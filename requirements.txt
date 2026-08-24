@@ -1,0 +1,55 @@
+# sam6d_realtime — pip 계층 의존성
+#
+# ⚠ 이 파일만으로는 환경이 완성되지 않는다.
+#   ROS 2 Jazzy 와 CUDA 빌드 torch 는 pip 에 없어서 conda(robostack) 로 깔아야 한다.
+#   → 먼저 `environment.yml` 로 베이스 env 를 만들고, 그 안에서 이 파일을 설치한다.
+#   전체 순서는 SETUP.md 참고.
+#
+#   conda env create -f environment.yml      # 1) 베이스 (ROS 2 Jazzy + torch + CUDA dev)
+#   conda activate sam6d
+#   pip install -r requirements.txt          # 2) 이 파일
+#   (그다음 pointnet2 CUDA 확장 빌드 — SETUP.md 4절)
+#
+# 검증 환경: 2026-08-13 워크스테이션(RTX PRO 6000 Blackwell, 드라이버 580.159.04),
+#            python 3.12.13 / pytorch 2.7.1 cuda129 / numpy 2.5.2.
+
+# ── YOLO-World (ISM 제안 단계) ────────────────────────────────────────────────
+# --no-deps 로 깔아야 한다. 그냥 깔면 pip 이 conda 가 넣은 torch/opencv 를
+# PyPI 휠로 덮어써서 CUDA 없는 torch 가 되고, numpy2 ABI 도 깨진다.
+# → SETUP.md 는 이 3개를 `pip install --no-deps` 로 따로 돌린다.
+ultralytics==8.4.64
+ultralytics-thop==2.1.6
+segment-anything==1.0
+
+# ── PEM 학습 프레임워크(추론에도 config/checkpoint 로더로 쓰인다) ──────────────
+# 이건 deps 가 필요하다(addict/lmdb/tensorboardX/yapf).
+gorilla-core==0.2.7.8
+addict==2.4.0
+lmdb==2.3.0
+tensorboardX==2.6.5
+yapf==0.43.0
+
+# ── YOLO-World 텍스트 인코더(CLIP) ────────────────────────────────────────────
+# ultralytics 가 첫 실행 때 자동으로 받아 가지만, 오프라인 노트북에서는 죽는다.
+# 미리 깔아 둘 것. 가중치 자체는 번들의 assets/clip/ViT-B-32.pt 를 쓰므로
+# 다운로드는 일어나지 않는다(realtime/sam6d_core.py:77 이 WEIGHTS_DIR 를 고정).
+clip @ git+https://github.com/ultralytics/CLIP.git@488e81a6711eea7346872b46ea928b367da8889d
+ftfy==6.3.1
+regex==2026.7.19
+
+# ── 시각화 보조 ───────────────────────────────────────────────────────────────
+distinctipy==1.3.4
+rosbags==0.11.5
+
+# ── 아래는 environment.yml 이 conda 로 넣는다 (pip 으로 덮어쓰지 말 것) ────────
+#   python 3.12.13, pytorch 2.7.1(cuda129), torchvision 0.24.0,
+#   numpy 2.5.2, scipy 1.18.0, pillow 12.3.0, pyyaml 6.0.3,
+#   opencv 4.12.0(py-opencv), scikit-image 0.26.0, imageio 2.37.0,
+#   trimesh 4.12.2, timm 1.0.26, einops 0.8.2, pycocotools 2.0.11,
+#   polars 1.43.2, psutil 7.2.2, py-cpuinfo 9.0.0, tqdm 4.70.0, requests 2.34.2,
+#   ros-jazzy-desktop 0.11.0, ros-jazzy-vision-msgs 4.1.1,
+#   ros-jazzy-rosbag2-storage-mcap 0.26.9
+#
+# ── 소스에서 빌드 (pip 저장소에 없다) ─────────────────────────────────────────
+#   pointnet2 (PEM 필수) — sam6d_master/SAM-6D/Pose_Estimation_Model/model/pointnet2
+#   SETUP.md 4절. 반드시 `conda activate sam6d` 상태에서 빌드할 것.

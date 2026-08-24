@@ -1,0 +1,183 @@
+{
+ "machine": {
+  "gpu": "NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition",
+  "cpu_count": 48,
+  "torch": "2.7.1",
+  "cuda": "12.9"
+ },
+ "gpu_start": {
+  "sm_mhz": "2272 MHz",
+  "sm_max_mhz": "3090 MHz",
+  "power_w": "78.53 W",
+  "power_limit_w": "300.00 W",
+  "temp_c": "53",
+  "util": "0 %",
+  "name": "NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition"
+ },
+ "gpu_end": {
+  "sm_mhz": "2212 MHz",
+  "sm_max_mhz": "3090 MHz",
+  "power_w": "214.30 W",
+  "power_limit_w": "300.00 W",
+  "temp_c": "63",
+  "util": "69 %",
+  "name": "NVIDIA RTX PRO 6000 Blackwell Max-Q Workstation Edition"
+ },
+ "n_iter": 200,
+ "elapsed_s": 14.3,
+ "hz": 13.98,
+ "stage_ms": {
+  "yolo": {
+   "median": 5.0,
+   "p90": 6.0,
+   "p99": 6.0,
+   "max": 6.0
+  },
+  "ism": {
+   "median": 30.0,
+   "p90": 45.0,
+   "p99": 51.1,
+   "max": 100.0
+  },
+  "pem": {
+   "median": 35.0,
+   "p90": 64.0,
+   "p99": 66.0,
+   "max": 66.0
+  },
+  "total": {
+   "median": 81.0,
+   "p90": 102.2,
+   "p99": 109.1,
+   "max": 155.0
+  }
+ },
+ "by_nobj": {
+  "0": {
+   "n": 50,
+   "median": 23.0,
+   "max": 30.0
+  },
+  "1": {
+   "n": 74,
+   "median": 74.0,
+   "max": 94.0
+  },
+  "2": {
+   "n": 50,
+   "median": 86.0,
+   "max": 155.0
+  },
+  "3": {
+   "n": 25,
+   "median": 103.0,
+   "max": 112.0
+  }
+ },
+ "decisions": {
+  "1786096378336322118": [
+   {
+    "object": "Sikhye_high",
+    "bbox": [
+     476,
+     214,
+     503,
+     256
+    ]
+   }
+  ],
+  "1786096416282510406": [
+   {
+    "object": "choco_hazelnut_high",
+    "bbox": [
+     190,
+     203,
+     236,
+     237
+    ]
+   }
+  ],
+  "1786096454195672902": [
+   {
+    "object": "Sikhye_high",
+    "bbox": [
+     253,
+     277,
+     293,
+     353
+    ]
+   },
+   {
+    "object": "choco_hazelnut_high",
+    "bbox": [
+     457,
+     33,
+     633,
+     142
+    ]
+   },
+   {
+    "object": "milk",
+    "bbox": [
+     364,
+     219,
+     421,
+     356
+    ]
+   }
+  ],
+  "1786096492108126790": [
+   {
+    "object": "Sauce_high",
+    "bbox": [
+     343,
+     87,
+     363,
+     136
+    ]
+   },
+   {
+    "object": "choco_hazelnut_high",
+    "bbox": [
+     375,
+     88,
+     442,
+     137
+    ]
+   }
+  ],
+  "1786096530021023302": [
+   {
+    "object": "Dinosaur",
+    "bbox": [
+     358,
+     216,
+     411,
+     281
+    ]
+   },
+   {
+    "object": "choco_hazelnut_high",
+    "bbox": [
+     351,
+     70,
+     415,
+     137
+    ]
+   }
+  ],
+  "1786096567933816390": [
+   {
+    "object": "milk",
+    "bbox": [
+     307,
+     158,
+     323,
+     205
+    ]
+   }
+  ],
+  "1786096605847042118": [],
+  "1786096643792901446": []
+ }
+}

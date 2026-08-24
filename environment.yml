@@ -1,0 +1,69 @@
+# sam6d_realtime — conda 베이스 환경 (ROS 2 Jazzy + CUDA torch)
+#
+#   conda env create -f environment.yml     (또는 mamba env create -f environment.yml)
+#   conda activate sam6d
+#   pip install -r requirements.txt
+#   → 그다음 pointnet2 빌드. 전체 순서는 SETUP.md.
+#
+# pip 계층은 여기 넣지 않았다. --no-deps 로 깔아야 하는 것들이 섞여 있어
+# conda 가 대신 돌리면 torch 를 PyPI 휠로 덮어쓴다(requirements.txt 머리말 참고).
+#
+# 크기 ~15 GB. 검증: 2026-08-13 워크스테이션(RTX PRO 6000 Blackwell, 드라이버 580.159.04).
+
+name: sam6d
+
+channels:
+  - conda-forge
+  - robostack-jazzy
+  - nodefaults          # defaults 채널이 섞이면 robostack ABI 와 충돌한다
+
+dependencies:
+  - python=3.12
+
+  # ── ROS 2 Jazzy ─────────────────────────────────────────────────────────────
+  - ros-jazzy-desktop
+  - ros-jazzy-vision-msgs                # Detection3DArray (노드 출력 타입)
+  - ros-jazzy-rosbag2-storage-mcap       # 번들 bag 은 v5/sqlite3 지만 mcap 도 대비
+
+  # ── PyTorch (CUDA 12.9 빌드) ────────────────────────────────────────────────
+  # ⚠ 'cuda129*' 빌드 문자열을 반드시 지킬 것. CPU 빌드가 잡히면 PEM 이 안 돈다.
+  - pytorch=2.7.1=cuda129*
+  - torchvision=0.24.0
+
+  # ── CUDA 툴체인 (pointnet2 확장 컴파일용) ───────────────────────────────────
+  - cuda-nvcc=12.9
+  - cuda-cudart-dev=12.9
+  - cuda-cccl
+  - libcusparse-dev                      # 없으면 cusparse.h not found 로 빌드 실패
+  - libcublas-dev
+  - libcusolver-dev
+  - libcufft-dev
+  - libcurand-dev
+  - compilers
+  - cmake
+  - ninja
+  - pkg-config
+
+  # ── ROS 빌드 보조 ───────────────────────────────────────────────────────────
+  - colcon-common-extensions
+  - catkin_pkg
+  - empy
+  - lark
+
+  # ── 파이썬 의존성 (conda 우선 — numpy2 ABI 에 맞춰 빌드된 것) ───────────────
+  - numpy=2.5.2                          # RoboStack Jazzy 가 numpy2 빌드라 선택지 없음
+  - scipy=1.18.0
+  - pillow=12.3.0
+  - pyyaml=6.0.3
+  - py-opencv=4.12.0
+  - scikit-image=0.26.0
+  - imageio=2.37.0
+  - trimesh=4.12.2                       # 5.x 는 API 변동 위험, 고정
+  - timm=1.0.26
+  - einops=0.8.2
+  - pycocotools=2.0.11
+  - polars=1.43.2
+  - psutil=7.2.2
+  - py-cpuinfo=9.0.0
+  - tqdm=4.70.0
+  - requests=2.34.2

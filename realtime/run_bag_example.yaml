@@ -1,0 +1,44 @@
+# SAM-6D 실시간 실행 설정 — bag 재생판 (워크스테이션 검증용)
+#
+#   conda activate sam6d && export ROS_DOMAIN_ID=72
+#   ros2 launch realtime/launch/sam6d_realtime.launch.py config:=realtime/run_bag_example.yaml
+#
+# 실제 카메라로 돌릴 때는 realtime/run_live_example.yaml 을 쓴다.
+
+topics:
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+  caminfo: /camera/camera/color/camera_info
+
+ism:
+  config: configs/yolo_ism_objects.yaml   # 상대경로는 sam6d_realtime/ 기준
+  objects: []                             # 비우면 config 의 활성 객체 전부(9개)
+
+runtime:
+  device: cuda:0
+  use_sim_time: true      # bag 재생이면 true (bag play --clock)
+  sync_slop: 0.02         # RGB-depth 짝 허용 시간차 [s]
+  sync_queue: 2           # 30 Hz 소스에서 2장 넘으면 이미 낡은 프레임이다
+  det_score_thresh: 0.2   # PEM 인스턴스 필터 (ISM 게이트와 무관)
+  # 포즈 후보 텍스처 검증(Stage V). 기하 점수로 정렬한 상위 후보를 '입력 이미지의
+  # 텍스처'와 '후보 포즈가 주장하는 모델 표면의 텍스처'로 맞대어 뒤집힘 여부를 판정하고,
+  # 텍스처가 지지하는 후보로 승자를 교정한다. 판정(PASS/CORRECTED/AMBIGUOUS)과 신뢰도는
+  # detections.jsonl 에 verify 로 남는다. 기본값·설명은 realtime/verify_config.py 참고.
+  #   appe_rerank: {topk: 100, w_geo: 2.0, stride: 1}     # 후보 재정렬(검증의 전제)
+  #   verify: {enabled: true, w_col: 1.0, geo_guard: 0.9} # w_col 0 = 원색 채널 끄기
+  # 둘 다 생략하면 검증된 기본값으로 기하+텍스처 검증이 켜진다.
+  # 기하 점수 기준선은 `verify: null` 로 명시한다.
+  status_period_s: 1.0
+
+output:
+  dir: output/longcircle2_realtime
+  overlay_every: 20       # N 프레임마다 오버레이 PNG (0 = 저장 안 함)
+  write_jsonl: true
+
+bag:
+  play: true
+  path: data/longcircle2             # 로컬 독립 사본(재부팅·Windows 마운트와 무관)
+  rate: 1.0
+  clock: true
+  ready_timeout: 600      # 모델 적재를 기다리는 상한 [s]
+  remap: {}               # 두 카메라를 동시에 재생할 때만 사용

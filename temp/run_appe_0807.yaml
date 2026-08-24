@@ -1,0 +1,32 @@
+# M1 실행 — 외형 재정렬 ON (0807/185223). 수신부 설정은 run_split_0807.yaml 과 동일.
+topics:
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+  caminfo: /camera/camera/color/camera_info
+
+ism:
+  config: configs/yolo_ism_objects.yaml
+  objects: []
+
+runtime:
+  device: cuda:0
+  use_sim_time: true
+  sync_slop: 0.02
+  sync_queue: 30
+  qos_reliability: reliable
+  qos_depth: 30
+  det_score_thresh: 0.2
+  status_period_s: 1.0
+  idle_exit_s: 20
+  appe_rerank: {topk: 50, w_geo: 0.5, stride: 4}
+
+output:
+  dir: temp/rt_appe_0807
+  diagnostics: false
+
+bag:
+  play: true
+  path: ../integration/data/0807_chungbuk/185223__circle_ccw_8laps/sam
+  rate: 1.0
+  clock: true
+  ready_timeout: 600
