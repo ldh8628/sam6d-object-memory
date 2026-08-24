@@ -28,7 +28,7 @@ import yaml
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import rclpy                                                     # noqa: E402
 from cv_bridge import CvBridge                                   # noqa: E402
-from geometry_msgs.msg import Pose, PoseStamped                  # noqa: E402
+from geometry_msgs.msg import Pose                               # noqa: E402
 from message_filters import ApproximateTimeSynchronizer, Subscriber  # noqa: E402
 from rclpy.callback_groups import ReentrantCallbackGroup         # noqa: E402
 from rclpy.executors import MultiThreadedExecutor                # noqa: E402
@@ -40,7 +40,7 @@ from sensor_msgs.msg import CameraInfo, Image                    # noqa: E402
 from std_msgs.msg import String                                  # noqa: E402
 from vision_msgs.msg import (Detection3D, Detection3DArray,      # noqa: E402
                              ObjectHypothesisWithPose)
-from shm_channel import FrameWriter, JsonReader, PoseRingWriter  # noqa: E402
+from shm_channel import FrameWriter, JsonReader                  # noqa: E402
 
 
 class Receiver(Node):
@@ -92,42 +92,11 @@ class Receiver(Node):
             queue_size=int(cfg["runtime"].get("sync_queue", 2)),
             slop=float(cfg["runtime"].get("sync_slop", 0.02)))
         self.sync.registerCallback(self._on_pair)
-        # ── ch2: SLAM 자세 구독 → 포즈 링 ──────────────────────────────
-        # ⚠ 자세는 **프레임 헤더에 실을 수 없다** — 프레임을 쓰는 시점에 그 프레임의
-        #   자세는 아직 없다(ORB-SLAM3 가 30 ms 쯤 뒤에 낸다). 이력으로 흘려보내고
-        #   추론 쪽이 capture stamp 로 조회한다.
-        # ⚠ SAM-6D 는 ROS_DOMAIN_ID 72, ORB-SLAM3 는 71 로 갈라져 있다(README §5).
-        #   자세를 받으려면 도메인을 맞추거나 브리지를 놓아야 한다.
-        mpc = cfg["runtime"].get("map_prior") or {}
-        self.pw_slam = self.pw_self = None
-        if mpc.get("enabled", True) and str(mpc.get("pose_source", "none")) not in (
-                "none", "trajectory_file"):
-            src = str(mpc.get("pose_source", "both"))
-            if src in ("slam_extrinsic", "both"):
-                self.pw_slam = PoseRingWriter("sam6d_pose")
-                self.create_subscription(
-                    PoseStamped, mpc.get("pose_topic", "/orbslam3/pose"),
-                    lambda m: self._on_pose(m, self.pw_slam), 50, callback_group=par)
-            if src in ("self_localization", "both"):
-                self.pw_self = PoseRingWriter("sam6d_pose_self")
-                self.create_subscription(
-                    PoseStamped, mpc.get("self_pose_topic", "/orbslam3_sam/pose"),
-                    lambda m: self._on_pose(m, self.pw_self), 50, callback_group=par)
-            self.get_logger().info(f"[recv] ch2 포즈 구독: {src}")
-
         self.create_timer(0.02, self._pump, callback_group=par)     # 결과 회수·발행
         self.create_timer(float(cfg["runtime"].get("status_period_s", 1.0)),
                           self._status, callback_group=par)
         self.create_timer(10.0, self._warn_if_silent, callback_group=par)
         self.get_logger().info("[recv] 수신 전용 노드 시작 (추론은 별도 프로세스)")
-
-    def _on_pose(self, msg, w):
-        """자세는 그냥 링에 흘린다. 시각 정합은 추론 쪽이 capture stamp 로 한다."""
-        if w is None:
-            return
-        t = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
-        p, q = msg.pose.position, msg.pose.orientation
-        w.write(t, (p.x, p.y, p.z), (q.x, q.y, q.z, q.w))
 
     def _on_caminfo(self, msg):
         if self.K is None:
@@ -212,9 +181,6 @@ class Receiver(Node):
     def close(self):
         self.get_logger().info(f"[recv] 수신 {self.n_in} · 공유메모리 기록 {self.n_written}")
         self.fw.close()
-        for w in (self.pw_slam, self.pw_self):     # 죽은 실행이 세그먼트를 남기지 않게
-            if w is not None:
-                w.close()
         if self._f_stat:
             self._f_stat.close()
         if self.jr:

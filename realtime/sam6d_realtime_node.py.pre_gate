@@ -47,11 +47,10 @@ PEM_DIR = os.path.join(REPO, "sam6d_master", "SAM-6D", "Pose_Estimation_Model")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from verify_config import build_appe_cfg, describe            # noqa: E402
-from map_prior import MapPrior, PoseSource, _rot as mp_rot    # noqa: E402
 
 import rclpy                                                    # noqa: E402
 from cv_bridge import CvBridge                                  # noqa: E402
-from geometry_msgs.msg import Pose, PoseStamped                 # noqa: E402
+from geometry_msgs.msg import Pose                              # noqa: E402
 from message_filters import ApproximateTimeSynchronizer, Subscriber  # noqa: E402
 from rclpy.callback_groups import (MutuallyExclusiveCallbackGroup,  # noqa: E402
                                    ReentrantCallbackGroup)
@@ -392,37 +391,6 @@ class Sam6DRealtimeNode(Node):
         if ar:
             self.pcfg.model.appe_rerank = ar
         self.get_logger().info(describe(ar, ver))
-        # ── ch2: Map 사전 ─────────────────────────────────────────────────
-        # 단일 프로세스판은 자기가 직접 자세를 구독한다(split 은 링으로 받는다).
-        # ⚠ SAM-6D 는 ROS_DOMAIN_ID 72, ORB-SLAM3 는 71 로 갈라져 있다(README §5) —
-        #   자세를 받으려면 도메인을 맞추거나 브리지를 놓아야 한다.
-        mpc = (ar or {}).get("map_prior") or {}
-        self.map_prior = MapPrior(mpc, log=self.get_logger().info)
-        self.psrc = PoseSource(mpc, log=self.get_logger().info) if self.map_prior.enabled else None
-        self._map_dg = None
-        _mgc = (ar or {}).get("mask_gate") or {}
-        self.gate_cases, self.gate_cases_dropped = [], 0
-        self._max_cases = int(_mgc.get("max_cases", 5000)) if _mgc.get("dump_cases", True) else 0
-        if self.psrc is not None and self.psrc.mode in ("slam_extrinsic", "self_localization", "both"):
-            par2 = ReentrantCallbackGroup()
-            if self.psrc.mode in ("slam_extrinsic", "both"):
-                self.create_subscription(
-                    PoseStamped, mpc.get("pose_topic", "/orbslam3/pose"),
-                    lambda m: self._on_pose(m, self.psrc.add_slam), 50, callback_group=par2)
-            if self.psrc.mode in ("self_localization", "both"):
-                self.create_subscription(
-                    PoseStamped, mpc.get("self_pose_topic", "/orbslam3_sam/pose"),
-                    lambda m: self._on_pose(m, self.psrc.add_self), 50, callback_group=par2)
-            self.get_logger().info(f"[map_prior] 자세 구독: {self.psrc.mode}")
-
-    def _on_pose(self, msg, add):
-        """자세를 버퍼에 넣기만 한다. 정합은 프레임의 capture stamp 로 한다."""
-        t = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
-        p, q = msg.pose.position, msg.pose.orientation
-        T = np.eye(4)
-        T[:3, :3] = mp_rot(np.array([q.x, q.y, q.z, q.w]))
-        T[:3, 3] = (p.x, p.y, p.z)
-        add(t, T)
         MODEL = importlib.import_module(self.pcfg.model_name)
         self.pem = MODEL.Net(self.pcfg.model).to(self.device).eval()
         gorilla.solver.load_checkpoint(
@@ -608,13 +576,7 @@ class Sam6DRealtimeNode(Node):
         overlay = rgb.copy() if (self.overlay_every and
                                  (self.n_proc + 1) % self.overlay_every == 0) else None
 
-        # ch2 — **capture stamp** 로 조회한다(도착 시각이 아니다). 없으면 그 프레임은
-        # ch2 없이 간다 — 절대 기다리지 않는다.
-        T_map_cam, pose_dg = (self.psrc.lookup(stamp_ns / 1e9) if self.psrc is not None
-                              else (None, {}))
-        self.map_prior.note_camera(T_map_cam)
-        for name, r, R, t_mm, score, mpts, dg, vf, gt, mv in self._pem_poses(
-                frame, hits, depth, T_map_cam):
+        for name, r, R, t_mm, score, mpts, dg, vf in self._pem_poses(frame, hits, depth):
             arr.detections.append(self._to_msg(rgb_msg.header, name, R, t_mm, score, vf))
             rows.append({
                 "stamp_ns": stamp_ns, "frame_seq": self.n_proc, "object": name,
@@ -624,8 +586,6 @@ class Sam6DRealtimeNode(Node):
                 "bbox": [int(v) for v in r["box"]],
                 **({"pem": dg} if self.diag else {}),
                 **({"verify": vf} if vf else {}),
-                **({"gate": self._stash_case(name, gt)} if gt else {}),
-                **({"map": dict(pose_dg, **(mv or {}))} if (mv or pose_dg) else {}),
                 "ism": {k: (round(float(r[k]), 5) if isinstance(r.get(k), (int, float)) else r.get(k))
                         for k in ("best_yolo", "best_sem", "masked_appe", "rank_appe",
                                   "hsv_score", "decision") if k in r},
@@ -718,49 +678,7 @@ class Sam6DRealtimeNode(Node):
             f"ism {self.last['ms']['ism']} / pem {self.last['ms']['pem']}]  "
             f"drop {self.n_drop}")
 
-
-    # ------------------------------------------------------------ ch2/케이스 보조
-    def _stash_case(self, name, gt):
-        """gate 행에서 후보 덤프를 떼어 따로 모은다(검출 행은 가볍게 유지)."""
-        c = gt.pop("cases", None)
-        if c is not None:
-            if len(self.gate_cases) < self._max_cases:
-                self.gate_cases.append({"object": name, **c})
-            else:
-                self.gate_cases_dropped += 1
-        return gt
-
-    def _attach_map_prior(self, inp, names, by_name, T_map_cam):
-        """등록된 Map 자세를 카메라계 참조로 바꿔 PEM 입력에 싣는다."""
-        self._map_dg = None
-        if not self.map_prior.enabled or T_map_cam is None or self.K is None:
-            return
-        Kn = np.asarray(self.K, dtype=float).reshape(3, 3)
-        refs, oks, dgs = [], [], []
-        for nm in names:
-            R, dg = self.map_prior.reference(nm, T_map_cam,
-                                             box=by_name.get(nm, {}).get("box"), K=Kn)
-            oks.append(R is not None)
-            refs.append(np.eye(3) if R is None else R)
-            dgs.append(dg)
-        if not any(oks):
-            return
-        dev = inp["pts"].device
-        inp["map_ref_R"] = torch.tensor(np.stack(refs), dtype=torch.float32, device=dev)
-        inp["map_ref_ok"] = torch.tensor(oks, dtype=torch.bool, device=dev)
-        self._map_dg = dgs
-
-    def _vote_map_prior(self, nm, R, t_mm, r, vf, gt, T_map_cam):
-        """PEM 결과 하나를 지도에 올린다. 자격 미달이면 조용히 버린다."""
-        if not self.map_prior.enabled or T_map_cam is None:
-            return None
-        box = r.get("box")
-        px = min(box[2] - box[0], box[3] - box[1]) if box else None
-        return self.map_prior.vote(
-            nm, R, [v / 1000.0 for v in t_mm], T_map_cam, bbox_px=px,
-            verdict=(vf or {}).get("verdict"), admitted_by=(gt or {}).get("admit"))
-
-    def _pem_poses(self, frame, hits, depth=None, T_map_cam=None):
+    def _pem_poses(self, frame, hits, depth=None):
         """수락된 객체들의 6D 포즈.
 
         pem_batch 면 한 프레임의 객체를 PEM 에 **한 번에** 태운다. 객체마다 따로
@@ -775,13 +693,13 @@ class Sam6DRealtimeNode(Node):
         for i in range(0, len(hits), step):
             chunk = hits[i:i + step]
             try:
-                rows += self._pem_chunk(frame, chunk, depth, T_map_cam)
+                rows += self._pem_chunk(frame, chunk, depth)
             except Exception as e:
                 self.get_logger().warn(
                     f"PEM {[n for n, _ in chunk]} 건너뜀: {type(e).__name__}: {e}")
         return rows
 
-    def _pem_chunk(self, frame, chunk, depth=None, T_map_cam=None):
+    def _pem_chunk(self, frame, chunk, depth=None):
         # 마스크를 그대로 넘긴다. 예전에는 RLE 로 인코딩해 JSON 으로 쓰고 PEM 이 다시
         # 디코딩했다 — 왕복이 무손실이라 결과는 같고 시간만 들던 구간이다.
         _t = time.perf_counter()
@@ -797,7 +715,6 @@ class Sam6DRealtimeNode(Node):
             if all(self._tem[n][2] is not None for n in names):
                 inp["dense_co"] = torch.cat([self._tem[n][2] for n in names], 0)
             inp["obj_names"] = names                  # 대칭 선언 조회용
-            self._attach_map_prior(inp, names, dict(chunk), T_map_cam)
             out = self.pem(inp)
         _sync(); self._t_fwd += time.perf_counter() - _t
 
@@ -808,7 +725,6 @@ class Sam6DRealtimeNode(Node):
         Rs = out["pred_R"].detach().cpu().numpy()
         ts = out["pred_t"].detach().cpu().numpy() * 1000.0
         vfs = out.get("verify") or [None] * len(names)
-        gts = out.get("gate") or [None] * len(names)
         by_name = dict(chunk)
         rows = []
         for j, name in enumerate(names):
@@ -828,13 +744,7 @@ class Sam6DRealtimeNode(Node):
                       "coarse": round(float(coarse[j]), 5),
                       "pose_score": round(float(pose_s[j]), 5) if pose_s is not None else None,
                       "batch": len(names)}
-            # ⚠ 투표는 gate.admit(어느 채널이 승자를 들여보냈는가)이 있어야 한다 —
-            #   고리 차단기(vote_need_mask)가 그것으로 작동한다.
-            mv = self._vote_map_prior(name, Rs[j], ts[j], r, vfs[j], gts[j], T_map_cam)
-            if mv is not None and self._map_dg:
-                mv = dict(self._map_dg[j] or {}, **mv)
-            rows.append((name, r, Rs[j], ts[j], float(ps[j]), mpts_list[j], dg,
-                         vfs[j], gts[j], mv))
+            rows.append((name, r, Rs[j], ts[j], float(ps[j]), mpts_list[j], dg, vfs[j]))
         return rows
 
     def _to_msg(self, header, name, R, t_mm, score, verify=None) -> Detection3D:
@@ -909,17 +819,6 @@ class Sam6DRealtimeNode(Node):
                    "frames_dropped_busy": self.n_drop, "detections": self.n_det,
                    "elapsed_s": round(el, 1), "hz_processed": round(self.n_proc / el, 2)}
         self.get_logger().info(f"[summary] {summary}")
-        # 후보 소실 케이스는 검출 행에서 떼어 따로 쓴다 — 나중에 궤적 기준을 붙여
-        # "정답이 후보 안에 있었는데 어느 관문에서 죽었는가"를 재추론 없이 본다.
-        if self.gate_cases:
-            with open(os.path.join(self.out_dir, "gate_cases.jsonl"), "w",
-                      encoding="utf-8") as f:
-                for c in self.gate_cases:
-                    f.write(json.dumps(c, ensure_ascii=False) + "\n")
-            self.get_logger().info(
-                f"[gate_cases] {len(self.gate_cases)}건 저장"
-                + (f" (초과 {self.gate_cases_dropped}건은 버림)"
-                   if self.gate_cases_dropped else ""))
         if getattr(self, "_stk", None) is not None:
             self._stop_sampler = True
             with open(os.path.join(self.out_dir, "stacks.json"), "w", encoding="utf-8") as f:

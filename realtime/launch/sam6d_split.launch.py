@@ -58,15 +58,12 @@ def _setup(context, *args, **kwargs):
 
     bag = cfg.get("bag", {}) or {}
     if bool(bag.get("play", False)):
-        bag_path = _abs(bag.get("path", ""))
-        if not bag.get("path") or not bag_path.exists():
-            raise RuntimeError(f"bag.path 가 없다: {bag_path}")
         gate = ExecuteProcess(
             cmd=["bash", "-c",
                  f'for i in $(seq 1 {int(bag.get("ready_timeout", 600))}); do '
                  f'[ -f "{ready}" ] && exit 0; sleep 1; done; exit 1'],
             output="screen")
-        play = ["ros2", "bag", "play", str(bag_path),
+        play = ["ros2", "bag", "play", str(_abs(bag["path"])),
                 "--rate", str(bag.get("rate", 1.0))]
         if bag.get("clock", True):
             play.append("--clock")

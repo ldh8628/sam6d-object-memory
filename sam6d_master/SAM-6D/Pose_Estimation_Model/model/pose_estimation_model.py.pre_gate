@@ -41,29 +41,6 @@ class Net(nn.Module):
                 d['dense_cm'] = get_chosen_pixel_feats(rgb * sd + m, end_points['rgb_choose'])
                 d['dense_co'] = end_points['dense_co']
             d['radius'] = radius          # 후보 병진을 원래 크기로 되돌릴 때 쓴다
-            # 마스크 비교 게이트(ch1). 설정은 appe_cfg 에 실려 오고, 텐서는 여기서
-            # **새 dict** 에 담는다 — appe_cfg 를 그대로 mutate 하면 GPU 텐서가
-            # self.cfg.appe_rerank 에 눌러앉아 누수 + verify_eval 의 설정 교체가 깨진다.
-            # ⚠ d = dict(appe_cfg, ...) 라 설정 dict 가 **이미 복사돼 있다**. 켜지 않을 때
-            #   지우지 않으면 텐서 없는 껍데기가 남아 게이트가 그걸 집어든다.
-            mg_cfg = d.pop('mask_gate', None)
-            if (mg_cfg and mg_cfg.get('enabled')
-                    and end_points.get('mask_g') is not None
-                    and end_points.get('K') is not None):
-                d['mask_gate'] = dict(dict(mg_cfg), mask=end_points['mask_g'],
-                                      bbox=end_points['bbox'], K=end_points['K'],
-                                      radius=radius)
-            # ch2 — Map 사전. 참조 자세는 추론 프로세스가 PEM 을 부르기 전에 만들어
-            # 넣어 준다(그때만 T_map_cam 을 안다). 없으면 껍데기를 남기지 않는다.
-            mp_cfg = d.pop('map_prior', None)
-            if (mp_cfg and mp_cfg.get('enabled')
-                    and end_points.get('map_ref_R') is not None):
-                ver_cfg = appe_cfg.get('verify') or {}
-                d['map_prior'] = dict(dict(mp_cfg), ref_R=end_points['map_ref_R'],
-                                      ref_ok=end_points['map_ref_ok'],
-                                      names=end_points.get('obj_names'),
-                                      sym_axes=ver_cfg.get('symmetry_axes'),
-                                      sym_step=ver_cfg.get('sym_step_deg', 10))
             if end_points.get('obj_names') is not None:
                 d['names'] = end_points['obj_names']     # 대칭 선언 조회용
             end_points['appe_rerank'] = d

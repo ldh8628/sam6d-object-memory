@@ -36,36 +36,13 @@ DEPTH = "/camera/camera/aligned_depth_to_color/image_raw"
 CAMINFO = "/camera/camera/color/camera_info"
 SEED = 12345
 
-_APPE = {"topk": 100, "w_geo": 2.0, "stride": 1}
-# ⚠ 옛 세 설정에는 mask_gate / map_prior 를 **명시적으로 null** 로 둔다. 이것들은
-#   verify_config 에서 기본 ON 이라, 키를 빼면 옛 설정이 조용히 게이트를 달고 돌아
-#   "off" 가 더는 예전 동작이 아니게 된다.
-_OLD = {"mask_gate": None, "map_prior": None}
-
 SETTINGS = {
     # 이름 -> runtime 조각. appe_rerank 는 세 설정 모두 final3 운영값으로 고정한다.
-    "off": {"appe_rerank": _APPE, "verify": None, **_OLD},
-    "w0": {"appe_rerank": _APPE,
-           "verify": {"enabled": True, "w_col": 0.0, "geo_guard": 0.0}, **_OLD},
-    "on": {"appe_rerank": _APPE,
-           "verify": {"enabled": True, "w_col": 1.0, "geo_guard": 0.9}, **_OLD},
-
-    # ── 마스크 게이트(ch1) 파리티/운영 ────────────────────────────────────
-    # mg_null   : 구조 중립. gate=None 이라 원래 텐서 연산이 그대로 돈다.
-    # mg_parity : 배선 중립. 렌더·비교를 전부 태우고도 아무도 거르지 않는다.
-    #             → mg_null 과 R/t 가 완전히 같아야 한다(게이트가 무해함의 증명).
-    # mg_on     : 운영 기본값.
-    "mg_null": {"appe_rerank": _APPE,
-                "verify": {"enabled": True, "w_col": 1.0, "geo_guard": 0.9}, **_OLD},
-    "mg_parity": {"appe_rerank": _APPE,
-                  "verify": {"enabled": True, "w_col": 1.0, "geo_guard": 0.9},
-                  "mask_gate": {"enabled": True, "gate_guard": 0.0, "min_keep": 300,
-                                "topk": 300, "ism_reject": False},
-                  "map_prior": None},
-    "mg_on": {"appe_rerank": _APPE,
-              "verify": {"enabled": True, "w_col": 1.0, "geo_guard": 0.9},
-              "mask_gate": {"enabled": True},
-              "map_prior": None},
+    "off": {"appe_rerank": {"topk": 100, "w_geo": 2.0, "stride": 1}, "verify": None},
+    "w0": {"appe_rerank": {"topk": 100, "w_geo": 2.0, "stride": 1},
+           "verify": {"enabled": True, "w_col": 0.0, "geo_guard": 0.0}},
+    "on": {"appe_rerank": {"topk": 100, "w_geo": 2.0, "stride": 1},
+           "verify": {"enabled": True, "w_col": 1.0, "geo_guard": 0.9}},
 }
 
 # 대칭 선언(objectmemory core/fusion.py 의 보수적 표와 같다)
@@ -330,8 +307,7 @@ def run(args):
             for d in det:
                 rows.append({"stamp_ns": t, "i": i, **{k: d[k] for k in
                              ("object", "score", "R", "t_mm") if k in d},
-                             **({"verify": d["verify"]} if "verify" in d else {}),
-                             **({"gate": d["gate"]} if "gate" in d else {})})
+                             **({"verify": d["verify"]} if "verify" in d else {})})
             if i % 50 == 0:
                 print(f"  {i}/{len(frames)}  누적검출 {len(rows)}", flush=True)
         (out / f"{name}.jsonl").write_text(

@@ -77,6 +77,40 @@ def b64(img, q=78):
     return "data:image/jpeg;base64," + base64.b64encode(buf).decode() if ok else ""
 
 
+def quat_to_R(q):
+    x, y, z, w = q[:, 0], q[:, 1], q[:, 2], q[:, 3]
+    return np.stack([1-2*(y*y+z*z), 2*(x*y-w*z), 2*(x*z+w*y),
+                     2*(x*y+w*z), 1-2*(x*x+z*z), 2*(y*z-w*x),
+                     2*(x*z-w*y), 2*(y*z+w*x), 1-2*(x*x+y*y)], -1).reshape(-1, 3, 3)
+
+
+def angles_to(ref, Rs, name):
+    """[K,3,3] 후보와 기준 사이 각도 [K]. 선언된 대칭은 접는다."""
+    G = np.stack(V.sym_group(name))                       # [G,3,3]
+    tr = np.einsum('ba,kbc,gca->kg', ref, Rs, G).max(1)   # max_S trace(ref^T R S)
+    return np.degrees(np.arccos(np.clip((tr - 1.0) / 2.0, -1.0, 1.0)))
+
+
+def shortlist_stats(ev):
+    """정답이 후보(shortlist) 안에 있었는가 · 있었다면 몇 등이었는가."""
+    for c in ev:
+        q = c["verify"].get("quats")
+        if not q:
+            c["sl"] = None
+            continue
+        q = np.asarray(q, dtype=float)
+        Rs = quat_to_R(q[:, :4])
+        ang = angles_to(c["ref"], Rs, c["object"])
+        good = np.where(ang <= OK_DEG)[0]                 # 정답 자세 '그룹'
+        rank_s = np.argsort(np.argsort(-q[:, 5]))         # s 내림차순 등수
+        c["sl"] = {
+            "n": len(q), "best": float(ang.min()),
+            "has": bool(len(good)),
+            "rank_geo": (int(good.min()) if len(good) else None),
+            "rank_s": (int(rank_s[good].min()) if len(good) else None),
+        }
+
+
 def cls_of(a):
     return "D" if a <= OK_DEG else ("C" if a <= NEAR_DEG else "A")
 
@@ -92,7 +126,7 @@ def collect(args):
         raise SystemExit("bag 에서 프레임/카메라 정보를 못 읽었다")
 
     core = Sam6DCore(args.config, [], args.device)
-    ar, _ = build_appe_cfg({"verify": {"dump_topk": args.topn}})
+    ar, _ = build_appe_cfg({"verify": {"dump_topk": args.topn, "dump_quats": True}})
     core.pem.cfg.appe_rerank = ar
     print(f"[run] {ar['verify']['w_col']=} {ar['verify']['geo_guard']=} dump={args.topn}", flush=True)
 
@@ -118,17 +152,34 @@ def collect(args):
 
 
 # ------------------------------------------------------------------ 기준
-def build_reference(cases):
+def picks(cases):
+    """사례마다 (기하 1등, 검증 선택) 후보를 뽑아 둔다."""
+    for c in cases:
+        cd = {x["rank_geo"]: x for x in c["verify"]["cands"]}
+        cs = {x["rank_s"]: x for x in c["verify"]["cands"]}
+        c["pick_geo"], c["pick_ver"] = cd.get(0), cs.get(0)
+        c["ref_src"] = [c["pick_geo"]["R"], c["pick_ver"]["R"]]
+
+
+def build_reference(cases, traj=None, extrinsic=None):
+    """궤적이 있으면 지도좌표계 최빈 자세를, 없으면 객체쌍 합의를 기준으로 쓴다."""
+    picks(cases)
+    if traj:
+        X = np.load(extrinsic) if extrinsic else None
+        ts, Rs, Ps = V.load_traj(traj, X)
+        modes, share = V.map_mode_reference(cases, ts, Rs, Ps)
+        for c in cases:
+            c["npart"] = None
+        return ("traj", share)
     runs = defaultdict(dict)
     for c in cases:
         runs[c["i"]][c["object"]] = {"R": c["R"]}
     rel, share = V.calibrate([runs])
     for c in cases:
-        objs = runs[c["i"]]
-        ref, npart = V.reference(objs, c["object"], rel)
+        ref, npart = V.reference(runs[c["i"]], c["object"], rel)
         c["ref"] = None if ref is None else ref
         c["npart"] = npart
-    return rel, share
+    return ("pair", share)
 
 
 # ------------------------------------------------------------------ 본문
@@ -143,22 +194,26 @@ def main():
     ap.add_argument("--topn", type=int, default=8)
     ap.add_argument("--per-object", type=int, default=8, help="객체당 그림으로 보여줄 사례 수")
     ap.add_argument("--title", default="")
+    ap.add_argument("--traj", default="", help="SAM 카메라 궤적(TUM). 있으면 이걸 기준으로 쓴다")
+    ap.add_argument("--extrinsic", default="", help="궤적이 SLAM 카메라 것일 때 X_camSLAM_camSAM.npy")
     a = ap.parse_args()
 
     K, frames, tem, cases = collect(a)
-    rel, share = build_reference(cases)
-    ev = [c for c in cases if c["ref"] is not None]
-    print(f"[기준] 객체쌍 {len(rel)} · 사례 {len(cases)} 중 기준 있는 것 {len(ev)}")
+    kind, share = build_reference(cases, a.traj, a.extrinsic)
+    ev = [c for c in cases if c.get("ref") is not None]
+    print(f"[기준] {kind} · 사례 {len(cases)} 중 기준 있는 것 {len(ev)}")
+    if kind == "traj":
+        for k in sorted(share, key=lambda k: -share[k][1]):
+            print(f"    {k[0]:24s} #{k[1]}  최빈군집 {share[k][0]*100:5.1f}%  n={share[k][1]}")
 
     # --- 통계 -----------------------------------------------------------
     for c in ev:
-        cd = {x["rank_geo"]: x for x in c["verify"]["cands"]}
-        cs = {x["rank_s"]: x for x in c["verify"]["cands"]}
-        c["pick_geo"], c["pick_ver"] = cd.get(0), cs.get(0)
         c["a_geo"] = V.ang_deg(c["ref"], np.array(c["pick_geo"]["R"]), c["object"])
         c["a_ver"] = V.ang_deg(c["ref"], np.array(c["pick_ver"]["R"]), c["object"])
         c["best"] = min(V.ang_deg(c["ref"], np.array(x["R"]), c["object"])
                         for x in c["verify"]["cands"])
+
+    shortlist_stats(ev)
 
     def stat(rows, key, thr):
         return 100.0 * sum(1 for r in rows if r[key] <= thr) / max(len(rows), 1)
@@ -175,6 +230,19 @@ def main():
                     stat(rows, "a_geo", NEAR_DEG), stat(rows, "a_ver", NEAR_DEG),
                     float(np.median([r["a_geo"] for r in rows])),
                     float(np.median([r["a_ver"] for r in rows])), fix, brk))
+
+    # --- 원자료 저장 (사후 분석용: 시각오프셋 스윕·가중치 실험·객체별 진단) -----
+    import json as _json
+    raw = [{"i": c["i"], "stamp": c["stamp"], "object": c["object"],
+            "inst": c.get("inst"), "bbox": c["bbox"], "t_mm": c["t_mm"],
+            "R": c["R"], "R_geo": c["pick_geo"]["R"], "R_ver": c["pick_ver"]["R"],
+            "a_geo": round(c["a_geo"], 3), "a_ver": round(c["a_ver"], 3),
+            "ref": [[round(float(v), 6) for v in row] for row in c["ref"]],
+            "verdict": c["verify"]["verdict"], "conf": c["verify"]["conf"],
+            "quats": c["verify"].get("quats")} for c in ev]
+    rawp = (a.out if os.path.isabs(a.out) else os.path.join(REPO, a.out)) + ".cases.json"
+    Path(rawp).write_text(_json.dumps(raw), encoding="utf-8")
+    print(f"[원자료] {rawp}  ({os.path.getsize(rawp)/1e6:.1f} MB)")
 
     # --- 그림으로 보여줄 사례 고르기 (바뀐 것 우선) -----------------------
     show = []
@@ -247,6 +315,33 @@ td.l,th.l{text-align:left}
     P.append("<p style='font-size:12px;color:#999'>‘교정’은 기하만으로는 정답 밖이던 것이 검증으로 정답이 된 건수, "
              "‘파손’은 그 반대다. 중앙값은 기준 자세 잡음(파트너 편차 12~13°)보다 작은 차이라 판정에 쓰지 말 것.</p>")
 
+    # 제안 vs 채점 분해
+    sl = [c for c in ev if c.get("sl")]
+    if sl:
+        P.append("<h2>정답이 후보 안에 있었나 — 제안(300→상위 K) vs 채점</h2>")
+        P.append("<table><tr><th class='l'>객체</th><th>사례</th>"
+                 f"<th>후보에 정답 있음</th><th>기하가 고름</th><th>검증이 고름</th>"
+                 "<th>정답의 기하등수(중앙)</th><th>정답의 텍스처등수(중앙)</th>"
+                 "<th>후보 중 최선(중앙)</th></tr>")
+        for o in objs + ["__ALL__"]:
+            rows = sl if o == "__ALL__" else [c for c in sl if c["object"] == o]
+            if not rows:
+                continue
+            has = [c for c in rows if c["sl"]["has"]]
+            nm = "<b>전체</b>" if o == "__ALL__" else html.escape(o)
+            rg = np.median([c["sl"]["rank_geo"] for c in has]) if has else float("nan")
+            rs = np.median([c["sl"]["rank_s"] for c in has]) if has else float("nan")
+            P.append(f"<tr><td class='l'>{nm}</td><td>{len(rows)}</td>"
+                     f"<td>{100*len(has)/len(rows):.1f}%</td>"
+                     f"<td>{100*sum(1 for c in has if c['a_geo']<=OK_DEG)/max(len(has),1):.1f}%</td>"
+                     f"<td>{100*sum(1 for c in has if c['a_ver']<=OK_DEG)/max(len(has),1):.1f}%</td>"
+                     f"<td>{rg:.0f}</td><td>{rs:.0f}</td>"
+                     f"<td>{np.median([c['sl']['best'] for c in rows]):.1f}°</td></tr>")
+        P.append("</table>")
+        P.append("<p style='font-size:12px;color:#999'>‘후보에 정답 있음’ 이 낮으면 <b>제안(후보 생성)</b> 문제고, "
+                 "높은데 ‘고름’ 이 낮으면 <b>채점</b> 문제다. 등수는 기하 상위 K개(shortlist) 안에서의 순위이며, "
+                 "0 이 1등이다.</p>")
+
     P.append("<p class='nav'><b>바로가기:</b> " +
              " ".join(f"<a href='#{html.escape(o)}'>{html.escape(o)}</a>" for o in objs) + "</p>")
 
@@ -270,7 +365,7 @@ td.l,th.l{text-align:left}
         P.append("<div class='case'>")
         P.append(f"<div class='meta'>frame {c['i']:04d} · bbox {box[2]-box[0]}x{box[3]-box[1]}px · "
                  f"판정 <b>{v['verdict']}</b> · 신뢰도 {v['conf']} · 마진 {v['margin']} · "
-                 f"모드 {v['n_modes']} · 파트너 {c['npart']} · "
+                 f"모드 {v['n_modes']}" + (f" · 파트너 {c['npart']}" if c['npart'] else '') + " · "
                  f"기하선택 <b class='{cls_of(c['a_geo'])}'>{c['a_geo']:.0f}°</b> → "
                  f"검증선택 <b class='{cls_of(c['a_ver'])}'>{c['a_ver']:.0f}°</b> "
                  f"(후보 중 최선 {c['best']:.0f}°) {d30}</div>")

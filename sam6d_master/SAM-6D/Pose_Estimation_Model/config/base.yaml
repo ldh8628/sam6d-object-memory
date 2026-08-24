@@ -14,7 +14,6 @@ lr_scheduler:
   warmup_iters: 1000
 
 model:
-  # Legacy production setting: geometry/depth verification uses 196 FPS points.
   coarse_npoint: 196
   fine_npoint: 2048
   feature_extraction:

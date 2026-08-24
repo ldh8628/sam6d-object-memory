@@ -15,10 +15,6 @@ DEVICE = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 import torchvision.transforms as transforms
 import cv2
 
-# 마스크 게이트(ch1)용 crop 마스크 내보내기 해상도. 게이트 격자 G 와 **일부러 분리**한다 —
-# 데이터 준비가 게이트 설정에 의존하면 설정을 바꿀 때마다 입력이 달라져 파리티 비교가 깨진다.
-MASK_EXPORT = 64
-
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 ROOT_DIR = os.path.join(BASE_DIR, '..', 'Pose_Estimation_Model')
 sys.path.append(os.path.join(ROOT_DIR, 'provider'))
@@ -217,8 +213,6 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
     all_rgb_choose = []
     all_score = []
     all_dets = []
-    all_maskg = []
-    all_bbox = []
     for inst in dets:
         if per_det_cad:
             mesh = trimesh.load_mesh(inst['cad'])
@@ -279,14 +273,6 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
         all_score.append(score)
         all_dets.append(inst)
         all_model.append(model_points)
-        # ── 마스크 게이트(ch1)용 ────────────────────────────────────────────
-        # 여기까지 온 mask 는 이미 crop 되어 있고(mask ∧ depth>0), bbox 는 정사각이다.
-        # ⚠ float32 로 내보낸다. uint8 로 리사이즈하면 INTER_AREA 평균이 반올림돼
-        #   30% 만 덮인 칸이 0 으로 죽는다 — 게이트가 마스크를 과소평가하게 된다.
-        # ⚠ 여기서 RNG 를 건드리면 안 된다(가설 표본 스트림이 달라진다). cv2.resize 는 안전.
-        all_bbox.append([y1, y2, x1, x2])
-        all_maskg.append(cv2.resize(mask.astype(np.float32), (MASK_EXPORT, MASK_EXPORT),
-                                    interpolation=cv2.INTER_AREA))
 
     ret_dict = {}
     ret_dict['pts'] = torch.stack(all_cloud).to(DEVICE)
@@ -300,9 +286,6 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
     else:
         ret_dict['model'] = torch.FloatTensor(model_points).unsqueeze(0).repeat(ninstance, 1, 1).to(DEVICE)
     ret_dict['K'] = torch.FloatTensor(K).unsqueeze(0).repeat(ninstance, 1, 1).to(DEVICE)
-    # 마스크 게이트 입력. 게이트가 꺼져 있으면 아무도 읽지 않는 불활성 키다.
-    ret_dict['mask_g'] = torch.FloatTensor(np.stack(all_maskg)).to(DEVICE)   # [B,64,64] 점유율 0~1
-    ret_dict['bbox'] = torch.FloatTensor(all_bbox).to(DEVICE)                # [B,4] y1,y2,x1,x2
     return ret_dict, (all_model if per_det_cad else model_points), all_dets
 
 

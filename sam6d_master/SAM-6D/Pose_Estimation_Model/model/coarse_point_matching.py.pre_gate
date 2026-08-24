@@ -78,8 +78,6 @@ class CoarsePointMatching(nn.Module):
             )
             if 'verify' in info:
                 end_points['verify'] = info['verify']
-            if 'gate' in info:
-                end_points['gate'] = info['gate']
         end_points['init_R'] = init_R
         end_points['init_t'] = init_t
 

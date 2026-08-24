@@ -12,7 +12,7 @@ topics:
 
 ism:
   config: configs/yolo_ism_objects.yaml   # 상대경로는 sam6d_realtime/ 기준
-  objects: []                             # 비우면 config 의 활성 객체 전부(9개)
+  objects: []                             # 비우면 config 의 활성 객체 전부(10개)
 
 runtime:
   device: cuda:0
@@ -26,18 +26,23 @@ runtime:
   # detections.jsonl 에 verify 로 남는다. 기본값·설명은 realtime/verify_config.py 참고.
   #   appe_rerank: {topk: 100, w_geo: 2.0, stride: 1}     # 후보 재정렬(검증의 전제)
   #   verify: {enabled: true, w_col: 1.0, geo_guard: 0.9} # w_col 0 = 원색 채널 끄기
-  # 둘 다 생략하면 검증된 기본값으로 기하+텍스처 검증이 켜진다.
-  # 기하 점수 기준선은 `verify: null` 로 명시한다.
+  #   mask_gate: {enabled: true, gate_guard: 0.85, min_keep: 5}  # ch1 마스크 비교(기본 ON)
+  #   map_prior: {enabled: true, pose_source: both,              # ch2 Map 사전(기본 ON)
+  #               extrinsic: calib/X_camSLAM_camSAM.npy}         #   포즈가 없으면 저절로 쉰다
+  # ⚠ ch2 는 SLAM 자세를 받아야 동작한다. SAM-6D 는 ROS_DOMAIN_ID 72, ORB-SLAM3 는 71 로
+  #   갈라져 있으니(README §5) 도메인을 맞추거나 브리지를 놓아야 한다.
+  # ⚠ 게이트를 완전히 끄고 예전과 **비트 단위로 같게** 하려면: mask_gate: null / map_prior: null
+  # 둘 다 생략하면 기하 점수만 쓰는 예전 동작이다(기본값).
   status_period_s: 1.0
 
 output:
-  dir: output/longcircle2_realtime
+  dir: output/rt_bag_0807_185223
   overlay_every: 20       # N 프레임마다 오버레이 PNG (0 = 저장 안 함)
   write_jsonl: true
 
 bag:
   play: true
-  path: data/longcircle2             # 로컬 독립 사본(재부팅·Windows 마운트와 무관)
+  path: data/bag_0807_185223_sam    # 번들 기준 상대경로 (sam6d_realtime/ 기준으로 해석된다)
   rate: 1.0
   clock: true
   ready_timeout: 600      # 모델 적재를 기다리는 상한 [s]

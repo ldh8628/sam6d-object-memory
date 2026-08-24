@@ -31,7 +31,7 @@ cd /원하는/경로/sam6d_realtime
 | `template/` | 활성 9객체의 렌더 42장 |
 | `outputs/.../template_features/` | ISM 템플릿 특징 + HSV 기준값 |
 | `assets/` | CLIP · PEM 템플릿 · CAD 8192점 |
-| `data/longcircle2/` | 검증용 입력 bag (72.203초, RGB/depth 각 2,166장, 3.5 GB) |
+| `data/bag_0807_185223_sam/` | 검증용 입력 bag (0807 185223 circle_ccw_8laps, 13 GB) |
 
 ---
 
@@ -121,8 +121,9 @@ ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true enable_sync:
 ros2 launch realtime/launch/sam6d_split.launch.py config:=realtime/run_live_split.yaml
 ```
 
-`bag.path` 는 **번들 루트(`sam6d_realtime/`) 기준 상대경로**로 해석된다. 현재 기본값은
-재부팅 후에도 독립적으로 사용할 수 있는 로컬 사본 `data/longcircle2` 이다.
+`bag.path` 는 **번들 루트(`sam6d_realtime/`) 기준 상대경로**로 해석된다. 기본값
+`data/bag_0807_185223_sam` 이 그대로 동작하므로 고칠 것이 없다. 다른 bag 을 쓰려면
+`data/` 밑에 두고 이름만 바꾸거나 절대경로를 써도 된다.
 
 ---
 
@@ -142,8 +143,12 @@ python tools/bench_compare.py bench_workstation.json bench_laptop.json
 워크스테이션 기준선은 전체 **81 ms/프레임(14 Hz)**, GPU 214 W. 노트북에서 **1.5~2.5배 느린 건
 정상**이다(발열로 클럭이 떨어지므로 `gpu_start`/`gpu_end` 도 같이 볼 것).
 
-판정 대조는 `data/longcircle2`의 같은 프레임과 같은 난수 시드를 사용해야 한다. 실시간 재생은
-처리 프레임이 실행마다 달라질 수 있으므로 설정 비교에는 `temp/verify_eval.py`를 사용한다.
+판정 대조는 조금 다르게 해야 한다. `bench_offline.py --frames` 가 받는 프레임 폴더는
+**번들에 없다**(용량 때문에 뺐다). 대신 `bench_workstation.json` 의 `decisions` 에 워크스테이션이
+낸 답이 **8개 타임스탬프**로 들어 있고, 그 8장은 전부 번들의 `data/bag_0807_185223_sam` 에서
+나온 프레임이다. 그래서 5절대로 bag 을 한 번 돌린 뒤,
+`output/rt_split/` 의 detections jsonl 에서 그 타임스탬프(`1786096378336322118` 등)를 찾아
+객체 집합과 bbox 를 비교하면 된다.
 
 **속도는 달라도 되지만 판정은 같아야 한다.** 다르면 HSV 캐시(mtime) 나 config 를 의심할 것.
 
