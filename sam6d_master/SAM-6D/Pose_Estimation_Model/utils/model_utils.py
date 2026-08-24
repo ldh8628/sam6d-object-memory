@@ -281,7 +281,9 @@ def _candidate_shape_metrics(pred_rs, pred_ts, model_pts, appe):
     P = pred_rs.size(1)
     ver = appe.get('verify') or {}
     chunk = max(1, int(ver.get('projection_chunk', 32)))
-    splat = max(0, int(ver.get('point_splat_radius_px', 2)))
+    base_splat = max(0, int(ver.get('point_splat_radius_px', 2)))
+    adaptive_splat = bool(ver.get('adaptive_point_splat', True))
+    closing = max(0, int(ver.get('closing_radius_px', 1)))
 
     obs_area = mask.flatten(1).sum(1).float()
     obs_bbox_area, obs_bbox = [], []
@@ -315,7 +317,14 @@ def _candidate_shape_metrics(pred_rs, pred_ts, model_pts, appe):
         umax = torch.where(inside, uc, ninf).max(2)[0]
         vmin = torch.where(inside, vc, inf).min(2)[0]
         vmax = torch.where(inside, vc, ninf).max(2)[0]
-        projection_valid = inside.any(2)
+        rotation_finite = torch.isfinite(R).flatten(2).all(2)
+        translation_finite = torch.isfinite(t).flatten(2).all(2)
+        orthogonal = torch.linalg.norm(
+            R.transpose(-1, -2) @ R - torch.eye(3, device=R.device, dtype=R.dtype),
+            dim=(-2, -1)) <= 1e-2
+        proper = torch.linalg.det(R) > 0.99
+        pose_valid = rotation_finite & translation_finite & orthogonal & proper
+        projection_valid = inside.any(2) & pose_valid
         rendered_bbox_area = ((umax - umin + 1).clamp_min(0) *
                               (vmax - vmin + 1).clamp_min(0))
         rendered_bbox_area = torch.where(
@@ -327,8 +336,36 @@ def _candidate_shape_metrics(pred_rs, pred_ts, model_pts, appe):
         flat.scatter_add_(1, (vi * W + ui).reshape(B * (stop - start), -1),
                           inside.reshape(B * (stop - start), -1).float())
         projected = (flat > 0).reshape(B * (stop - start), 1, H, W).float()
-        if splat:
-            projected = F.max_pool2d(projected, 2 * splat + 1, stride=1, padding=splat)
+        # A fixed radius is the lower bound. Sparse/far projections receive one or two
+        # extra pixels so the 8192 surface samples approximate a closed silhouette.
+        # Apply that radius per candidate: using the maximum radius of a whole chunk
+        # makes a candidate's IoU depend on unrelated candidates and chunk ordering.
+        if adaptive_splat:
+            valid_counts = inside.sum(2).float().clamp_min(1.0)
+            bbox_pixels = rendered_bbox_area.clamp_min(1.0)
+            spacing = torch.sqrt(bbox_pixels / valid_counts)
+            max_splat = max(4, base_splat)
+            splat_radii = torch.ceil(spacing).long().clamp(
+                min=base_splat, max=max_splat)
+        else:
+            max_splat = base_splat
+            splat_radii = torch.full_like(rendered_bbox_area, base_splat, dtype=torch.long)
+        splat_radii = splat_radii.reshape(-1)
+        expanded = torch.zeros_like(projected)
+        for splat in range(max_splat + 1):
+            selected = splat_radii == splat
+            if not bool(selected.any().item()):
+                continue
+            if splat:
+                expanded[selected] = F.max_pool2d(
+                    projected[selected], 2 * splat + 1, stride=1, padding=splat)
+            else:
+                expanded[selected] = projected[selected]
+        projected = expanded
+        if closing:
+            kernel = 2 * closing + 1
+            projected = F.max_pool2d(projected, kernel, stride=1, padding=closing)
+            projected = -F.max_pool2d(-projected, kernel, stride=1, padding=closing)
         projected = projected.bool().reshape(B, stop - start, H, W)
         observed = mask[:, None]
         intersection = (projected & observed).flatten(2).sum(2).float()
@@ -346,8 +383,145 @@ def _candidate_shape_metrics(pred_rs, pred_ts, model_pts, appe):
     out.update({'observed_mask_area_px': obs_area, 'observed_bbox_area_px': obs_bbox_area,
                 'observed_bbox_224': obs_bbox,
                 'observed_mask_rle': [_mask_rle(mask[b].detach().cpu().numpy()) for b in range(B)],
-                'mask_size': [H, W], 'point_splat_radius_px': splat})
+                'mask_size': [H, W], 'point_splat_radius_px': base_splat,
+                'adaptive_point_splat': adaptive_splat,
+                'closing_radius_px': closing})
     return out
+
+
+def sequential_candidate_select(pred_rs, pred_ts_m, geo_scores, texture_scores,
+                                shape, names, ver, proposal_ids=None):
+    """Apply Mask -> Texture -> pose-convergence selection to all geometry candidates.
+
+    The return index always identifies an existing proposal. Rejected batches receive the
+    geometry winner as an inert placeholder so batched fine inference stays shape-stable;
+    ``accepted`` is authoritative and prevents that placeholder from being published.
+    """
+    B, P = geo_scores.shape
+    mask_min = float(ver.get('mask_iou_min', ver.get('iou_min', 0.420998)))
+    texture_min = float(ver.get('texture_min_score', 0.449562))
+    rot_limit = float(ver.get('cluster_rotation_deg', 20.0))
+    trans_limit_m = float(ver.get('cluster_translation_mm', 25.0)) / 1000.0
+    occupancy_min = float(ver.get('cluster_min_occupancy', 0.5))
+    sym_tab = ver.get('symmetry_axes') or {}
+    sym_step = int(ver.get('sym_step_deg', 10))
+    selected_out, rows = [], []
+
+    for b in range(B):
+        geo_order = torch.argsort(geo_scores[b], descending=True, stable=True)
+        rank_geo = torch.empty(P, dtype=torch.long, device=geo_scores.device)
+        rank_geo[geo_order] = torch.arange(P, device=geo_scores.device)
+        fallback = int(geo_order[0].item())
+        R = pred_rs[b]
+        t = pred_ts_m[b]
+        pose_valid = (torch.isfinite(R).flatten(1).all(1)
+                      & torch.isfinite(t).flatten(1).all(1)
+                      & torch.isfinite(geo_scores[b]))
+        pose_valid &= (torch.linalg.norm(
+            R.transpose(-1, -2) @ R - torch.eye(3, device=R.device, dtype=R.dtype),
+            dim=(-2, -1)) <= 1e-2) & (torch.linalg.det(R) > 0.99)
+        if shape is None:
+            projection_valid = torch.zeros(P, dtype=torch.bool, device=R.device)
+            mask_iou = torch.full((P,), float('nan'), device=R.device)
+        else:
+            projection_valid = shape['projection_valid'][b].bool()
+            mask_iou = shape['mask_iou'][b]
+        mask_pass = pose_valid & projection_valid & torch.isfinite(mask_iou) & (mask_iou >= mask_min)
+        texture_pass = (mask_pass & torch.isfinite(texture_scores[b])
+                        & (texture_scores[b] >= texture_min))
+        survivors = torch.where(texture_pass)[0]
+        accepted = False
+        reason = None
+        occupancy = 0.0
+        cluster = torch.empty(0, dtype=torch.long, device=R.device)
+        center = None
+
+        if not bool((pose_valid & projection_valid).any().item()):
+            reason = 'candidate_projection_invalid'
+        elif not bool(mask_pass.any().item()):
+            reason = 'mask_filter_empty'
+        elif not bool(texture_pass.any().item()):
+            reason = 'texture_filter_empty'
+        elif survivors.numel() == 1:
+            cluster = survivors
+            center = int(survivors[0].item())
+            occupancy = 1.0
+            accepted = True
+        else:
+            sym = _sym_group(sym_tab.get(names[b]), sym_step, R.device, R.dtype)
+            angles = _pairwise_angle_deg(R, sym)
+            translations = torch.cdist(t, t)
+            best_key = None
+            best_cluster = None
+            best_center = None
+            for candidate in survivors.tolist():
+                members = survivors[(angles[candidate, survivors] <= rot_limit)
+                                    & (translations[candidate, survivors] <= trans_limit_m)]
+                # Largest neighbourhood first; ties use the better geometry-ranked centre.
+                key = (int(members.numel()), -int(rank_geo[candidate].item()))
+                if best_key is None or key > best_key:
+                    best_key, best_cluster, best_center = key, members, candidate
+            cluster, center = best_cluster, best_center
+            occupancy = float(cluster.numel()) / float(survivors.numel())
+            accepted = occupancy >= occupancy_min
+            if not accepted:
+                reason = 'convergence_insufficient'
+
+        chosen = fallback
+        if accepted:
+            chosen = int(cluster[torch.argmin(rank_geo[cluster])].item())
+        selected_out.append(chosen)
+        proposal = (torch.arange(P, device=R.device) if proposal_ids is None
+                    else proposal_ids[b])
+        candidates = []
+        for original in geo_order.tolist():
+            candidate_row = {
+                'rank_geo': int(rank_geo[original].item()),
+                'index300': int(original),
+                'proposal6000_index': int(proposal[original].item()),
+                'geometry_score': _rounded_finite(geo_scores[b, original].item(), 8),
+                'mask_iou': (_rounded_finite(mask_iou[original].item(), 6)
+                             if torch.isfinite(mask_iou[original]) else None),
+                'texture_score': (_rounded_finite(texture_scores[b, original].item(), 8)
+                                  if torch.isfinite(texture_scores[b, original]) else None),
+                'pose_valid': bool(pose_valid[original].item()),
+                'projection_valid': bool(projection_valid[original].item()),
+                'mask_pass': bool(mask_pass[original].item()),
+                'texture_pass': bool(texture_pass[original].item()),
+                'cluster_member': bool((cluster == original).any().item()),
+            }
+            if shape is not None and 'coverage' in shape:
+                candidate_row.update({
+                    'coverage': _rounded_finite(shape['coverage'][b, original].item(), 6),
+                    'size_ratio': _rounded_finite(
+                        shape['size_ratio'][b, original].item(), 6),
+                    'rendered_mask_area_px': int(
+                        shape['rendered_mask_area_px'][b, original].item()),
+                })
+            candidates.append(candidate_row)
+        selected_candidate = candidates[int(rank_geo[chosen].item())]
+        rows.append({
+            'selection_method': 'geometry_mask_texture_convergence',
+            'accepted': accepted,
+            'rejection_reason': reason,
+            'rank_geo': int(rank_geo[chosen].item()),
+            'selected_index300': chosen if accepted else None,
+            'selected_proposal6000_index': (int(proposal[chosen].item()) if accepted else None),
+            'mask_iou_min': mask_min,
+            'texture_score_min': texture_min,
+            'mask_survivors': int(mask_pass.sum().item()),
+            'texture_survivors': int(texture_pass.sum().item()),
+            'cluster_size': int(cluster.numel()),
+            'cluster_occupancy': round(occupancy, 6),
+            'cluster_center_rank_geo': (None if center is None else
+                                        int(rank_geo[center].item())),
+            'mask_iou': selected_candidate.get('mask_iou'),
+            'texture_score': selected_candidate.get('texture_score'),
+            'coverage': selected_candidate.get('coverage'),
+            'size_ratio': selected_candidate.get('size_ratio'),
+            'candidates': candidates,
+        })
+    return torch.as_tensor(selected_out, dtype=torch.long, device=geo_scores.device), rows
 
 
 def _count_modes(ang, order, tol, elig, max_modes=8):
@@ -585,7 +759,7 @@ def _pointwise_evidence(pm, fm, cm, po, fo, co, nn, texture_distance, rgb_choose
 
 
 def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
-    """Keep geometry top-1 and measure texture/size/IoU as independent channels."""
+    """Measure all candidates and, when enabled, apply the production filter chain."""
     B, P = geo_scores.shape
     topk = int(min(appe.get('topk', 100), P))
     stride = max(1, int(appe.get('stride', 1)))
@@ -593,7 +767,8 @@ def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
     diag = appe.get('diagnostic') or {}
     analysis_cfg = diag.get('score_analysis') or {}
     analysis_on = bool(diag.get('enabled') and analysis_cfg.get('enabled'))
-    measured_count = P if analysis_on else topk
+    production_on = bool(ver.get('enabled', False))
+    measured_count = P if (analysis_on or production_on) else topk
     dump = max(int(ver.get('dump_topk', 0)), int(diag.get('topn', 0)))
     diag_topn = max(0, int(diag.get('topn', 0))) if diag.get('enabled') else 0
     diag_stride = max(1, int(diag.get('evidence_stride', 8)))
@@ -601,6 +776,134 @@ def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
     have_col = ('dense_cm' in appe) and ('dense_co' in appe)
     shape = _candidate_shape_metrics(
         pred_rs, pred_ts, appe.get('_projection_model_pts'), appe)
+    if production_on:
+        texture_by_original = torch.full_like(geo_scores, float('nan'))
+        mask_min = float(ver.get('mask_iou_min', ver.get('iou_min', 0.420998)))
+        texture_chunk = max(1, int(ver.get('texture_chunk', 16)))
+        for b in range(B):
+            if shape is None:
+                continue
+            R_all, t_all = pred_rs[b], pred_ts[b]
+            pose_valid = (torch.isfinite(R_all).flatten(1).all(1)
+                          & torch.isfinite(t_all).flatten(1).all(1)
+                          & torch.isfinite(geo_scores[b])
+                          & (torch.linalg.det(R_all) > 0.99))
+            mask_pass = (pose_valid & shape['projection_valid'][b]
+                         & torch.isfinite(shape['mask_iou'][b])
+                         & (shape['mask_iou'][b] >= mask_min))
+            candidates = torch.where(mask_pass)[0]
+            if not candidates.numel():
+                continue
+            pm = appe['dense_pm'][b][::stride]
+            fm = F.normalize(appe['dense_fm'][b][::stride], dim=1)
+            po = appe['dense_po'][b]
+            fo = F.normalize(appe['dense_fo'][b], dim=1)
+            for subset in candidates.split(texture_chunk):
+                R = R_all[subset]
+                t = t_all[subset].reshape(-1, 1, 3)
+                obj = torch.einsum('kji,knj->kni', R, pm.unsqueeze(0) - t)
+                nearest = torch.cdist(
+                    obj, po.unsqueeze(0).expand(obj.size(0), -1, -1)).argmin(2)
+                texture_by_original[b, subset] = torch.einsum(
+                    'nd,knd->kn', fm, fo[nearest]).mean(1)
+        physical_t = pred_ts.clone()
+        if radius is not None:
+            physical_t = physical_t * radius.reshape(-1, 1, 1)
+        selected, rows = sequential_candidate_select(
+            pred_rs, physical_t, geo_scores, texture_by_original, shape,
+            appe.get('names') or [None] * B, ver, appe.get('_proposal_ids'))
+        for b, decision in enumerate(rows):
+            if shape is not None:
+                decision['shape_mask'] = {
+                    'size': shape['mask_size'],
+                    'rle': shape['observed_mask_rle'][b],
+                    'bbox_224': shape['observed_bbox_224'][b],
+                    'crop_bbox_yxyx': [round(float(v), 3) for v in
+                                       appe['crop_bbox_yxyx'][b].detach().cpu().tolist()],
+                    'point_splat_radius_px': shape['point_splat_radius_px'],
+                    'closing_radius_px': shape['closing_radius_px'],
+                    'provenance': 'original ISM mask; 8192-point adaptive-splat proxy',
+                }
+        if info is not None:
+            info['verify'] = rows
+            if analysis_on:
+                errors = _candidate_reference_errors(pred_rs, pred_ts, appe, radius)
+                stages = []
+                for b, decision in enumerate(rows):
+                    finite_geo = geo_scores[b][torch.isfinite(geo_scores[b])]
+                    low = float(finite_geo.min().item()) if finite_geo.numel() else math.nan
+                    high = float(finite_geo.max().item()) if finite_geo.numel() else math.nan
+                    span = high - low
+                    for candidate in decision['candidates']:
+                        original = candidate['index300']
+                        geometry = candidate['geometry_score']
+                        candidate.update({
+                            'R': [[round(float(value), 6) for value in matrix_row]
+                                  for matrix_row in pred_rs[b, original].detach().cpu().numpy()],
+                            't_mm': [round(float(value) * 1000.0, 3) for value in
+                                     physical_t[b, original].detach().cpu().numpy()],
+                            'geometry_score_detection_normalized': (
+                                None if geometry is None or not math.isfinite(span) or span <= 0
+                                else _rounded_finite((geometry - low) / span, 8)),
+                            'geometry_selected': bool(
+                                decision['accepted'] and original == decision['selected_index300']),
+                            'missing_reason': (None if candidate['projection_valid'] else
+                                               'invalid_projection'),
+                        })
+                        error = errors[b]
+                        candidate_valid = (candidate['pose_valid'] and
+                                           (error is None or bool(
+                                               error['pose_valid'][original].item())))
+                        candidate['candidate_valid'] = candidate_valid
+                        if error is None:
+                            candidate.update({'gt_status': 'unavailable', 'correct': None,
+                                              'rotation_error_deg': None,
+                                              'translation_error_mm': None})
+                        elif not candidate_valid:
+                            candidate.update({'gt_status': 'available', 'correct': None,
+                                              'rotation_error_deg': None,
+                                              'translation_error_mm': None,
+                                              'missing_reason': 'invalid_candidate_pose'})
+                        else:
+                            candidate.update({
+                                'gt_status': 'available',
+                                'correct': bool(error['correct'][original].item()),
+                                'rotation_error_deg': _rounded_finite(
+                                    error['rotation_error_deg'][original].item(), 5),
+                                'translation_error_mm': _rounded_finite(
+                                    error['translation_error_mm'][original].item(), 5),
+                            })
+                    stages.append({
+                        'schema_version': 1,
+                        'selection_method': decision['selection_method'],
+                        'candidate_count': P,
+                        'selected_index300': decision['selected_index300'],
+                        'correctness': _correctness_metadata(
+                            diag, (appe.get('names') or [None] * B)[b]),
+                        'channels': {
+                            'geometry_score': {'direction': 'higher_is_better',
+                                               'kind': 'PEM geometry'},
+                            'geometry_score_detection_normalized': {
+                                'direction': 'higher_is_better',
+                                'normalization': 'per-detection min-max'},
+                            'texture_score': {'direction': 'higher_is_better',
+                                              'kind': 'sequential_after_mask'},
+                            'mask_iou': {'direction': 'higher_is_better',
+                                         'kind': '8192-point silhouette proxy'},
+                        },
+                        'candidates': decision['candidates'],
+                    })
+                existing = info.get('score_analysis') or [{} for _ in range(B)]
+                info['score_analysis'] = [
+                    {**existing[b], 'stage300': stages[b]} for b in range(B)]
+            if not analysis_on:
+                requested = max(0, int(ver.get('dump_topk', 0)))
+                for decision in rows:
+                    if requested:
+                        decision['candidates'] = decision['candidates'][:requested]
+                    else:
+                        decision.pop('candidates', None)
+        return selected
     # Analysis expands only the independently measured population. The winner
     # remains the exact geometry argmax below, regardless of any other channel.
     selected = geo_scores.max(1)[1]
@@ -614,6 +917,7 @@ def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
     ])
     rows = []
     analysis_rows = []
+    texture_by_original = torch.full_like(geo_scores, float('nan'))
     reference_errors = (_candidate_reference_errors(pred_rs, pred_ts, appe, radius)
                         if analysis_on else [None] * B)
 
@@ -630,6 +934,7 @@ def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
         nn_distance = (torch.linalg.norm(obj - po[nn], dim=2)
                        if diag.get('enabled') else None)
         texture = torch.einsum('nd,knd->kn', fm, fo[nn]).mean(1)
+        texture_by_original[b, sel] = texture
         color = None
         if have_col:
             cm = _whiten(appe['dense_cm'][b][::stride])
@@ -855,6 +1160,68 @@ def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
                 {**existing[b], 'stage300': analysis_rows[b]} for b in range(B)
             ]
     return selected
+
+
+def validate_refined_poses(pred_rs, pred_ts_m, pose_scores, appe, verify_rows):
+    """Recompute 8192-point Mask and deep-feature Texture for fine poses in place."""
+    ver = appe.get('verify') or {}
+    if not ver.get('enabled', False):
+        return verify_rows
+    radius = appe.get('radius')
+    normalized_t = (pred_ts_m if radius is None else
+                    pred_ts_m / radius.reshape(-1, 1).clamp_min(1e-8))
+    shape = _candidate_shape_metrics(
+        pred_rs[:, None], normalized_t[:, None], appe.get('_projection_model_pts'), appe)
+    stride = max(1, int(appe.get('stride', 1)))
+    texture = torch.full((pred_rs.size(0),), float('nan'), device=pred_rs.device)
+    for b in range(pred_rs.size(0)):
+        pm = appe['dense_pm'][b][::stride]
+        fm = F.normalize(appe['dense_fm'][b][::stride], dim=1)
+        po = appe['dense_po'][b]
+        fo = F.normalize(appe['dense_fo'][b], dim=1)
+        obj = torch.einsum('ji,nj->ni', pred_rs[b], pm - normalized_t[b])
+        nearest = torch.cdist(obj[None], po[None]).squeeze(0).argmin(1)
+        texture[b] = torch.einsum('nd,nd->n', fm, fo[nearest]).mean()
+
+    mask_min = float(ver.get('mask_iou_min', ver.get('iou_min', 0.420998)))
+    texture_min = float(ver.get('texture_min_score', 0.449562))
+    flat_scores = None if pose_scores is None else pose_scores.reshape(-1)
+    for b, row in enumerate(verify_rows):
+        R = pred_rs[b]
+        t = pred_ts_m[b]
+        fine_ok = bool(torch.isfinite(R).all().item() and torch.isfinite(t).all().item())
+        fine_ok = fine_ok and bool((torch.linalg.det(R) > 0.99).item())
+        if flat_scores is not None:
+            fine_ok = fine_ok and bool(torch.isfinite(flat_scores[b]).item())
+        projection_ok = bool(shape is not None and shape['projection_valid'][b, 0].item())
+        iou = (float(shape['mask_iou'][b, 0].item()) if projection_ok else float('nan'))
+        tex = float(texture[b].item())
+        mask_pass = projection_ok and math.isfinite(iou) and iou >= mask_min
+        texture_pass = math.isfinite(tex) and tex >= texture_min
+        coarse_accepted = bool(row.get('accepted', False))
+        accepted = coarse_accepted and fine_ok and mask_pass and texture_pass
+        reason = row.get('rejection_reason')
+        if coarse_accepted and not accepted:
+            if not fine_ok:
+                reason = 'fine_refinement_failed'
+            elif not mask_pass:
+                reason = 'final_mask_below_threshold'
+            else:
+                reason = 'final_texture_below_threshold'
+        row['accepted'] = accepted
+        row['rejection_reason'] = reason
+        row['fine'] = {
+            'valid': fine_ok,
+            'projection_valid': projection_ok,
+            'mask_iou': _rounded_finite(iou, 6) if math.isfinite(iou) else None,
+            'mask_pass': mask_pass,
+            'texture_score': _rounded_finite(tex, 8) if math.isfinite(tex) else None,
+            'texture_pass': texture_pass,
+            # A low mask score alone is not an anchor invalidation signal. This pose can
+            # still be compared by the anchor shadow validator when fine+texture are valid.
+            'anchor_shadow_valid': fine_ok and texture_pass,
+        }
+    return verify_rows
 
 
 def appearance_rerank(pred_rs, pred_ts, geo_scores, appe, info=None):
@@ -1099,8 +1466,8 @@ def compute_coarse_Rt(
     dis = torch.sqrt(pairwise_distance(transformed_pts, expand_model_pts))
     dis = dis.min(2)[0].reshape(B, n_proposal2, -1)
     scores = weights1.unsqueeze(1).sum(2) / ((dis * weights1.unsqueeze(1)).sum(2) + + 1e-8)
-    # 초기 pose는 항상 원본 기하 점수 1위다. 텍스처·크기·IoU는 독립 검증값만
-    # 계산하며 이 idx를 바꾸지 않는다.
+    # Geometry order itself is immutable. Enabled verification applies the sequential
+    # Mask -> Texture -> convergence policy and returns one actual proposal index.
     if diag_on:
         # 실제 기하 점수의 분모에 쓰인 196개 최근접거리와 유효 마스크를
         # appearance_rerank의 상위-N 계측기로 전달한다. 진단 OFF에서는 복사/추가가 없다.
@@ -1108,8 +1475,8 @@ def compute_coarse_Rt(
     idx = scores.max(1)[1]
     if appe is not None:
         appe = dict(appe, _proposal_ids=proposal_ids,
-                    _projection_model_pts=model_pts)
-        independent_candidate_verify(
+                    _projection_model_pts=appe.get('projection_model', model_pts))
+        idx = independent_candidate_verify(
             pred_rs, pred_ts.squeeze(2), scores, appe, info)
     pred_R = torch.gather(pred_rs, 1, idx.reshape(B,1,1,1).repeat(1,1,3,3)).squeeze(1)
     pred_t = torch.gather(pred_ts, 1, idx.reshape(B,1,1,1).repeat(1,1,1,3)).squeeze(2).squeeze(1)

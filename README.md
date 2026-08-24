@@ -225,8 +225,25 @@ ros2 launch realtime/launch/sam6d_realtime.launch.py config:=<bag.play=false 인
 | `/sam6d/detections` | `vision_msgs/Detection3DArray` | `header.stamp` = **촬영 시각**, `results[0].hypothesis.class_id` = 객체 이름, `.score` = PEM 점수, `.pose` = 카메라 기준 `T_cam_obj` [m] |
 | `/sam6d/status` | `std_msgs/String` (JSON) | 처리 Hz, 건너뛴 장수, 마지막 프레임의 단계별 소요 ms |
 
-포즈를 **map 좌표로 바꾸지 않고 카메라 기준 그대로** 내보낸다. 지도 좌표 변환은
-"그 프레임을 찍던 순간의 SLAM 포즈"를 아는 쪽(object memory)이 해야 옳다.
+출력 pose 형식은 계속 카메라 기준 `T_camera_object`다. `anchor.enabled: true`이면 같은
+timestamp의 `/orbslam3/pose`를 이용해 세션 내부에 `T_map_object`를 등록한 뒤 다시 현재
+카메라 좌표로 투영한다. `pose_source`, `map_id`, 후보 rank/Mask/Texture/군집 점유율,
+Anchor 상태와 `rejection_reason`은 JSONL 진단에 기록된다.
+
+후보 선택 기본 순서는 6000→잔차 top-300→geometry 정렬→Mask(0.420998)→
+Texture(0.449562)→20°/25 mm 수렴군→fine 재검증이다. 어느 단계든 전멸하면 검출을
+발행하지 않는다. Anchor 출력 비교는 같은 설정의 `anchor_output_mode`만
+`ism_associated`(안전 기본)와 `fov_always`로 바꿔 수행한다. 결과 보고에서는 ISM 인식률,
+6000/300 recall, Mask/Texture 생존률, 최종 pose 정확도, Anchor 정확도를 분리하며 기존
+91.75% 수치를 전체 성공률로 사용하지 않는다.
+
+동일 녹화를 두 모드로 실행한 뒤 A/B 지표를 분리 출력한다.
+
+```bash
+python tools/compare_anchor_modes.py \
+  --ism-associated output/run_ism_associated \
+  --fov-always output/run_fov_always --output output/anchor_ab.json
+```
 
 출력 폴더(`output.dir`)에는 `detections.jsonl`(검출 한 건 = 한 줄), `frames.jsonl`(처리한
 프레임 한 장 = 한 줄), `run_meta.json`(설정·적용된 게이트·최종 요약)이 쌓인다.

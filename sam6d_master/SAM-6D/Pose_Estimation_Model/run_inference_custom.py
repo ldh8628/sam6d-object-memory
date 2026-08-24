@@ -103,6 +103,18 @@ rgb_transform = transforms.Compose([transforms.ToTensor(),
                                 transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                                     std=[0.229, 0.224, 0.225])])
 
+
+def _projection_surface_points(mesh, count=8192):
+    """Sample projection points without perturbing the legacy NumPy RNG stream."""
+    stored = getattr(mesh, "_pts", None)
+    if stored is not None and len(stored) == count:
+        return np.asarray(stored, dtype=np.float32) / 1000.0
+    state = np.random.get_state()
+    try:
+        return mesh.sample(count).astype(np.float32) / 1000.0
+    finally:
+        np.random.set_state(state)
+
 def visualize(rgb, pred_rot, pred_trans, model_points, K, save_path):
     img = draw_detections(rgb, pred_rot, pred_trans, model_points, K, color=(255, 0, 0))
     img = Image.fromarray(np.uint8(img))
@@ -204,10 +216,12 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
     if not per_det_cad:
         mesh = trimesh.load_mesh(cad_path)
         model_points = mesh.sample(cfg.n_sample_model_point).astype(np.float32) / 1000.0
+        projection_model_points = _projection_surface_points(mesh)
         radius = np.max(np.linalg.norm(model_points, axis=1))
 
 
     all_model = []
+    all_projection_model = []
     all_rgb = []
     all_cloud = []
     all_rgb_choose = []
@@ -219,6 +233,9 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
         if per_det_cad:
             mesh = trimesh.load_mesh(inst['cad'])
             model_points = mesh.sample(cfg.n_sample_model_point).astype(np.float32) / 1000.0
+            # Keep the original 8192 CAD surface samples for silhouette projection.
+            # Geometry scoring continues to use the unchanged 1024-point sample above.
+            projection_model_points = _projection_surface_points(mesh)
             radius = np.max(np.linalg.norm(model_points, axis=1))
         score = inst['score']
         if score <= det_score_thresh:
@@ -235,13 +252,17 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
             except:
                 rle = seg
             mask = cocomask.decode(rle)
-        mask = np.logical_and(mask > 0, whole_depth > 0)
-        if np.sum(mask) > 32:
-            bbox = get_bbox(mask)
+        ism_mask = mask > 0
+        depth_mask = np.logical_and(ism_mask, whole_depth > 0)
+        if np.sum(depth_mask) > 32:
+            # The crop covers the complete original ISM silhouette. Only point-cloud
+            # membership below is restricted by valid depth.
+            bbox = get_bbox(ism_mask)
             y1, y2, x1, x2 = bbox
         else:
             continue
-        mask = mask[y1:y2, x1:x2]
+        mask = depth_mask[y1:y2, x1:x2]
+        ism_crop = ism_mask[y1:y2, x1:x2]
         choose = mask.astype(np.float32).flatten().nonzero()[0]
 
         # pts
@@ -264,12 +285,9 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
         choose = choose[flag]
         cloud = cloud[flag]
 
-        # 독립 후보 검증용 입력 실루엣. PEM이 실제로 받아들인 depth-valid/radius-inlier
-        # 점만 남기며, 후보 투영과 같은 224 crop 좌표계에서 비교한다. 이후 2048점
-        # 표본화 전 mask를 보존해야 입력 크기와 IoU가 난수 표본 밀도에 좌우되지 않는다.
-        shape_mask = np.zeros(mask.size, dtype=np.uint8)
-        shape_mask[choose] = 1
-        shape_mask = shape_mask.reshape(mask.shape)
+        # Mask verification uses the original ISM silhouette. Depth validity and the
+        # radius gate above affect only the 3D observation points.
+        shape_mask = ism_crop.astype(np.uint8)
         shape_mask = cv2.resize(
             shape_mask, (cfg.img_size, cfg.img_size), interpolation=cv2.INTER_NEAREST
         ) > 0
@@ -286,7 +304,7 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
         # rgb
         rgb = whole_image.copy()[y1:y2, x1:x2, :][:,:,::-1]
         if cfg.rgb_mask_flag:
-            rgb = rgb * (mask[:,:,None]>0).astype(np.uint8)
+            rgb = rgb * ism_crop[:, :, None].astype(np.uint8)
         rgb = cv2.resize(rgb, (cfg.img_size, cfg.img_size), interpolation=cv2.INTER_LINEAR)
         rgb = rgb_transform(np.array(rgb))
         rgb_choose = get_resize_rgb_choose(choose, [y1, y2, x1, x2], cfg.img_size)
@@ -297,6 +315,8 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
         all_score.append(score)
         all_dets.append(inst)
         all_model.append(model_points)
+        if per_det_cad:
+            all_projection_model.append(projection_model_points)
 
     ret_dict = {}
     if not all_cloud:
@@ -314,8 +334,12 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
     ninstance = ret_dict['pts'].size(0)
     if per_det_cad:
         ret_dict['model'] = torch.stack([torch.FloatTensor(m) for m in all_model]).to(DEVICE)
+        ret_dict['projection_model'] = torch.stack(
+            [torch.FloatTensor(m) for m in all_projection_model]).to(DEVICE)
     else:
         ret_dict['model'] = torch.FloatTensor(model_points).unsqueeze(0).repeat(ninstance, 1, 1).to(DEVICE)
+        ret_dict['projection_model'] = torch.FloatTensor(
+            projection_model_points).unsqueeze(0).repeat(ninstance, 1, 1).to(DEVICE)
     ret_dict['K'] = torch.FloatTensor(K).unsqueeze(0).repeat(ninstance, 1, 1).to(DEVICE)
     return ret_dict, (all_model if per_det_cad else model_points), all_dets
 

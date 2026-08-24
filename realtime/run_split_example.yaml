@@ -10,6 +10,29 @@ topics:
   depth: /camera/camera/aligned_depth_to_color/image_raw
   caminfo: /camera/camera/color/camera_info
 
+slam:
+  pose_topic: /orbslam3/pose
+  tracking_topic: /orbslam3/tracking_state
+  map_id_topic: /orbslam3/map_id
+  timestamp_tolerance_ms: 100
+  map_id: primary_sam_camera
+
+anchor:
+  enabled: true
+  anchor_output_mode: ism_associated  # 비교 실험: fov_always
+  timestamp_tolerance_ms: 100
+  window: 20
+  register_count: 16
+  register_rotation_deg: 20
+  register_translation_mm: 50
+  release_window: 5
+  release_count: 4
+  release_rotation_deg: 20
+  release_translation_mm: 50
+  ism_overlap_min: 0.5
+  ism_depth_tolerance_mm: 100
+  fov_fraction_min: 0.2
+
 ism:
   config: configs/yolo_ism_objects.yaml
   objects: []
@@ -22,14 +45,16 @@ runtime:
   qos_reliability: reliable   # 영상 토픽에 best_effort 를 쓰면 대량 유실된다(NOTES 24절)
   qos_depth: 30
   det_score_thresh: 0.2
-  # 포즈 후보 텍스처 검증(Stage V). 기하 점수로 정렬한 상위 후보를 '입력 이미지의
-  # 텍스처'와 '후보 포즈가 주장하는 모델 표면의 텍스처'로 맞대어 뒤집힘 여부를 판정하고,
-  # 텍스처가 지지하는 후보로 승자를 교정한다. 판정(PASS/CORRECTED/AMBIGUOUS)과 신뢰도는
-  # detections.jsonl 에 verify 로 남는다. 기본값·설명은 realtime/verify_config.py 참고.
-  #   appe_rerank: {topk: 100, w_geo: 2.0, stride: 1}     # 후보 재정렬(검증의 전제)
-  #   verify: {enabled: true, w_col: 1.0, geo_guard: 0.9} # w_col 0 = 원색 채널 끄기
-  # 둘 다 생략하면 검증된 기본값으로 기하+텍스처 검증이 켜진다.
-  # 기하 점수 기준선은 `verify: null` 로 명시한다.
+  verify:
+    enabled: true
+    mask_iou_min: 0.420998
+    texture_min_score: 0.449562
+    cluster_rotation_deg: 20
+    cluster_translation_mm: 25
+    cluster_min_occupancy: 0.5
+  # 300개 geometry 후보를 8192점 Mask→deep Texture→pose 수렴 순으로 필터한다.
+  # 경계값은 포함하며 refine 결과도 같은 Mask/Texture 기본값으로 재검증한다.
+  # 기하-only 기준선 비교가 필요할 때만 `verify: null`을 명시한다.
   status_period_s: 1.0
   idle_exit_s: 20          # 입력이 이만큼 끊기면 추론 프로세스가 스스로 끝난다
 

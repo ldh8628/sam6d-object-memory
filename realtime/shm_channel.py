@@ -13,14 +13,15 @@ from multiprocessing import shared_memory
 
 import numpy as np
 
-HDR = 128          # 헤더 바이트
+HDR = 384          # 헤더 바이트 (frame metadata + pose + K + UTF-8 map_id)
 MAXBUF = 12 << 20   # 프레임 한 장 최대 12 MB (1280x720 RGB+depth 여유)
 
 
 def _hdr(buf):
-    return (np.ndarray((4,), np.int64, buffer=buf, offset=0),      # seq, stamp_ns, h, w
-            np.ndarray((2,), np.float64, buffer=buf, offset=32),   # recv_wall, spare
-            np.ndarray((9,), np.float64, buffer=buf, offset=48))   # K
+    return (np.ndarray((8,), np.int64, buffer=buf, offset=0),      # seq, frame, pose metadata
+            np.ndarray((17,), np.float64, buffer=buf, offset=64),  # recv_wall + T_map_camera
+            np.ndarray((9,), np.float64, buffer=buf, offset=200),  # K
+            np.ndarray((96,), np.uint8, buffer=buf, offset=288))   # map_id
 
 
 class FrameWriter:
@@ -30,10 +31,11 @@ class FrameWriter:
         except FileExistsError:
             shared_memory.SharedMemory(name=name).unlink()
             self.shm = shared_memory.SharedMemory(name=name, create=True, size=size)
-        self.i, self.f, self.K = _hdr(self.shm.buf)
+        self.i, self.f, self.K, self.map_id = _hdr(self.shm.buf)
         self.i[0] = 0
 
-    def write(self, rgb: np.ndarray, depth: np.ndarray, K, stamp_ns: int, recv_wall: float):
+    def write(self, rgb: np.ndarray, depth: np.ndarray, K, stamp_ns: int, recv_wall: float,
+              slam_context=None):
         h, w = rgb.shape[:2]
         nr, nd = rgb.nbytes, depth.nbytes
         if HDR + nr + nd > self.shm.size:
@@ -41,6 +43,16 @@ class FrameWriter:
         self.i[0] += 1                                   # 홀수 = 쓰는 중
         self.i[1], self.i[2], self.i[3] = stamp_ns, h, w
         self.f[0] = recv_wall
+        slam_context = slam_context or {}
+        pose = slam_context.get("T_map_camera")
+        valid = pose is not None
+        self.i[4] = int(slam_context.get("pose_stamp_ns", -1))
+        self.i[5] = 1 if (valid and slam_context.get("tracking_state") == "TRACKING_OK") else 0
+        self.f[1:17] = (np.asarray(pose, np.float64).reshape(-1) if valid
+                        else np.full(16, np.nan, np.float64))
+        encoded_map = str(slam_context.get("map_id", "")).encode("utf-8")[:95]
+        self.map_id[:] = 0
+        self.map_id[:len(encoded_map)] = np.frombuffer(encoded_map, np.uint8)
         self.K[:] = np.asarray(K, np.float64).ravel()
         self.shm.buf[HDR:HDR + nr] = rgb.tobytes()
         self.shm.buf[HDR + nr:HDR + nr + nd] = depth.tobytes()
@@ -57,8 +69,9 @@ class FrameWriter:
 class FrameReader:
     def __init__(self, name="sam6d_frame"):
         self.shm = shared_memory.SharedMemory(name=name)
-        self.i, self.f, self.K = _hdr(self.shm.buf)
+        self.i, self.f, self.K, self.map_id = _hdr(self.shm.buf)
         self.last = -1
+        self.last_slam_context = None
 
     def read_new(self):
         """새 프레임이 있으면 (rgb, depth, K, stamp_ns, recv_wall), 없으면 None."""
@@ -67,12 +80,22 @@ class FrameReader:
             return None
         stamp, h, w = int(self.i[1]), int(self.i[2]), int(self.i[3])
         recv, K = float(self.f[0]), np.array(self.K).reshape(3, 3)
+        pose_stamp, tracking_ok = int(self.i[4]), bool(self.i[5])
+        pose = np.array(self.f[1:17]).reshape(4, 4)
+        map_bytes = bytes(self.map_id).split(b"\0", 1)[0]
         nr, nd = h * w * 3, h * w * 2
         rgb = np.frombuffer(self.shm.buf[HDR:HDR + nr], np.uint8).reshape(h, w, 3).copy()
         dep = np.frombuffer(self.shm.buf[HDR + nr:HDR + nr + nd], np.uint16).reshape(h, w).copy()
         if int(self.i[0]) != s0:                          # 읽는 중에 덮어써졌다 → 버린다
             return None
         self.last = s0
+        self.last_slam_context = {
+            "T_map_camera": pose,
+            "pose_stamp_ns": pose_stamp,
+            "rgb_stamp_ns": stamp,
+            "tracking_state": "TRACKING_OK" if tracking_ok else "TRACKING_LOST",
+            "map_id": map_bytes.decode("utf-8", errors="replace"),
+        }
         return rgb, dep, K, stamp, recv
 
     def close(self):

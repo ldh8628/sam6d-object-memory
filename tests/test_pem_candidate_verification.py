@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 
+import pytest
 import torch
 
 
@@ -14,10 +15,12 @@ from model_utils import (  # noqa: E402
     _compact_distribution,
     _stage6000_score_analysis,
     independent_candidate_verify,
+    sequential_candidate_select,
+    validate_refined_poses,
 )
 
 
-def test_independent_verification_never_changes_geometry_winner():
+def test_missing_mask_rejects_detection_without_inventing_pose():
     rotations = torch.eye(3).reshape(1, 1, 3, 3).repeat(1, 3, 1, 1)
     translations = torch.tensor([[[0.0, 0.0, 0.0],
                                   [0.2, 0.0, 0.0],
@@ -40,8 +43,109 @@ def test_independent_verification_never_changes_geometry_winner():
     selected = independent_candidate_verify(
         rotations, translations, geometry, appearance, info)
     assert selected.tolist() == [1]
-    assert info["verify"][0]["selection_method"] == "geometry_only"
-    assert info["verify"][0]["selected_proposal6000_index"] == 102
+    assert info["verify"][0]["selection_method"] == "geometry_mask_texture_convergence"
+    assert info["verify"][0]["accepted"] is False
+    assert info["verify"][0]["rejection_reason"] == "candidate_projection_invalid"
+    assert info["verify"][0]["selected_proposal6000_index"] is None
+
+
+def _selector_shape(mask_iou, valid=None):
+    mask_iou = torch.tensor([mask_iou], dtype=torch.float32)
+    return {"mask_iou": mask_iou,
+            "projection_valid": (torch.ones_like(mask_iou, dtype=torch.bool)
+                                 if valid is None else torch.tensor([valid]))}
+
+
+def test_sequential_threshold_boundaries_and_stage_reasons():
+    rotations = torch.eye(3).reshape(1, 1, 3, 3).repeat(1, 3, 1, 1)
+    translations = torch.tensor([[[0.0, 0.0, 1.0], [0.01, 0.0, 1.0],
+                                  [0.02, 0.0, 1.0]]])
+    geometry = torch.tensor([[3.0, 2.0, 1.0]])
+    texture = torch.tensor([[0.449562, 0.449562, 0.449561]])
+    shape = _selector_shape([0.420998, 0.420997, 0.8])
+    selected, rows = sequential_candidate_select(
+        rotations, translations, geometry, texture, shape, ["Bear"], {
+            "mask_iou_min": 0.420998, "texture_min_score": 0.449562,
+            "cluster_rotation_deg": 20, "cluster_translation_mm": 25,
+            "cluster_min_occupancy": 0.5,
+        })
+    assert selected.tolist() == [0]
+    assert rows[0]["accepted"] is True
+    assert rows[0]["mask_survivors"] == 2
+    assert rows[0]["texture_survivors"] == 1
+
+    _, rows = sequential_candidate_select(
+        rotations, translations, geometry, torch.full_like(texture, 0.1),
+        _selector_shape([0.8, 0.8, 0.8]), ["Bear"], {})
+    assert rows[0]["rejection_reason"] == "texture_filter_empty"
+
+    _, rows = sequential_candidate_select(
+        rotations, translations, geometry, torch.full_like(texture, 0.8),
+        _selector_shape([0.1, 0.2, 0.3]), ["Bear"], {})
+    assert rows[0]["rejection_reason"] == "mask_filter_empty"
+
+    separated = torch.tensor([[[0.0, 0.0, 1.0], [0.1, 0.0, 1.0],
+                               [0.2, 0.0, 1.0]]])
+    _, rows = sequential_candidate_select(
+        rotations, separated, geometry, torch.full_like(texture, 0.8),
+        _selector_shape([0.8, 0.8, 0.8]), ["Bear"], {})
+    assert rows[0]["rejection_reason"] == "convergence_insufficient"
+
+
+def test_invalid_projection_and_nonfinite_geometry_are_rejected_before_mask():
+    rotations = torch.eye(3).reshape(1, 1, 3, 3)
+    translations = torch.tensor([[[0.0, 0.0, 1.0]]])
+    _, rows = sequential_candidate_select(
+        rotations, translations, torch.tensor([[float("nan")]]),
+        torch.tensor([[1.0]]), _selector_shape([1.0]), ["Bear"], {})
+    assert rows[0]["rejection_reason"] == "candidate_projection_invalid"
+
+
+def test_symmetry_aware_dominant_cluster_selects_best_actual_geometry_candidate():
+    quarter = torch.tensor([[0.0, -1.0, 0.0], [1.0, 0.0, 0.0],
+                            [0.0, 0.0, 1.0]])
+    rotations = torch.stack([torch.eye(3), quarter, torch.eye(3)])[None]
+    translations = torch.tensor([[[0.0, 0.0, 1.0], [0.01, 0.0, 1.0],
+                                  [0.2, 0.0, 1.0]]])
+    selected, rows = sequential_candidate_select(
+        rotations, translations, torch.tensor([[3.0, 2.0, 1.0]]),
+        torch.tensor([[0.8, 0.8, 0.8]]), _selector_shape([0.8, 0.8, 0.8]),
+        ["symmetric"], {"symmetry_axes": {"symmetric": [0, 0, 1]},
+                        "sym_step_deg": 90, "cluster_rotation_deg": 20,
+                        "cluster_translation_mm": 25, "cluster_min_occupancy": 0.5})
+    assert rows[0]["cluster_size"] == 2
+    assert rows[0]["cluster_occupancy"] == pytest.approx(2 / 3)
+    assert selected.tolist() == [0]
+
+
+@pytest.mark.parametrize(("pose_score", "iou", "feature", "accepted", "reason"), [
+    (float("nan"), 0.8, 1.0, False, "fine_refinement_failed"),
+    (1.0, 0.2, 1.0, False, "final_mask_below_threshold"),
+    (1.0, 0.8, -1.0, False, "final_texture_below_threshold"),
+    (1.0, 0.8, 1.0, True, None),
+])
+def test_fine_pose_has_no_coarse_fallback(monkeypatch, pose_score, iou, feature,
+                                          accepted, reason):
+    import model_utils as module
+    monkeypatch.setattr(module, "_candidate_shape_metrics", lambda *args: {
+        "projection_valid": torch.tensor([[True]]),
+        "mask_iou": torch.tensor([[iou]]),
+    })
+    rows = [{"accepted": True, "rejection_reason": None}]
+    appearance = {
+        "verify": {"enabled": True, "mask_iou_min": 0.420998,
+                   "texture_min_score": 0.449562},
+        "dense_pm": torch.tensor([[[0.0, 0.0, 0.0]]]),
+        "dense_fm": torch.tensor([[[1.0, 0.0]]]),
+        "dense_po": torch.tensor([[[0.0, 0.0, 0.0]]]),
+        "dense_fo": torch.tensor([[[feature, 0.0]]]),
+        "radius": torch.ones(1), "_projection_model_pts": torch.zeros(1, 1, 3),
+    }
+    validate_refined_poses(
+        torch.eye(3)[None], torch.tensor([[0.0, 0.0, 1.0]]),
+        torch.tensor([pose_score]), appearance, rows)
+    assert rows[0]["accepted"] is accepted
+    assert rows[0]["rejection_reason"] == reason
 
 
 def test_geometry_tie_uses_same_first_index_as_production_max():

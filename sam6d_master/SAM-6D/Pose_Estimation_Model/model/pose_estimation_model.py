@@ -5,7 +5,7 @@ from feature_extraction import ViTEncoder
 from coarse_point_matching import CoarsePointMatching
 from fine_point_matching import FinePointMatching
 from transformer import GeometricStructureEmbedding
-from model_utils import sample_pts_feats, get_chosen_pixel_feats
+from model_utils import sample_pts_feats, get_chosen_pixel_feats, validate_refined_poses
 
 
 class Net(nn.Module):
@@ -23,14 +23,12 @@ class Net(nn.Module):
     def forward(self, end_points):
         dense_pm, dense_fm, dense_po, dense_fo, radius = self.feature_extraction(end_points)
 
-        # 독립 후보 검증(기본 OFF). coarse 승자는 항상 기하 1위이고, 이 설정은
-        # texture/size/IoU를 계측하는 데만 관여한다.
+        # 후보 선택 설정. Geometry로 정렬한 300개를 Mask→Texture→수렴으로 줄인다.
         appe_cfg = getattr(self.cfg, 'appe_rerank', None)
         if appe_cfg and not self.training:
             d = dict(appe_cfg, dense_pm=dense_pm, dense_fm=dense_fm,
                      dense_po=dense_po, dense_fo=dense_fo)
-            # PEM explorer 계측은 명시적으로 켠 경우에만 이 부가 입력을 전달한다.
-            # 꺼진 기본 경로에서는 분기조차 타지 않아 기존 후보 선택 수치가 바뀌지 않는다.
+            # Projection/diagnostic 입력은 선택 또는 명시적 계측이 켜진 경우에 전달한다.
             diag = appe_cfg.get('diagnostic') or {}
             ver = appe_cfg.get('verify') or {}
             if diag.get('enabled') or ver.get('enabled'):
@@ -52,6 +50,10 @@ class Net(nn.Module):
                 d['dense_cm'] = get_chosen_pixel_feats(rgb * sd + m, end_points['rgb_choose'])
                 d['dense_co'] = end_points['dense_co']
             d['radius'] = radius          # 후보 병진을 원래 크기로 되돌릴 때 쓴다
+            projection_model = end_points.get('projection_model')
+            if projection_model is not None:
+                d['projection_model'] = projection_model / radius.reshape(-1, 1, 1)
+                d['_projection_model_pts'] = d['projection_model']
             if end_points.get('obj_names') is not None:
                 d['names'] = end_points['obj_names']     # 대칭 선언 조회용
             end_points['appe_rerank'] = d
@@ -84,5 +86,13 @@ class Net(nn.Module):
             dense_po, dense_fo, geo_embedding_o, fps_idx_o,
             radius, end_points
         )
+
+        if (not self.training and appe_cfg and
+                (appe_cfg.get('verify') or {}).get('enabled') and
+                end_points.get('verify') is not None):
+            end_points['verify'] = validate_refined_poses(
+                end_points['pred_R'], end_points['pred_t'],
+                end_points.get('pred_pose_score'), end_points['appe_rerank'],
+                end_points['verify'])
 
         return end_points

@@ -48,6 +48,13 @@ def main():
                      appe_rerank=rt.get("appe_rerank"),
                      verify=rt.get("verify", VC.UNSET),
                      pem_diagnostic=rt.get("pem_diagnostic"))
+    anchor_cfg = cfg.get("anchor", {})
+    slam_cfg = cfg.get("slam", {})
+    if anchor_cfg.get("enabled", False):
+        anchor_cfg = dict(anchor_cfg)
+        anchor_cfg.setdefault("symmetry_axes", core.verify.get("symmetry_axes", {}))
+        anchor_cfg.setdefault("sym_step_deg", core.verify.get("sym_step_deg", 10))
+        core.configure_anchors(slam_cfg.get("map_id", "default"), anchor_cfg)
 
     # 모델이 다 올라온 뒤에야 수신 쪽이 재생을 시작하도록 신호를 남긴다
     ready = os.path.join(odir, "READY")
@@ -89,9 +96,13 @@ def main():
             idle_since = time.time()
             got_any = True
             rgb, depth, K, stamp_ns, recv_wall = got
+            slam_context = fr.last_slam_context
+            if slam_context is not None and not slam_context.get("map_id"):
+                slam_context["map_id"] = str(slam_cfg.get("map_id", "default"))
             bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
             t_a = time.time()
-            rows, ms, n_boxes, lab = core.process(bgr, depth, K, want_mask=diag)
+            rows, ms, n_boxes, lab = core.process(
+                bgr, depth, K, want_mask=diag, slam_context=slam_context)
             t_b = time.time()
             n_proc += 1; n_det += len(rows)
             # bag 시각 환산: 이 프레임이 수신된 벽시계 시각을 기준점으로 삼는다(rate 1.0)
@@ -99,7 +110,12 @@ def main():
             t_done_ns = int(stamp_ns + (t_b - recv_wall) * 1e9)
             jw.write({"stamp_ns": stamp_ns, "t_done_ns": t_done_ns, "n": len(rows),
                       "dets": [{"object": r["object"], "score": r["score"],
-                                "R": r["R"], "t_mm": r["t_mm"]} for r in rows],
+                                "R": r["R"], "t_mm": r["t_mm"],
+                                "pose_source": r.get("pose_source", "sam6d"),
+                                "map_id": r.get("map_id"),
+                                "anchor_state": r.get("anchor_state"),
+                                "rejection_reason": r.get("rejection_reason")}
+                               for r in rows],
                       "ms": ms, "n_proc": n_proc, "n_det": n_det})
             for r in rows:
                 f_det.write(json.dumps({**r, "stamp_ns": stamp_ns,

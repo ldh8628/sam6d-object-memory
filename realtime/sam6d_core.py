@@ -31,6 +31,7 @@ if HERE not in sys.path:
 import yolo_ism as yi                                           # noqa: E402
 import yolo_ism_object_n as o_n                                 # noqa: E402
 from verify_config import UNSET, build_appe_cfg, describe        # noqa: E402
+from slam_pose_memory import ObjectAnchorManager, pose_matrix    # noqa: E402
 
 
 def _sync():
@@ -65,8 +66,13 @@ class Sam6DCore:
             self.appe_cfg = dict(self.appe_cfg or {"topk": 100, "stride": 1})
             self.appe_cfg["diagnostic"] = dict(self.pem_diagnostic)
         self.last_frame_diag = {}
+        self.anchor_manager = None
         self._load_ism(ism_config, objects or [])
         self._load_pem()
+
+    def configure_anchors(self, map_id, config=None):
+        """Enable session-only Object Anchors; no state is loaded from disk."""
+        self.anchor_manager = ObjectAnchorManager(map_id, config)
 
     # ------------------------------------------------------------------ 적재
     def _load_ism(self, cfg_path, want):
@@ -177,9 +183,11 @@ class Sam6DCore:
         self.log(f"[load] PEM 템플릿·모델점 {len(self._tem)} 객체")
 
     # ------------------------------------------------------------------ 처리
-    def process(self, bgr, depth, K, want_mask=False, diagnostic_references=None):
+    def process(self, bgr, depth, K, want_mask=False, diagnostic_references=None,
+                slam_context=None):
         """한 프레임 → (검출 목록, 단계별 ms, 마스크 라벨 이미지 or None)."""
-        self.last_frame_diag = {"pem_candidates": [], "pem_error": None}
+        self.last_frame_diag = {"pem_candidates": [], "pem_error": None,
+                                "rejections": []}
         _sync(); t0 = time.perf_counter()
         rgb = cv2.cvtColor(bgr, cv2.COLOR_BGR2RGB)
         h, w = bgr.shape[:2]
@@ -207,7 +215,7 @@ class Sam6DCore:
 
         hits = [(n, r) for n, r in sorted(results.items())
                 if r.get("accepted") and r.get("mask") is not None]
-        rows, lab = [], None
+        rows, lab, shadows = [], None, []
         if hits:
             frame = self.ric.prepare_frame(rgb, depth, K)
             dets = [{"score": 1.0, "mask": r["mask"].astype(bool), "cad": n} for n, r in hits]
@@ -282,6 +290,28 @@ class Sam6DCore:
                 by = dict(hits)
                 for j, nm in enumerate(names):
                     r = by[nm]
+                    verification = dict(vfs[j] or {})
+                    shadows.append({
+                        "object": nm, "R": Rs[j], "t_mm": ts[j],
+                        "score": float(ps[j]), "verify": verification, "ism": r,
+                    })
+                    if self.verify.get("enabled") and not verification.get("accepted", False):
+                        rejection = {
+                            "object": nm,
+                            "rank_geo": verification.get("rank_geo"),
+                            "mask_iou": ((verification.get("fine") or {}).get("mask_iou")),
+                            "texture_score": ((verification.get("fine") or {}).get(
+                                "texture_score")),
+                            "cluster_occupancy": verification.get("cluster_occupancy"),
+                            "pose_source": "sam6d_rejected",
+                            "rejection_reason": verification.get(
+                                "rejection_reason", "candidate_verification_failed"),
+                        }
+                        self.last_frame_diag["rejections"].append(rejection)
+                        for candidate_diag in self.last_frame_diag["pem_candidates"]:
+                            if candidate_diag["object"] == nm:
+                                candidate_diag.update(rejection)
+                        continue
                     diagnostic = dict(pds[j] or {})
                     # Pointwise evidence already lives in ``verify``. Keeping the same
                     # large array under ``diagnostic`` doubled top-100 dump size without
@@ -298,7 +328,7 @@ class Sam6DCore:
                         "R": [[round(float(v), 6) for v in row] for row in Rs[j]],
                         "t_mm": [round(float(v), 4) for v in ts[j]],
                         "bbox": [int(v) for v in r["box"]],
-                        **({"verify": vfs[j]} if vfs[j] else {}),
+                        **({"verify": verification} if verification else {}),
                         **({"diagnostic": diagnostic} if diagnostic else {}),
                         **({"score_analysis": score_analysis[j]}
                            if score_analysis[j] else {}),
@@ -317,6 +347,13 @@ class Sam6DCore:
                                 "pose_score": (round(float(pose_s[j]), 5)
                                                if pose_s is not None else None),
                                 "batch": len(names)},
+                        "rank_geo": verification.get("rank_geo"),
+                        "mask_iou": ((verification.get("fine") or {}).get("mask_iou")),
+                        "texture_score": ((verification.get("fine") or {}).get(
+                            "texture_score")),
+                        "cluster_occupancy": verification.get("cluster_occupancy"),
+                        "pose_source": "sam6d",
+                        "rejection_reason": None,
                     })
             except Exception as e:
                 if ((((self.pem_diagnostic or {}).get("score_analysis") or {}).get("enabled"))):
@@ -327,7 +364,102 @@ class Sam6DCore:
                 lab = np.zeros((h, w), np.uint8)
                 for i, (nm, r) in enumerate(hits):
                     lab[r["mask"].astype(bool)] = i + 1
+        if self.anchor_manager is not None:
+            rows = self._apply_anchors(
+                rows, shadows, hits, depth, K, (h, w), slam_context)
         _sync(); t3 = time.perf_counter()
         ms = {"yolo": round(1e3 * (t1 - t0)), "ism": round(1e3 * (t2 - t1)),
               "pem": round(1e3 * (t3 - t2)), "total": round(1e3 * (t3 - t0))}
         return rows, ms, n_boxes, lab
+
+    def _apply_anchors(self, rows, shadows, hits, depth, K, image_shape, slam_context):
+        """Update anchors from shadow SAM-6D and apply the configured A/B output policy."""
+        manager = self.anchor_manager
+        if not slam_context:
+            for row in rows:
+                row.setdefault("map_id", manager.map_id)
+                row.setdefault("anchor_state", "collecting")
+            self.last_frame_diag["anchor"] = {"state": "unused", "reason": "slam_pose_missing"}
+            return rows
+        map_id = str(slam_context.get("map_id", manager.map_id))
+        map_changed = manager.set_map(map_id)
+        for row in rows:
+            row["map_id"] = map_id
+            row["anchor_state"] = ("registered" if row["object"] in manager.anchors
+                                   else "collecting")
+        twc = np.asarray(slam_context.get("T_map_camera"), dtype=float)
+        state = slam_context.get("tracking_state", "")
+        pose_stamp = int(slam_context.get("pose_stamp_ns", -1))
+        rgb_stamp = int(slam_context.get("rgb_stamp_ns", -2))
+        if not manager.slam_pose_valid(twc, state, pose_stamp, rgb_stamp):
+            self.last_frame_diag["anchor"] = {
+                "state": "unused", "map_id": map_id, "map_changed": map_changed,
+                "reason": "slam_pose_invalid",
+            }
+            return rows
+
+        updates = []
+        for shadow in shadows:
+            verify = shadow.get("verify") or {}
+            fine = verify.get("fine") or {}
+            tco = pose_matrix(shadow["R"], np.asarray(shadow["t_mm"], float) / 1000.0)
+            object_id = shadow["object"]
+            if verify.get("accepted"):
+                updates.append({"object": object_id, **manager.observe(
+                    object_id, twc, tco, state, pose_stamp, rgb_stamp)})
+            elif object_id in manager.anchors and fine.get("anchor_shadow_valid"):
+                mask_only = verify.get("rejection_reason") in {
+                    "mask_filter_empty", "final_mask_below_threshold"}
+                updates.append({"object": object_id, **manager.validate_shadow(
+                    object_id, twc @ tco, mask_only_failure=mask_only)})
+
+        # Registration/release may have happened above, so expose the state after
+        # this frame's observations rather than the state at function entry.
+        for row in rows:
+            row["anchor_state"] = ("registered" if row["object"] in manager.anchors
+                                   else "collecting")
+
+        hit_by_name = dict(hits)
+        row_by_name = {row["object"]: row for row in rows}
+        eligible_objects = (list(manager.anchors) if manager.config["anchor_output_mode"] == "fov_always"
+                            else [name for name in manager.anchors if name in hit_by_name])
+        decisions = []
+        for object_id in eligible_objects:
+            ism = hit_by_name.get(object_id)
+            pose, diag = manager.output_decision(
+                object_id, twc, self._pts[object_id]._pts / 1000.0, K, image_shape,
+                None if ism is None else ism["mask"], depth,
+                manager.config["anchor_output_mode"])
+            decisions.append({"object": object_id, **diag})
+            if pose is None:
+                continue
+            previous = row_by_name.get(object_id, {})
+            anchor_row = {
+                **previous,
+                "object": object_id,
+                # fov_always may create a row without an ISM confidence. Do not
+                # fabricate a perfect detector score for an anchor-only output.
+                "score": previous.get("score", 0.0),
+                "R": [[round(float(v), 6) for v in matrix_row]
+                      for matrix_row in pose[:3, :3]],
+                "t_mm": [round(float(v) * 1000.0, 4) for v in pose[:3, 3]],
+                "bbox": (previous.get("bbox") if previous else
+                         ([int(v) for v in ism["box"]] if ism is not None else None)),
+                "pose_source": "slam_anchor", "map_id": map_id,
+                "anchor_state": "registered", "anchor_diagnostic": diag,
+                "rejection_reason": None,
+            }
+            row_by_name[object_id] = anchor_row
+        self.last_frame_diag["anchor"] = {
+            "state": "active", "map_id": map_id, "map_changed": map_changed,
+            "registered_objects": sorted(manager.anchors),
+            "updates": updates, "decisions": decisions,
+        }
+        # Preserve original order, then append fov-only anchor detections.
+        output, seen = [], set()
+        for row in rows:
+            output.append(row_by_name[row["object"]]); seen.add(row["object"])
+        for object_id, row in row_by_name.items():
+            if object_id not in seen and row.get("pose_source") == "slam_anchor":
+                output.append(row)
+        return output

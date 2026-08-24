@@ -586,6 +586,12 @@ class Sam6DRealtimeNode(Node):
                 "bbox": [int(v) for v in r["box"]],
                 **({"pem": dg} if self.diag else {}),
                 **({"verify": vf} if vf else {}),
+                "rank_geo": (vf or {}).get("rank_geo"),
+                "mask_iou": (((vf or {}).get("fine") or {}).get("mask_iou")),
+                "texture_score": (((vf or {}).get("fine") or {}).get("texture_score")),
+                "cluster_occupancy": (vf or {}).get("cluster_occupancy"),
+                "pose_source": "sam6d", "map_id": None,
+                "anchor_state": "disabled", "rejection_reason": None,
                 "ism": {k: (round(float(r[k]), 5) if isinstance(r.get(k), (int, float)) else r.get(k))
                         for k in ("best_yolo", "best_sem", "masked_appe", "rank_appe",
                                   "hsv_score", "decision") if k in r},
@@ -729,6 +735,14 @@ class Sam6DRealtimeNode(Node):
         rows = []
         for j, name in enumerate(names):
             r = by_name[name]
+            vf = dict(vfs[j] or {})
+            if self.verify.get("enabled") and not vf.get("accepted", False):
+                self.get_logger().warn(
+                    f"[reject] {name}: {vf.get('rejection_reason', 'candidate_verification_failed')} "
+                    f"rank_geo={vf.get('rank_geo')} mask={((vf.get('fine') or {}).get('mask_iou'))} "
+                    f"texture={((vf.get('fine') or {}).get('texture_score'))} "
+                    f"occupancy={vf.get('cluster_occupancy')}")
+                continue
             dg = None
             if self.diag:
                 # PEM 이 실제로 본 입력의 품질. 흔들림을 마스크 탓/거리 탓/점수 탓으로
@@ -744,7 +758,7 @@ class Sam6DRealtimeNode(Node):
                       "coarse": round(float(coarse[j]), 5),
                       "pose_score": round(float(pose_s[j]), 5) if pose_s is not None else None,
                       "batch": len(names)}
-            rows.append((name, r, Rs[j], ts[j], float(ps[j]), mpts_list[j], dg, vfs[j]))
+            rows.append((name, r, Rs[j], ts[j], float(ps[j]), mpts_list[j], dg, vf))
         return rows
 
     def _to_msg(self, header, name, R, t_mm, score, verify=None) -> Detection3D:
