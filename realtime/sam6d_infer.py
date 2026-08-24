@@ -84,6 +84,12 @@ def main():
             raise SystemExit(
                 "[explorer] output.pem_explorer.enabled requires "
                 "runtime.pem_diagnostic.enabled and explorer_v2.enabled")
+        output_profile = explorer_cfg.get("capture_profile")
+        diagnostic_profile = (diagnostic_cfg.get("explorer_v2") or {}).get(
+            "capture_profile")
+        if output_profile != diagnostic_profile:
+            raise SystemExit(
+                "[explorer] output and diagnostic capture_profile must match exactly")
         declared_bag = cfg.get("bag", {}).get("path")
         if declared_bag:
             declared = Path(declared_bag)

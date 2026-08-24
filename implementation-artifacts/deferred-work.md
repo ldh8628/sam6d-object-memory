@@ -26,3 +26,9 @@
 
 - `temp/verify_eval.py` fsyncs each JSONL and the containing directory, but detections, score analysis, frames, and provenance are still published as multiple renames.
 - A process failure between those renames can leave a mixed generation when reusing an output directory. A focused change should publish a complete run directory with an atomic version pointer/directory exchange and make all consumers require the completion provenance.
+
+## Pre-existing nonfinite geometry winner policy
+
+- `independent_candidate_verify` and `sequential_candidate_select` inherit the production geometry ordering behavior for nonfinite scores; a synthetic NaN/Inf geometry value can become the raw argmax/Geometry Top-1 before later validity gates reject it.
+- The compact Explorer deliberately preserves the production index/proposal/R/t selection contract and the captured longcircle2 candidates are finite, so this story did not change production ordering semantics. The live GT/shadow comparison now treats malformed poses/evidence as unavailable rather than correct.
+- A focused follow-up should define an authoritative nonfinite geometry policy, update both production selection paths together, and version the behavior with diagnostic-OFF parity fixtures before changing winners.

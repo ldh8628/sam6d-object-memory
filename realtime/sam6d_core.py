@@ -132,6 +132,13 @@ class Sam6DCore:
 
     def _load_pem(self):
         cwd = os.getcwd()
+        try:
+            return self._load_pem_impl()
+        finally:
+            os.chdir(cwd)
+
+    def _load_pem_impl(self):
+        cwd = os.getcwd()
         os.chdir(PEM_DIR)
         for sub in ("provider", "utils", "model", os.path.join("model", "pointnet2")):
             sys.path.append(os.path.join(PEM_DIR, sub))
@@ -303,6 +310,32 @@ class Sam6DCore:
                     r = by[nm]
                     verification = dict(vfs[j] or {})
                     explorer_payload = explorer_payloads[j]
+                    fine_r = np.asarray(Rs[j], dtype=np.float32)
+                    fine_t = np.asarray(ts[j], dtype=np.float32)
+                    fine_valid = bool(
+                        np.isfinite(fine_r).all() and np.isfinite(fine_t).all()
+                        and fine_r.shape == (3, 3) and fine_t.shape == (3,)
+                        and np.linalg.norm(fine_r.T @ fine_r - np.eye(3)) <= 1e-2
+                        and np.linalg.det(fine_r) > 0.99)
+                    final_pose = {
+                        "valid": fine_valid,
+                        "R": (fine_r.tolist() if fine_valid else None),
+                        "t_mm": (fine_t.tolist() if fine_valid else None),
+                        "score": (float(ps[j]) if np.isfinite(ps[j]) else None),
+                        "stage": "fine_refined",
+                    }
+                    geometry_top1_index = None
+                    geometry_top1_proposal = None
+                    if explorer_payload is not None:
+                        ranks = np.asarray(explorer_payload.get("rank_geo", []))
+                        top = np.flatnonzero(ranks == 0)
+                        if top.size:
+                            geometry_top1_index = int(top[0])
+                            proposals = np.asarray(
+                                explorer_payload.get("proposal6000", []))
+                            if geometry_top1_index < proposals.size:
+                                geometry_top1_proposal = int(
+                                    proposals[geometry_top1_index])
                     if explorer_payload is not None:
                         for candidate_diag in self.last_frame_diag["pem_candidates"]:
                             if candidate_diag["object"] == nm:
@@ -313,6 +346,10 @@ class Sam6DCore:
                                         "decision", verification),
                                     "explorer_candidates": explorer_payload,
                                     "explorer_replay": explorer_payload.get("replay"),
+                                    "geometry_top1_index300": geometry_top1_index,
+                                    "geometry_top1_proposal6000": geometry_top1_proposal,
+                                    "final_pose": final_pose,
+                                    "stage_summary": dict(pds[j] or {}),
                                 })
                                 break
                     shadows.append({

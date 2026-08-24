@@ -778,8 +778,14 @@ def _attach_explorer_v2(info, pred_rs, physical_t, geo_scores, texture_scores,
         R, t = pred_rs[b], physical_t[b]
         flags = torch.zeros(P, dtype=torch.int32, device=geo_scores.device)
         pose_valid = (torch.isfinite(R).flatten(1).all(1) & torch.isfinite(t).all(1)
-                      & torch.isfinite(geo_scores[b]) & (torch.linalg.det(R) > 0.99))
+                      & torch.isfinite(geo_scores[b]))
+        pose_valid &= (torch.linalg.norm(
+            R.transpose(-1, -2) @ R - torch.eye(3, device=R.device, dtype=R.dtype),
+            dim=(-2, -1)) <= 1e-2) & (torch.linalg.det(R) > 0.99)
         flags |= pose_valid.int()
+        # Bit 6 records whether Texture was actually measured.  It reuses the
+        # existing uint16 flags field, so the compact candidate record stays 80 B.
+        flags |= torch.isfinite(texture_scores[b]).int() * 64
         if shape is not None:
             flags |= shape['projection_valid'][b].int() * 2
         decision = decisions[b] if decisions else None
@@ -830,10 +836,22 @@ def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
     diag = appe.get('diagnostic') or {}
     analysis_cfg = diag.get('score_analysis') or {}
     analysis_on = bool(diag.get('enabled') and analysis_cfg.get('enabled'))
-    explorer_on = bool(diag.get('enabled') and
-                       (diag.get('explorer_v2') or {}).get('enabled'))
+    explorer_cfg = diag.get('explorer_v2') or {}
+    explorer_on = bool(diag.get('enabled') and explorer_cfg.get('enabled'))
+    capture_profile = explorer_cfg.get(
+        'capture_profile', 'exhaustive_visualization')
+    if explorer_on and capture_profile not in (
+            'exhaustive_visualization', 'realtime_inference'):
+        raise ValueError(
+            'diagnostic.explorer_v2.capture_profile must be '
+            "'exhaustive_visualization' or 'realtime_inference'")
+    exhaustive_capture = explorer_on and capture_profile == 'exhaustive_visualization'
+    realtime_capture = explorer_on and capture_profile == 'realtime_inference'
     production_on = bool(ver.get('enabled', False))
-    measured_count = P if (analysis_on or explorer_on or production_on) else topk
+    # Realtime capture is a measurement ceiling: even if a score-analysis block
+    # is present, it must not widen the production texture population.
+    measured_count = P if (production_on or exhaustive_capture or
+                           (analysis_on and not realtime_capture)) else topk
     dump = max(int(ver.get('dump_topk', 0)), int(diag.get('topn', 0)))
     diag_topn = max(0, int(diag.get('topn', 0))) if diag.get('enabled') else 0
     diag_stride = max(1, int(diag.get('evidence_stride', 8)))
@@ -880,7 +898,7 @@ def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
         selected, rows = sequential_candidate_select(
             pred_rs, physical_t, geo_scores, texture_by_original, shape,
             appe.get('names') or [None] * B, ver, appe.get('_proposal_ids'))
-        if explorer_on:
+        if exhaustive_capture:
             texture_chunk = max(1, int(ver.get('texture_chunk', 16)))
             for b in range(B):
                 R_all, t_all = pred_rs[b], pred_ts[b]

@@ -32,6 +32,9 @@ FLAG_MASK_PASS = 1 << 2
 FLAG_TEXTURE_PASS = 1 << 3
 FLAG_CLUSTER_MEMBER = 1 << 4
 FLAG_SELECTED = 1 << 5
+FLAG_TEXTURE_MEASURED = 1 << 6
+
+CAPTURE_PROFILES = {"exhaustive_visualization", "realtime_inference"}
 
 
 def _jsonable(value):
@@ -140,6 +143,12 @@ class ExplorerRecorder:
     """Append PEM attempts and atomically maintain an incomplete/complete manifest."""
 
     def __init__(self, run_dir, provenance, config=None):
+        config = dict(config or {})
+        raw_profile = config.get("capture_profile")
+        profile = None if raw_profile is None else str(raw_profile)
+        if profile is not None and profile not in CAPTURE_PROFILES:
+            raise ValueError(
+                f"capture_profile must be one of {sorted(CAPTURE_PROFILES)}, got {profile!r}")
         self.run_dir = Path(run_dir).resolve()
         self.run_dir.mkdir(parents=True, exist_ok=True)
         self.mask_dir = self.run_dir / "masks"
@@ -159,8 +168,13 @@ class ExplorerRecorder:
         self._replay = open(self.replay_path, "xb")
         self._attempt = 0
         self._frames = set()
+        self._processed_frames = 0
+        self._last_frame_seq = None
+        self._first_stamp_ns = None
         self._last_stamp_ns = None
-        self._max_bytes_per_attempt = int((config or {}).get(
+        self._capture_profile = profile
+        self._shadow_texture_complete = True
+        self._max_bytes_per_attempt = int(config.get(
             "max_bytes_per_attempt", 0) or 0)
         self._manifest = {
             "schema": SCHEMA, "schema_version": 2, "completed": False,
@@ -169,8 +183,16 @@ class ExplorerRecorder:
             "candidate_fields": list(CANDIDATE_FIELDS),
             "replay_layout": "source:u32,fps:u16,valid:packed-little-bits,cad:u16",
             "attempts": 0, "candidate_count": 0, "bytes_per_full_attempt": None,
-            "provenance": provenance, "recording": dict(config or {}),
+            "bag_frame_count": (None if config.get("bag_frame_count") is None else
+                                int(config["bag_frame_count"])),
+            "frames_processed": 0,
+            "first_stamp_ns": None, "last_stamp_ns": None,
+            "shadow_texture_measurement": profile != "realtime_inference",
+            "shadow_texture_complete": True,
+            "provenance": provenance, "recording": config,
         }
+        if profile is not None:
+            self._manifest["capture_profile"] = profile
         self._write_manifest()
 
     def _write_manifest(self):
@@ -181,9 +203,23 @@ class ExplorerRecorder:
 
     def record_frame(self, stamp_ns, depth_stamp_ns, frame_seq, K, image_shape, attempts,
                      label_image=None):
-        self._last_stamp_ns = int(stamp_ns)
+        stamp_ns = int(stamp_ns)
+        frame_seq = int(frame_seq)
+        if self._last_frame_seq is not None and frame_seq != self._last_frame_seq + 1:
+            raise ValueError(
+                f"frame_seq must be contiguous: expected {self._last_frame_seq + 1}, "
+                f"got {frame_seq}")
+        if self._last_stamp_ns is not None and stamp_ns <= self._last_stamp_ns:
+            raise ValueError("frame stamps must be strictly increasing")
+        if self._first_stamp_ns is None:
+            self._first_stamp_ns = stamp_ns
+        self._last_stamp_ns = stamp_ns
+        self._last_frame_seq = frame_seq
+        self._processed_frames += 1
         mask_name = None
         frame_key = (int(frame_seq), int(stamp_ns))
+        if label_image is not None and len(attempts) > 16:
+            raise ValueError("uint16 Mask bitset supports at most 16 PEM attempts per frame")
         if attempts and label_image is not None and frame_key not in self._frames:
             import cv2
             mask_name = f"masks/{int(frame_seq)}_{int(stamp_ns)}.png"
@@ -219,6 +255,10 @@ class ExplorerRecorder:
                 "depth_stamp_ns": int(depth_stamp_ns),
                 "frame_seq": int(frame_seq), "object": attempt["object"],
                 "bbox_xyxy": [int(v) for v in attempt.get("bbox", [])],
+                "mask_px": int(attempt.get("mask_px", 0) or 0),
+                "valid_depth_px": int(attempt.get("valid_depth_px", 0) or 0),
+                "depth_valid_frac": (float(attempt.get("valid_depth_px", 0) or 0) /
+                                     max(1, int(attempt.get("mask_px", 0) or 0))),
                 "crop_bbox_yxyx": [float(v) for v in attempt.get("crop_bbox_yxyx", [])],
                 "K": np.asarray(K, dtype=np.float32).reshape(-1).tolist(),
                 "image_size": [int(image_shape[0]), int(image_shape[1])],
@@ -230,6 +270,11 @@ class ExplorerRecorder:
                 "replay_counts": counts,
                 "selected_index300": decision.get("selected_index300"),
                 "selected_proposal6000": decision.get("selected_proposal6000_index"),
+                "geometry_top1_index300": attempt.get("geometry_top1_index300"),
+                "geometry_top1_proposal6000": attempt.get(
+                    "geometry_top1_proposal6000"),
+                "final_pose": attempt.get("final_pose"),
+                "stage_summary": attempt.get("stage_summary") or {},
                 "accepted": bool(decision.get("accepted", False)),
                 "mask_survivors": int(decision.get("mask_survivors", 0) or 0),
                 "texture_survivors": int(decision.get("texture_survivors", 0) or 0),
@@ -237,14 +282,25 @@ class ExplorerRecorder:
                 "cluster_occupancy": float(decision.get("cluster_occupancy", 0.0) or 0.0),
                 "rejection_reason": (attempt.get("input_rejection") or
                                      decision.get("rejection_reason")),
+                "texture_measured_count": (int(sum(
+                    bool(int(flag) & FLAG_TEXTURE_MEASURED)
+                    for flag in np.asarray(payload.get("flags", [])))) if payload else 0),
             }
             self._index.write((json.dumps(row, ensure_ascii=False) + "\n").encode("utf-8"))
             self._attempt += 1
             self._manifest["candidate_count"] += row["candidate_count"]
+            if (self._capture_profile == "exhaustive_visualization" and
+                    row["candidate_count"] and
+                    row["texture_measured_count"] != row["candidate_count"]):
+                self._shadow_texture_complete = False
+                self._manifest["shadow_texture_complete"] = False
             if row["candidate_count"] == 300:
                 total = len(candidate_blob) + len(replay_blob)
                 self._manifest["bytes_per_full_attempt"] = total
         self._manifest["attempts"] = self._attempt
+        self._manifest["frames_processed"] = self._processed_frames
+        self._manifest["first_stamp_ns"] = self._first_stamp_ns
+        self._manifest["last_stamp_ns"] = self._last_stamp_ns
         for stream in (self._index, self._candidates, self._replay):
             stream.flush()
 
@@ -252,15 +308,31 @@ class ExplorerRecorder:
         for stream in (self._index, self._candidates, self._replay):
             if not stream.closed:
                 stream.flush(); os.fsync(stream.fileno()); stream.close()
-        expected = self._manifest["recording"].get("expected_last_stamp_ns")
+        recording = self._manifest["recording"]
+        expected = recording.get("expected_last_stamp_ns")
         tolerance = int(self._manifest["recording"].get("completion_tolerance_ns", 0) or 0)
-        reached_end = (expected is None or (self._last_stamp_ns is not None and
-                       self._last_stamp_ns + tolerance >= int(expected)))
-        completed = bool(completed and reached_end)
+        expected_first = recording.get("expected_first_stamp_ns")
+        expected_count = self._manifest.get("bag_frame_count")
+        if self._capture_profile == "exhaustive_visualization":
+            reached_end = (
+                expected is not None and expected_first is not None and expected_count is not None
+                and self._first_stamp_ns == int(expected_first)
+                and self._last_stamp_ns == int(expected)
+                and self._processed_frames == int(expected_count))
+        else:
+            reached_end = (expected is None or (self._last_stamp_ns is not None and
+                           self._last_stamp_ns + tolerance >= int(expected)))
+        texture_complete = (self._capture_profile != "exhaustive_visualization" or
+                            self._shadow_texture_complete)
+        completed = bool(completed and reached_end and texture_complete)
+        self._manifest["frames_processed"] = self._processed_frames
+        self._manifest["first_stamp_ns"] = self._first_stamp_ns
         self._manifest["last_stamp_ns"] = self._last_stamp_ns
+        self._manifest["shadow_texture_complete"] = self._shadow_texture_complete
         self._manifest["completed"] = completed
         self._manifest["completion_reason"] = (
             "source_end_reached" if completed else
+            "shadow_texture_incomplete" if reached_end and not texture_complete else
             "source_end_not_reached" if not reached_end else "interrupted_or_failed")
         self._manifest["completed_wall"] = time.time() if completed else None
         self._write_manifest()

@@ -31,8 +31,8 @@ def _sha256(path):
     return digest.hexdigest()
 
 
-def _asset_provenance_mismatches(provenance):
-    """Hash model assets; bag content is validated separately and scores catch drift."""
+def _asset_provenance_mismatches(provenance, bag_path=None):
+    """Hash recorded model assets and the validated source bag before replay."""
     entries = []
     for key in ("config", "checkpoint"):
         if isinstance(provenance.get(key), dict):
@@ -46,7 +46,22 @@ def _asset_provenance_mismatches(provenance):
         if (not path.is_file() or path.stat().st_size != int(entry.get("size", -1)) or
                 (entry.get("sha256") and _sha256(path) != entry["sha256"])):
             mismatches.append(label)
+    bag_entry = provenance.get("bag") or {}
+    if bag_path is not None and isinstance(bag_entry, dict):
+        bag_path = Path(bag_path).resolve()
+        recorded = {item.get("name"): item for item in bag_entry.get("files", [])}
+        for name, entry in recorded.items():
+            path = bag_path / str(name)
+            if (not path.is_file() or path.is_symlink() or
+                    path.stat().st_size != int(entry.get("size", -1)) or
+                    (entry.get("sha256") and _sha256(path) != entry["sha256"])):
+                mismatches.append(f"bag.{name}")
     return mismatches
+
+
+def _strided_texture_features(points, features, stride):
+    stride = max(1, int(stride))
+    return points[::stride], features[::stride]
 
 
 class PemReplayCore:
@@ -68,6 +83,7 @@ class PemReplayCore:
         self.device = (str(rt.get("device", "cuda:0"))
                        if torch.cuda.is_available() else "cpu")
         appe_cfg, self.verify = VC.build_appe_cfg(rt)
+        self.texture_stride = max(1, int((appe_cfg or {}).get("stride", 1)))
         previous = Path.cwd()
         try:
             os.chdir(pem_dir)
@@ -87,6 +103,10 @@ class PemReplayCore:
         ism_path = Path(cfg.get("ism", {}).get("config", "configs/yolo_ism_objects.yaml"))
         if not ism_path.is_absolute():
             ism_path = repo / ism_path
+        if (ism_path.is_symlink() or not ism_path.is_file() or
+                repo.resolve() not in ism_path.resolve().parents):
+            raise PermissionError("ISM config must be a real file under the repository")
+        ism_path = ism_path.resolve()
         ism = yaml.safe_load(ism_path.read_text(encoding="utf-8")) or {}
         requested = set(cfg.get("ism", {}).get("objects") or [])
         names = [item["name"] for item in ism.get("objects", [])
@@ -101,8 +121,8 @@ class PemReplayCore:
             self._tem[name] = (blob["tp"].to(self.device), blob["tf"].to(self.device),
                                None if blob.get("tc") is None else
                                blob["tc"].to(self.device).float())
-        # Pay CUDA kernel/module initialization at server startup, not on the first
-        # candidate click. This tensor is discarded immediately and never persisted.
+        # Pay CUDA kernel/module initialization when the lazy analyzer is created.
+        # This tensor is discarded immediately and never persisted.
         if names:
             warm_name = names[0]
             warm = {
@@ -150,40 +170,50 @@ class BagFrameCache:
             name: get_message(self.topic_info[name][1]) for name in topics.values()
         }
 
+    def _decode(self, key, header_stamp):
+        with self.lock:
+            topic = self.topics[key]
+            topic_id, _ = self.topic_info[topic]
+            # Standard bags use the header stamp as the storage timestamp. Keep a
+            # bounded fallback for valid bags whose recorder used arrival time.
+            rows = self.connection.execute(
+                "SELECT data FROM messages WHERE topic_id=? AND timestamp=? LIMIT 1",
+                (topic_id, int(header_stamp))).fetchall()
+            if not rows:
+                rows = self.connection.execute(
+                    "SELECT data FROM messages WHERE topic_id=? "
+                    "AND timestamp BETWEEN ? AND ? ORDER BY ABS(timestamp-?) LIMIT 16",
+                    (topic_id, int(header_stamp) - 1_000_000_000,
+                     int(header_stamp) + 1_000_000_000, int(header_stamp))).fetchall()
+            msg = None
+            message_class = self.message_classes[topic]
+            for (blob,) in rows:
+                candidate = self.deserialize_message(blob, message_class)
+                candidate_stamp = (int(candidate.header.stamp.sec) * 1_000_000_000
+                                   + int(candidate.header.stamp.nanosec))
+                if candidate_stamp == int(header_stamp):
+                    msg = candidate
+                    break
+            if msg is None:
+                raise LookupError(f"{topic} header stamp {header_stamp} not found")
+            return np.asarray(self.bridge.imgmsg_to_cv2(
+                msg, desired_encoding="rgb8" if key == "rgb" else "passthrough"))
+
+    def get_rgb(self, rgb_stamp_ns):
+        rgb_stamp_ns = int(rgb_stamp_ns)
+        for stamps, value in list(self.cache.items()):
+            if stamps[0] == rgb_stamp_ns:
+                self.cache.move_to_end(stamps)
+                return value[0]
+        return self._decode("rgb", rgb_stamp_ns)
+
     def get(self, rgb_stamp_ns, depth_stamp_ns):
         stamps = (int(rgb_stamp_ns), int(depth_stamp_ns))
         if stamps in self.cache:
             self.cache.move_to_end(stamps)
             return self.cache[stamps]
-        found = {}
-        with self.lock:
-            for key, header_stamp in zip(("rgb", "depth"), stamps):
-                topic = self.topics[key]
-                topic_id, msgtype = self.topic_info[topic]
-                # Standard bags use the header stamp as the storage timestamp. Keep a
-                # bounded fallback for valid bags whose recorder used arrival time.
-                rows = self.connection.execute(
-                    "SELECT data FROM messages WHERE topic_id=? AND timestamp=? LIMIT 1",
-                    (topic_id, header_stamp)).fetchall()
-                if not rows:
-                    rows = self.connection.execute(
-                        "SELECT data FROM messages WHERE topic_id=? "
-                        "AND timestamp BETWEEN ? AND ? ORDER BY ABS(timestamp-?) LIMIT 16",
-                        (topic_id, header_stamp - 1_000_000_000,
-                         header_stamp + 1_000_000_000, header_stamp)).fetchall()
-                msg = None
-                message_class = self.message_classes[topic]
-                for (blob,) in rows:
-                    candidate = self.deserialize_message(blob, message_class)
-                    candidate_stamp = (int(candidate.header.stamp.sec) * 1_000_000_000
-                                       + int(candidate.header.stamp.nanosec))
-                    if candidate_stamp == header_stamp:
-                        msg = candidate
-                        break
-                if msg is None:
-                    raise LookupError(f"{topic} header stamp {header_stamp} not found")
-                found[key] = self.bridge.imgmsg_to_cv2(
-                    msg, desired_encoding="rgb8" if key == "rgb" else "passthrough")
+        found = {"rgb": self._decode("rgb", stamps[0]),
+                 "depth": self._decode("depth", stamps[1])}
         value = (np.asarray(found["rgb"]), np.asarray(found["depth"]))
         self.cache[stamps] = value
         while len(self.cache) > self.capacity:
@@ -194,17 +224,19 @@ class BagFrameCache:
 class PemLiveAnalyzer:
     """Preload the shared PEM assets and recompute one selected candidate at a time."""
 
-    def __init__(self, repo, config_path, provenance=None):
+    def __init__(self, repo, config_path, provenance=None, bag_path=None):
         repo = Path(repo)
         self.repo = repo
         self.config_path = Path(config_path)
-        self.provenance_mismatches = _asset_provenance_mismatches(provenance or {})
         cfg = yaml.safe_load(self.config_path.read_text(encoding="utf-8")) or {}
         rt = cfg.get("runtime", {}); topics = cfg["topics"]
-        self.core = PemReplayCore(repo, cfg)
-        bag = Path((cfg.get("output", {}).get("pem_explorer", {}) or {}).get(
-            "source_bag") or cfg.get("bag", {}).get("path", ""))
+        bag = Path(bag_path) if bag_path is not None else Path(
+            (cfg.get("output", {}).get("pem_explorer", {}) or {}).get(
+                "source_bag") or cfg.get("bag", {}).get("path", ""))
         if not bag.is_absolute(): bag = repo / bag
+        self.provenance_mismatches = _asset_provenance_mismatches(
+            provenance or {}, bag)
+        self.core = PemReplayCore(repo, cfg)
         self.frames = BagFrameCache(bag, topics)
         self.features = OrderedDict()
         self.feature_capacity = 8
@@ -222,7 +254,16 @@ class PemLiveAnalyzer:
         K = np.asarray(row["K"], np.float32).reshape(3, 3)
         y1, y2, x1, x2 = [int(round(v)) for v in row["crop_bbox_yxyx"]]
         source = np.asarray(replay["source_pixel_index"], np.int64)
-        mask_image = cv2.imread(str(Path(run_dir) / row["mask_asset"]), cv2.IMREAD_UNCHANGED)
+        run_dir = Path(run_dir).resolve()
+        mask_relative = Path(row["mask_asset"] or "")
+        if mask_relative.is_absolute() or ".." in mask_relative.parts:
+            raise PermissionError("unsafe mask asset path")
+        mask_path = run_dir / mask_relative
+        resolved_mask = mask_path.resolve(strict=False)
+        if (mask_path.is_symlink() or not mask_path.is_file() or
+                run_dir not in resolved_mask.parents):
+            raise PermissionError("mask asset escapes the run")
+        mask_image = cv2.imread(str(mask_path), cv2.IMREAD_UNCHANGED)
         if mask_image is None:
             raise FileNotFoundError(row["mask_asset"])
         if row.get("mask_bit") is not None:
@@ -282,10 +323,12 @@ class PemLiveAnalyzer:
             geo_distance = torch.cdist(
                 transformed_geo[None], geometry_model[None]).squeeze(0).min(1).values
             geometry_score = valid.sum() / (geo_distance[valid].sum() + 1e-8)
-            transformed = (pm[0] - t) @ R
+            texture_pm, texture_fm = _strided_texture_features(
+                pm[0], fm[0], self.core.texture_stride)
+            transformed = (texture_pm - t) @ R
             nearest = torch.cdist(transformed, po[0]).argmin(1)
             similarity = torch.einsum(
-                "nd,nd->n", torch.nn.functional.normalize(fm[0], dim=1),
+                "nd,nd->n", torch.nn.functional.normalize(texture_fm, dim=1),
                 torch.nn.functional.normalize(fo[0][nearest], dim=1))
 
         cad = self.core._pts[name]._pts.astype(np.float32) / 1000.0

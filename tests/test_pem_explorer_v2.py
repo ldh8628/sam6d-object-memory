@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 
 from realtime.pem_explorer_record import (
-    CANDIDATE_BYTES, ExplorerRecorder, pack_candidates, pack_replay, read_attempt,
-    unpack_candidates,
+    CANDIDATE_BYTES, FLAG_TEXTURE_MEASURED, ExplorerRecorder, pack_candidates,
+    pack_replay, read_attempt, unpack_candidates,
 )
 from tools.serve_pem_explorer import classify_run, discover_runs, json_safe, safe_run
 
@@ -98,6 +98,25 @@ def test_one_uint16_mask_png_preserves_overlapping_object_bits(tmp_path):
     assert second[1].tolist() == [False, False, True, True]
 
 
+def test_uint16_mask_rejects_more_than_sixteen_attempts(tmp_path):
+    recorder = ExplorerRecorder(tmp_path / "too-many-mask-bits", {})
+    with pytest.raises(ValueError, match="at most 16"):
+        recorder.record_frame(
+            1, 1, 0, np.eye(3), (2, 2),
+            [{"object": f"object-{index}"} for index in range(17)],
+            np.zeros((2, 2), np.uint16))
+    recorder.close(completed=False)
+
+
+def test_missing_profile_is_preserved_as_legacy_exhaustive_metadata(tmp_path):
+    run = tmp_path / "legacy-default"
+    recorder = ExplorerRecorder(run, {})
+    recorder.close(completed=True)
+    manifest = json.loads((run / "explorer_manifest.json").read_text())
+    assert "capture_profile" not in manifest
+    assert manifest["shadow_texture_measurement"] is True
+
+
 def test_binary_reader_rejects_out_of_range_and_misaligned_ranges(tmp_path):
     run = tmp_path / "bounds"
     recorder = ExplorerRecorder(run, {})
@@ -123,7 +142,10 @@ def test_run_classification_and_hostile_paths_are_fail_closed(tmp_path):
     (incomplete / "explorer_manifest.json").write_text(json.dumps({
         "schema": "pem-explorer-v2", "completed": False}))
     complete = root / "v2"
-    recorder = ExplorerRecorder(complete, {}); recorder.close(completed=True)
+    recorder = ExplorerRecorder(complete, {}, {"capture_profile": "realtime_inference"})
+    recorder.close(completed=True)
+    (complete / "frames.jsonl").write_text("")
+    (complete / "detections.jsonl").write_text("")
     outside = tmp_path / "outside"; outside.mkdir()
     (root / "escape").symlink_to(outside, target_is_directory=True)
 
@@ -170,6 +192,83 @@ def test_source_end_and_existing_run_guards_are_fail_closed(tmp_path):
         ExplorerRecorder(run, {})
 
 
+def test_exhaustive_manifest_requires_exact_count_and_boundary_stamps(tmp_path):
+    config = {
+        "capture_profile": "exhaustive_visualization", "bag_frame_count": 2,
+        "expected_first_stamp_ns": 100, "expected_last_stamp_ns": 200,
+    }
+    run = tmp_path / "complete-full"
+    recorder = ExplorerRecorder(run, {"same_camera_reference": {"kind": "pseudo-GT"}}, config)
+    recorder.record_frame(100, 100, 0, np.eye(3), (2, 2), [], None)
+    recorder.record_frame(200, 200, 1, np.eye(3), (2, 2), [], None)
+    recorder.close(completed=True)
+    manifest = json.loads((run / "explorer_manifest.json").read_text())
+    assert manifest["completed"] is True
+    assert manifest["capture_profile"] == "exhaustive_visualization"
+    assert manifest["shadow_texture_measurement"] is True
+    assert manifest["bag_frame_count"] == manifest["frames_processed"] == 2
+    assert manifest["first_stamp_ns"] == 100
+    assert manifest["last_stamp_ns"] == 200
+
+    short = tmp_path / "short-full"
+    recorder = ExplorerRecorder(short, {}, config)
+    recorder.record_frame(100, 100, 0, np.eye(3), (2, 2), [], None)
+    recorder.close(completed=True)
+    manifest = json.loads((short / "explorer_manifest.json").read_text())
+    assert manifest["completed"] is False
+    assert manifest["completion_reason"] == "source_end_not_reached"
+
+
+def test_exhaustive_completion_rejects_unmeasured_texture_candidates(tmp_path):
+    config = {
+        "capture_profile": "exhaustive_visualization", "bag_frame_count": 1,
+        "expected_first_stamp_ns": 100, "expected_last_stamp_ns": 100,
+    }
+    payload = candidate_payload(3)
+    payload["flags"] = np.asarray(
+        [FLAG_TEXTURE_MEASURED, 0, FLAG_TEXTURE_MEASURED], np.uint16)
+    run = tmp_path / "texture-incomplete"
+    recorder = ExplorerRecorder(run, {}, config)
+    recorder.record_frame(100, 100, 0, np.eye(3), (2, 2), [{
+        "object": "Bear", "explorer_candidates": payload,
+        "explorer_replay": replay_payload(),
+    }])
+    recorder.close(completed=True)
+    manifest = json.loads((run / "explorer_manifest.json").read_text())
+    assert manifest["completed"] is False
+    assert manifest["shadow_texture_complete"] is False
+    assert manifest["completion_reason"] == "shadow_texture_incomplete"
+
+
+def test_index_preserves_final_rejected_pose_top1_stage_and_measurement_count(tmp_path):
+    payload = candidate_payload(3)
+    payload["flags"] = np.asarray([FLAG_TEXTURE_MEASURED, 0,
+                                   FLAG_TEXTURE_MEASURED], np.uint16)
+    final_pose = {"valid": True, "R": np.eye(3).tolist(),
+                  "t_mm": [1.0, 2.0, 3.0], "stage": "fine_refined"}
+    recorder = ExplorerRecorder(tmp_path / "metadata", {}, {
+        "capture_profile": "realtime_inference",
+    })
+    recorder.record_frame(1, 1, 7, np.eye(3), (2, 2), [{
+        "object": "Bear", "explorer_candidates": payload,
+        "explorer_replay": replay_payload(),
+        "decision": {"accepted": False, "selected_index300": 2,
+                     "selected_proposal6000_index": 5002,
+                     "rejection_reason": "final_texture_below_threshold"},
+        "geometry_top1_index300": 1, "geometry_top1_proposal6000": 5001,
+        "final_pose": final_pose,
+        "stage_summary": {"stage6000": {"status": "available", "present": True}},
+    }], np.ones((2, 2), np.uint16))
+    recorder.close(completed=True)
+    row = json.loads((tmp_path / "metadata" / "explorer_index.jsonl").read_text())
+    assert row["accepted"] is False
+    assert row["selected_index300"] == 2
+    assert row["geometry_top1_index300"] == 1
+    assert row["final_pose"] == final_pose
+    assert row["stage_summary"]["stage6000"]["present"] is True
+    assert row["texture_measured_count"] == 2
+
+
 def test_nonfinite_numpy_values_are_valid_json_nulls():
     safe = json_safe({"values": np.asarray([1.0, np.nan, np.inf], np.float32)})
     assert safe == {"values": [1.0, None, None]}
@@ -179,6 +278,9 @@ def test_split_launch_registers_infer_exit_handler_even_for_external_bag():
     source = Path("realtime/launch/sam6d_split.launch.py").read_text(encoding="utf-8")
     handler = "RegisterEventHandler(OnProcessExit(\n                target_action=infer"
     assert source.index(handler) < source.index("if bool(bag.get(\"play\", False))")
+
+    infer = Path("realtime/sam6d_infer.py").read_text(encoding="utf-8")
+    assert "output and diagnostic capture_profile must match exactly" in infer
 
 
 def test_replay_layout_has_no_candidate_images_or_features():

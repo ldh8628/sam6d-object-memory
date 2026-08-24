@@ -1,11 +1,7 @@
 <!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>PEM Explorer v2</title><link rel="stylesheet" href="app.css"></head>
-<body><header><h1>PEM Explorer v2</h1><p id="notice"></p></header>
-<main><aside><h2>Runs</h2><div id="runs"></div></aside><section>
-<div id="summary">왼쪽에서 run을 선택하세요.</div><div class="grid"><div id="attempts"></div><div id="candidates"></div></div>
-<div id="analysis"><h2>동적 비교</h2><p id="timing"></p><div class="analysis-grid">
-<figure><figcaption>Geometry · 196 FPS 거리</figcaption><canvas id="geometry"></canvas></figure>
-<figure><figcaption>Texture · 2,048 feature cosine</figcaption><canvas id="texture"></canvas></figure>
-<figure><figcaption>Mask · 관측/8,192 CAD 투영</figcaption><canvas id="mask" width="640" height="480"></canvas></figure>
-</div><pre id="scores"></pre></div>
-</section></main><script src="app.js"></script></body></html>
+<title>longcircle2 PEM Explorer</title><link rel="stylesheet" href="landing.css"></head>
+<body class="landing"><header><div><p class="eyebrow">SAM-6D diagnostic datasets</p><h1>longcircle2 PEM Explorer</h1></div>
+<div class="controls"><label for="dataset-select">Dataset / camera</label><select id="dataset-select"></select>
+<a id="open-report" target="_blank" rel="noopener">새 창에서 열기</a></div></header>
+<p id="landing-notice" class="notice">localhost에서 compact run과 기존 static report를 함께 탐색합니다.</p>
+<iframe id="report-frame" title="PEM dataset report"></iframe><script src="landing.js"></script></body></html>
