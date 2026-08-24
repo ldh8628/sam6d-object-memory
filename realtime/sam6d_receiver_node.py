@@ -210,7 +210,8 @@ class Receiver(Node):
     def _write_frame(self, frame, slam_context):
         with self._write_lock:
             self.fw.write(frame["rgb"], frame["depth"], frame["K"],
-                          frame["stamp_ns"], frame["recv_wall"], slam_context)
+                          frame["stamp_ns"], frame["recv_wall"], slam_context,
+                          depth_stamp_ns=frame["depth_stamp_ns"])
             self.n_written += 1
             if self._f_stat is not None:
                 self._f_stat.write(json.dumps({
@@ -230,11 +231,14 @@ class Receiver(Node):
         if depth.dtype != np.uint16:
             depth = depth.astype(np.uint16)
         stamp = rgb_msg.header.stamp.sec * 1_000_000_000 + rgb_msg.header.stamp.nanosec
+        depth_stamp = (depth_msg.header.stamp.sec * 1_000_000_000
+                       + depth_msg.header.stamp.nanosec)
         frame = {
             "rgb": np.ascontiguousarray(rgb),
             "depth": np.ascontiguousarray(depth),
             "K": self.K.copy(),
             "stamp_ns": stamp,
+            "depth_stamp_ns": depth_stamp,
             "recv_wall": time.time(),
             "queued_at": time.monotonic(),
             "deliver_ms": round((self.get_clock().now().nanoseconds - stamp) / 1e6, 1),

@@ -1,0 +1,48 @@
+# Opt-in research run for compact PEM Explorer v2 recording.
+topics:
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+  caminfo: /camera/camera/color/camera_info
+
+ism:
+  config: configs/yolo_ism_objects.yaml
+  objects: []
+
+runtime:
+  device: cuda:0
+  use_sim_time: true
+  sync_slop: 0.02
+  sync_queue: 30
+  qos_reliability: reliable
+  qos_depth: 30
+  det_score_thresh: 0.2
+  idle_exit_s: 30
+  verify:
+    enabled: true
+    mask_iou_min: 0.420998
+    texture_min_score: 0.449562
+    cluster_rotation_deg: 20
+    cluster_translation_mm: 25
+    cluster_min_occupancy: 0.5
+  pem_diagnostic:
+    enabled: true
+    # Records all 300 raw float32 candidates and replay indices. Texture is measured
+    # as a shadow channel when production verification is disabled; it never changes
+    # that mode's geometry-only winner.
+    explorer_v2:
+      enabled: true
+
+output:
+  dir: output/longcircle2_manual
+  diagnostics: true
+  pem_explorer:
+    enabled: true
+    source_bag: data/longcircle2_sam
+    max_bytes_per_attempt: 40960
+    require_source_end: true
+
+bag:
+  play: false
+  path: data/longcircle2_sam
+  rate: 1.0
+  clock: true

@@ -35,13 +35,14 @@ class FrameWriter:
         self.i[0] = 0
 
     def write(self, rgb: np.ndarray, depth: np.ndarray, K, stamp_ns: int, recv_wall: float,
-              slam_context=None):
+              slam_context=None, depth_stamp_ns=None):
         h, w = rgb.shape[:2]
         nr, nd = rgb.nbytes, depth.nbytes
         if HDR + nr + nd > self.shm.size:
             raise ValueError("공유메모리가 너무 작다")
         self.i[0] += 1                                   # 홀수 = 쓰는 중
         self.i[1], self.i[2], self.i[3] = stamp_ns, h, w
+        self.i[6] = stamp_ns if depth_stamp_ns is None else int(depth_stamp_ns)
         self.f[0] = recv_wall
         slam_context = slam_context or {}
         pose = slam_context.get("T_map_camera")
@@ -72,6 +73,7 @@ class FrameReader:
         self.i, self.f, self.K, self.map_id = _hdr(self.shm.buf)
         self.last = -1
         self.last_slam_context = None
+        self.last_depth_stamp_ns = None
 
     def read_new(self):
         """새 프레임이 있으면 (rgb, depth, K, stamp_ns, recv_wall), 없으면 None."""
@@ -79,6 +81,7 @@ class FrameReader:
         if s0 % 2 or s0 == self.last or s0 == 0:
             return None
         stamp, h, w = int(self.i[1]), int(self.i[2]), int(self.i[3])
+        depth_stamp = int(self.i[6])
         recv, K = float(self.f[0]), np.array(self.K).reshape(3, 3)
         pose_stamp, tracking_ok = int(self.i[4]), bool(self.i[5])
         pose = np.array(self.f[1:17]).reshape(4, 4)
@@ -89,6 +92,7 @@ class FrameReader:
         if int(self.i[0]) != s0:                          # 읽는 중에 덮어써졌다 → 버린다
             return None
         self.last = s0
+        self.last_depth_stamp_ns = depth_stamp
         self.last_slam_context = {
             "T_map_camera": pose,
             "pose_stamp_ns": pose_stamp,

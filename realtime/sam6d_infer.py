@@ -27,6 +27,40 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from shm_channel import FrameReader, JsonWriter          # noqa: E402
 import verify_config as VC                             # noqa: E402
 from sam6d_core import Sam6DCore, REPO                   # noqa: E402
+from pem_explorer_record import ExplorerRecorder, provenance_entry  # noqa: E402
+
+
+def _explorer_bag_path(cfg):
+    explorer = cfg.get("output", {}).get("pem_explorer", {}) or {}
+    bag_path = Path(explorer.get("source_bag") or cfg.get("bag", {}).get("path", ""))
+    if not bag_path.is_absolute():
+        bag_path = Path(REPO) / bag_path
+    return bag_path.resolve()
+
+
+def _explorer_provenance(config_path, cfg, core):
+    bag_path = _explorer_bag_path(cfg)
+    pem_dir = Path(REPO) / "sam6d_master" / "SAM-6D" / "Pose_Estimation_Model"
+    return {
+        "config": provenance_entry(config_path),
+        "bag": provenance_entry(bag_path),
+        "checkpoint": provenance_entry(pem_dir / "checkpoints" / "sam-6d-pem-base.pth"),
+        "templates": {name: provenance_entry(Path(REPO) / "assets" / "pem_templates" /
+                                               f"{name}.pt") for name in core._tem},
+        "cad": {name: provenance_entry(Path(REPO) / "assets" / "model_points" /
+                                         f"{name}.npy") for name in core._pts},
+    }
+
+
+def _public_frame_diagnostics(diagnostics):
+    """Strip raw recorder-only ndarrays from ordinary frames.jsonl."""
+    out = dict(diagnostics)
+    out["pem_candidates"] = []
+    for attempt in diagnostics.get("pem_candidates", []):
+        out["pem_candidates"].append({k: v for k, v in attempt.items()
+                                      if not k.startswith("explorer_") and k != "decision"
+                                      and k != "crop_bbox_yxyx"})
+    return out
 
 
 def main():
@@ -42,6 +76,37 @@ def main():
     if diag:
         os.makedirs(os.path.join(odir, "masks"), exist_ok=True)
 
+    explorer_cfg = dict(out.get("pem_explorer") or {})
+    if explorer_cfg.get("enabled"):
+        diagnostic_cfg = rt.get("pem_diagnostic") or {}
+        if not (diagnostic_cfg.get("enabled") and
+                (diagnostic_cfg.get("explorer_v2") or {}).get("enabled")):
+            raise SystemExit(
+                "[explorer] output.pem_explorer.enabled requires "
+                "runtime.pem_diagnostic.enabled and explorer_v2.enabled")
+        declared_bag = cfg.get("bag", {}).get("path")
+        if declared_bag:
+            declared = Path(declared_bag)
+            if not declared.is_absolute():
+                declared = Path(REPO) / declared
+            if declared.resolve() != _explorer_bag_path(cfg):
+                raise SystemExit("[explorer] source_bag and bag.path must identify the same bag")
+        sys.path.insert(0, str(Path(REPO) / "tools"))
+        from validate_rgbd_dataset import validate_rgbd_dataset
+        validation = validate_rgbd_dataset(
+            _explorer_bag_path(cfg), require_manifest=True)
+        explorer_cfg["expected_last_stamp_ns"] = validation.last_stamp_ns
+        # The split path deliberately drops stale frames. Reaching the tail therefore
+        # means reaching a small final-frame window, not necessarily decoding the exact
+        # last RGB message. Derive that window from the attested dataset instead of a
+        # wall-clock guess, while keeping it narrow enough to reject interrupted bags.
+        mean_period_ns = (max(0, validation.last_stamp_ns - validation.first_stamp_ns) //
+                          max(1, validation.pair_count - 1))
+        explorer_cfg["completion_tolerance_ns"] = max(
+            int(float(rt.get("sync_slop", 0.02)) * 1e9), 5 * mean_period_ns)
+        explorer_cfg["completion_tolerance_policy"] = (
+            "max(sync_slop,5_attested_mean_frame_periods)")
+
     core = Sam6DCore(cfg.get("ism", {}).get("config", "configs/yolo_ism_objects.yaml"),
                      cfg.get("ism", {}).get("objects", []),
                      rt.get("device", "cuda:0"), rt.get("det_score_thresh", 0.2),
@@ -55,6 +120,11 @@ def main():
         anchor_cfg.setdefault("symmetry_axes", core.verify.get("symmetry_axes", {}))
         anchor_cfg.setdefault("sym_step_deg", core.verify.get("sym_step_deg", 10))
         core.configure_anchors(slam_cfg.get("map_id", "default"), anchor_cfg)
+
+    recorder = None
+    if explorer_cfg.get("enabled"):
+        recorder = ExplorerRecorder(
+            odir, _explorer_provenance(a.config, cfg, core), explorer_cfg)
 
     # 모델이 다 올라온 뒤에야 수신 쪽이 재생을 시작하도록 신호를 남긴다
     ready = os.path.join(odir, "READY")
@@ -80,6 +150,7 @@ def main():
     t_start = time.monotonic()
     idle_since = time.time()
     got_any = False          # 첫 프레임이 오기 전에는 종료 타이머를 걸지 않는다
+    completed = False
     try:
         while True:
             got = fr.read_new()
@@ -102,9 +173,14 @@ def main():
             bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
             t_a = time.time()
             rows, ms, n_boxes, lab = core.process(
-                bgr, depth, K, want_mask=diag, slam_context=slam_context)
+                bgr, depth, K, want_mask=(diag or recorder is not None),
+                slam_context=slam_context)
             t_b = time.time()
             n_proc += 1; n_det += len(rows)
+            if recorder is not None:
+                recorder.record_frame(
+                    stamp_ns, fr.last_depth_stamp_ns, n_proc - 1, K, depth.shape,
+                    core.last_frame_diag.get("pem_candidates", []), lab)
             # bag 시각 환산: 이 프레임이 수신된 벽시계 시각을 기준점으로 삼는다(rate 1.0)
             t_start_ns = int(stamp_ns + (t_a - recv_wall) * 1e9)
             t_done_ns = int(stamp_ns + (t_b - recv_wall) * 1e9)
@@ -124,16 +200,21 @@ def main():
                                     "n_accept": len(rows), "n_boxes": n_boxes, "ms": ms,
                                     "t_start_ns": t_start_ns, "t_done_ns": t_done_ns,
                                     "objects": [r["object"] for r in rows],
-                                    "diagnostics": core.last_frame_diag},
+                                    "diagnostics": _public_frame_diagnostics(
+                                        core.last_frame_diag)},
                                    ensure_ascii=False) + "\n")
             f_det.flush(); f_frm.flush()
-            if lab is not None and rows:
+            # ExplorerRecorder owns its one label PNG per attempted frame. Preserve
+            # the legacy diagnostics contract outside Explorer without double-writing.
+            if recorder is None and lab is not None and rows:
                 cv2.imwrite(os.path.join(odir, "masks", f"{stamp_ns}.png"), lab)
             print(f"#{n_proc-1} {len(rows)}개 ({', '.join(r['object'] for r in rows) or '-'})  "
                   f"{ms['total']}ms [yolo {ms['yolo']} / ism {ms['ism']} / pem {ms['pem']}]",
                   flush=True)
+        completed = True
     except KeyboardInterrupt:
-        pass
+        # A manually interrupted run is intentionally discoverable as incomplete.
+        completed = False
     finally:
         el = max(1e-6, time.monotonic() - t_start)
         summary = {"frames_processed": n_proc, "detections": n_det,
@@ -143,6 +224,8 @@ def main():
         json.dump(meta, open(os.path.join(odir, "run_meta.json"), "w"),
                   indent=1, ensure_ascii=False)
         f_det.close(); f_frm.close(); fr.close(); jw.close()
+        if recorder is not None:
+            recorder.close(completed=completed)
         try:
             os.remove(ready)
         except OSError:

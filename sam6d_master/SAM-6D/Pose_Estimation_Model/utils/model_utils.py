@@ -758,6 +758,69 @@ def _pointwise_evidence(pm, fm, cm, po, fo, co, nn, texture_distance, rgb_choose
     return rows
 
 
+def _attach_explorer_v2(info, pred_rs, physical_t, geo_scores, texture_scores,
+                        shape, appe, decisions, selected):
+    """Expose lossless arrays only to the compact Explorer recorder."""
+    enabled = ((appe.get('diagnostic') or {}).get('explorer_v2') or {}).get('enabled')
+    if info is None or not enabled:
+        return
+    B, P = geo_scores.shape
+    proposal_ids = appe.get('_proposal_ids')
+    payloads = []
+    for b in range(B):
+        rank_geo = torch.empty(P, dtype=torch.long, device=geo_scores.device)
+        rank_geo[torch.argsort(geo_scores[b], descending=True, stable=True)] = torch.arange(
+            P, device=geo_scores.device)
+        rank_texture = torch.empty(P, dtype=torch.long, device=geo_scores.device)
+        rank_texture[torch.argsort(torch.nan_to_num(texture_scores[b], nan=float('-inf')),
+                                   descending=True, stable=True)] = torch.arange(
+            P, device=geo_scores.device)
+        R, t = pred_rs[b], physical_t[b]
+        flags = torch.zeros(P, dtype=torch.int32, device=geo_scores.device)
+        pose_valid = (torch.isfinite(R).flatten(1).all(1) & torch.isfinite(t).all(1)
+                      & torch.isfinite(geo_scores[b]) & (torch.linalg.det(R) > 0.99))
+        flags |= pose_valid.int()
+        if shape is not None:
+            flags |= shape['projection_valid'][b].int() * 2
+        decision = decisions[b] if decisions else None
+        if decision:
+            for row in decision.get('candidates', []):
+                original = int(row['index300'])
+                flags[original] |= (4 if row.get('mask_pass') else 0)
+                flags[original] |= (8 if row.get('texture_pass') else 0)
+                flags[original] |= (16 if row.get('cluster_member') else 0)
+            if decision.get('accepted') and decision.get('selected_index300') is not None:
+                flags[int(decision['selected_index300'])] |= 32
+        else:
+            flags[int(selected[b].item())] |= 32
+        nan = torch.full((P,), float('nan'), device=geo_scores.device)
+        payloads.append({
+            'R': R.detach().cpu().numpy(), 't_m': t.detach().cpu().numpy(),
+            'geometry': geo_scores[b].detach().cpu().numpy(),
+            'mask_iou': (nan if shape is None else shape['mask_iou'][b]).detach().cpu().numpy(),
+            'texture': texture_scores[b].detach().cpu().numpy(),
+            'coverage': (nan if shape is None else shape['coverage'][b]).detach().cpu().numpy(),
+            'size_ratio': (nan if shape is None else shape['size_ratio'][b]).detach().cpu().numpy(),
+            'proposal6000': ((torch.arange(P, device=R.device) if proposal_ids is None
+                              else proposal_ids[b]).detach().cpu().numpy()),
+            'index300': np.arange(P, dtype=np.uint16),
+            'rank_geo': rank_geo.detach().cpu().numpy(),
+            'rank_texture': rank_texture.detach().cpu().numpy(),
+            'flags': flags.detach().cpu().numpy(),
+            'replay': {
+                'source_pixel_index': appe['source_pixel_index'][b].detach().cpu().numpy(),
+                'coarse_fps_index': appe['coarse_fps_idx'][b].detach().cpu().numpy(),
+                'coarse_valid': appe['_geo_point_valid'][b].detach().cpu().numpy(),
+                'cad_sample_index': appe['cad_sample_index'][b].detach().cpu().numpy(),
+            },
+            'crop_bbox_yxyx': (appe['crop_bbox_yxyx'][b].detach().cpu().numpy()
+                               if appe.get('crop_bbox_yxyx') is not None else []),
+            'decision': decision or {'accepted': True,
+                                     'selected_index300': int(selected[b].item())},
+        })
+    info['pem_explorer'] = payloads
+
+
 def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
     """Measure all candidates and, when enabled, apply the production filter chain."""
     B, P = geo_scores.shape
@@ -767,8 +830,10 @@ def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
     diag = appe.get('diagnostic') or {}
     analysis_cfg = diag.get('score_analysis') or {}
     analysis_on = bool(diag.get('enabled') and analysis_cfg.get('enabled'))
+    explorer_on = bool(diag.get('enabled') and
+                       (diag.get('explorer_v2') or {}).get('enabled'))
     production_on = bool(ver.get('enabled', False))
-    measured_count = P if (analysis_on or production_on) else topk
+    measured_count = P if (analysis_on or explorer_on or production_on) else topk
     dump = max(int(ver.get('dump_topk', 0)), int(diag.get('topn', 0)))
     diag_topn = max(0, int(diag.get('topn', 0))) if diag.get('enabled') else 0
     diag_stride = max(1, int(diag.get('evidence_stride', 8)))
@@ -791,6 +856,9 @@ def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
             mask_pass = (pose_valid & shape['projection_valid'][b]
                          & torch.isfinite(shape['mask_iou'][b])
                          & (shape['mask_iou'][b] >= mask_min))
+            # Keep the production candidate set and chunk boundaries byte-for-byte
+            # identical. Explorer-only candidates are measured in a second pass after
+            # the authoritative selection below.
             candidates = torch.where(mask_pass)[0]
             if not candidates.numel():
                 continue
@@ -812,6 +880,31 @@ def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
         selected, rows = sequential_candidate_select(
             pred_rs, physical_t, geo_scores, texture_by_original, shape,
             appe.get('names') or [None] * B, ver, appe.get('_proposal_ids'))
+        if explorer_on:
+            texture_chunk = max(1, int(ver.get('texture_chunk', 16)))
+            for b in range(B):
+                R_all, t_all = pred_rs[b], pred_ts[b]
+                pose_valid = (torch.isfinite(R_all).flatten(1).all(1)
+                              & torch.isfinite(t_all).flatten(1).all(1)
+                              & torch.isfinite(geo_scores[b])
+                              & (torch.linalg.det(R_all) > 0.99))
+                missing = torch.where(pose_valid & ~torch.isfinite(texture_by_original[b]))[0]
+                if not missing.numel():
+                    continue
+                pm = appe['dense_pm'][b][::stride]
+                fm = F.normalize(appe['dense_fm'][b][::stride], dim=1)
+                po = appe['dense_po'][b]
+                fo = F.normalize(appe['dense_fo'][b], dim=1)
+                for subset in missing.split(texture_chunk):
+                    obj = torch.einsum(
+                        'kji,knj->kni', R_all[subset],
+                        pm.unsqueeze(0) - t_all[subset].reshape(-1, 1, 3))
+                    nearest = torch.cdist(
+                        obj, po.unsqueeze(0).expand(obj.size(0), -1, -1)).argmin(2)
+                    texture_by_original[b, subset] = torch.einsum(
+                        'nd,knd->kn', fm, fo[nearest]).mean(1)
+        _attach_explorer_v2(info, pred_rs, physical_t, geo_scores,
+                            texture_by_original, shape, appe, rows, selected)
         for b, decision in enumerate(rows):
             if shape is not None:
                 decision['shape_mask'] = {
@@ -1159,6 +1252,11 @@ def independent_candidate_verify(pred_rs, pred_ts, geo_scores, appe, info=None):
             info['score_analysis'] = [
                 {**existing[b], 'stage300': analysis_rows[b]} for b in range(B)
             ]
+        physical_t = pred_ts.clone()
+        if radius is not None:
+            physical_t = physical_t * radius.reshape(-1, 1, 1)
+        _attach_explorer_v2(info, pred_rs, physical_t, geo_scores,
+                            texture_by_original, shape, appe, None, selected)
     return selected
 
 

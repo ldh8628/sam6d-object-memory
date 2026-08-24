@@ -60,6 +60,8 @@ class Sam6DCore:
         self.appe_cfg, self.verify = build_appe_cfg(rt)
         self.verify = self.verify or {}
         self.pem_diagnostic = dict(pem_diagnostic or {})
+        self.pem_explorer_v2 = bool(
+            ((self.pem_diagnostic.get("explorer_v2") or {}).get("enabled")))
         if self.pem_diagnostic.get("enabled"):
             # 진단은 후보 재정렬의 중간값을 계측한다. opt-in일 때만 설정을 복사해
             # 모델에 전달하므로 기본 실행의 연산/선택 순서는 그대로다.
@@ -153,11 +155,17 @@ class Sam6DCore:
             model=self.pem, filename=os.path.join(PEM_DIR, "checkpoints", "sam-6d-pem-base.pth"))
 
         class _Stub:
-            def __init__(s, pts): s._pts = pts
+            def __init__(s, pts):
+                s._pts = pts
+                s.last_sample_indices = None
             def sample(s, n):
                 if n == len(s._pts):
+                    s.last_sample_indices = np.arange(len(s._pts), dtype=np.int64)
                     return s._pts
-                return s._pts[np.random.choice(len(s._pts), n, replace=(n > len(s._pts)))]
+                # Preserve the historical RNG call and expose only its integer indices.
+                s.last_sample_indices = np.random.choice(
+                    len(s._pts), n, replace=(n > len(s._pts)))
+                return s._pts[s.last_sample_indices]
 
         pts_dir = os.path.join(REPO, "assets", "model_points")
         tem_dir = os.path.join(REPO, "assets", "pem_templates")
@@ -251,7 +259,9 @@ class Sam6DCore:
                 })
             try:
                 inp, mpts_list, used = self.ric.get_instance_data(
-                    frame, None, dets, self.det_thresh, self.pcfg.test_dataset)
+                    frame, None, dets, self.det_thresh, self.pcfg.test_dataset,
+                    record_replay=bool(((self.pem_diagnostic.get("explorer_v2") or {})
+                                        .get("enabled"))))
                 names = [d["cad"] for d in used]
                 if self.pem_diagnostic.get("enabled"):
                     refs = diagnostic_references or {}
@@ -285,12 +295,26 @@ class Sam6DCore:
                 Rs = out["pred_R"].detach().cpu().numpy()
                 ts = out["pred_t"].detach().cpu().numpy() * 1000.0
                 vfs = out.get("verify") or [None] * len(names)
+                explorer_payloads = out.get("pem_explorer") or [None] * len(names)
                 pds = out.get("pem_diagnostic") or [None] * len(names)
                 score_analysis = out.get("pem_score_analysis") or [None] * len(names)
                 by = dict(hits)
                 for j, nm in enumerate(names):
                     r = by[nm]
                     verification = dict(vfs[j] or {})
+                    explorer_payload = explorer_payloads[j]
+                    if explorer_payload is not None:
+                        for candidate_diag in self.last_frame_diag["pem_candidates"]:
+                            if candidate_diag["object"] == nm:
+                                candidate_diag.update({
+                                    "crop_bbox_yxyx": explorer_payload.get(
+                                        "crop_bbox_yxyx", []),
+                                    "decision": explorer_payload.get(
+                                        "decision", verification),
+                                    "explorer_candidates": explorer_payload,
+                                    "explorer_replay": explorer_payload.get("replay"),
+                                })
+                                break
                     shadows.append({
                         "object": nm, "R": Rs[j], "t_mm": ts[j],
                         "score": float(ps[j]), "verify": verification, "ism": r,
@@ -361,9 +385,16 @@ class Sam6DCore:
                 self.last_frame_diag["pem_error"] = f"{type(e).__name__}: {e}"
                 self.log(f"PEM 건너뜀: {type(e).__name__}: {e}")
             if want_mask:
-                lab = np.zeros((h, w), np.uint8)
+                # Explorer uses one uint16 bitset PNG per frame so overlapping object
+                # masks remain lossless. Legacy diagnostics keep their uint8 labels.
+                if self.pem_explorer_v2 and len(hits) > 16:
+                    raise ValueError("Explorer uint16 mask supports at most 16 objects")
+                lab = np.zeros((h, w), np.uint16 if self.pem_explorer_v2 else np.uint8)
                 for i, (nm, r) in enumerate(hits):
-                    lab[r["mask"].astype(bool)] = i + 1
+                    if self.pem_explorer_v2:
+                        lab[r["mask"].astype(bool)] |= np.uint16(1 << i)
+                    else:
+                        lab[r["mask"].astype(bool)] = i + 1
         if self.anchor_manager is not None:
             rows = self._apply_anchors(
                 rows, shadows, hits, depth, K, (h, w), slam_context)

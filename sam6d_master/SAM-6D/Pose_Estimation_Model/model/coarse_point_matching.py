@@ -82,6 +82,8 @@ class CoarsePointMatching(nn.Module):
                 end_points['pem_diagnostic'] = info['diagnostic']
             if 'score_analysis' in info:
                 end_points['pem_score_analysis'] = info['score_analysis']
+            if 'pem_explorer' in info:
+                end_points['pem_explorer'] = info['pem_explorer']
         end_points['init_R'] = init_R
         end_points['init_t'] = init_t
 

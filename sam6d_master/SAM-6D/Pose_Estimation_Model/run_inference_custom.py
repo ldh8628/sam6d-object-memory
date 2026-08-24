@@ -197,7 +197,19 @@ def prepare_frame(rgb, depth, K, depth_scale=1.0):
             'pts': get_point_cloud_from_depth(whole_depth, K), 'K': K}
 
 
-def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
+def global_pixel_indices(crop_indices, bbox_yxyx, image_width):
+    """Map flattened crop indices to lossless flattened full-frame indices."""
+    y1, y2, x1, x2 = [int(value) for value in bbox_yxyx]
+    del y2
+    crop_indices = np.asarray(crop_indices, dtype=np.int64)
+    crop_width = x2 - x1
+    if crop_width <= 0:
+        raise ValueError("crop width must be positive")
+    return ((crop_indices // crop_width + y1) * int(image_width)
+            + (crop_indices % crop_width + x1))
+
+
+def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg, record_replay=False):
     """준비된 프레임(prepare_frame 결과)에서 인스턴스별 PEM 입력을 만든다.
 
     det 은 파일에서 읽은 dict 그대로도 되고, 메모리의 마스크를 실어 보내도 된다
@@ -216,11 +228,14 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
     if not per_det_cad:
         mesh = trimesh.load_mesh(cad_path)
         model_points = mesh.sample(cfg.n_sample_model_point).astype(np.float32) / 1000.0
+        model_point_index = getattr(mesh, "last_sample_indices", None)
         projection_model_points = _projection_surface_points(mesh)
         radius = np.max(np.linalg.norm(model_points, axis=1))
 
 
     all_model = []
+    all_model_index = []
+    all_source_pixel_index = []
     all_projection_model = []
     all_rgb = []
     all_cloud = []
@@ -233,6 +248,7 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
         if per_det_cad:
             mesh = trimesh.load_mesh(inst['cad'])
             model_points = mesh.sample(cfg.n_sample_model_point).astype(np.float32) / 1000.0
+            model_point_index = getattr(mesh, "last_sample_indices", None)
             # Keep the original 8192 CAD surface samples for silhouette projection.
             # Geometry scoring continues to use the unchanged 1024-point sample above.
             projection_model_points = _projection_surface_points(mesh)
@@ -300,6 +316,14 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
             choose_idx = np.random.choice(np.arange(len(choose)), cfg.n_sample_observed_point, replace=False)
         choose = choose[choose_idx]
         cloud = cloud[choose_idx]
+        # Explorer v2 stores these compact indices, not the observed cloud or RGB/features.
+        # Keeping them on the model input is an opt-in-neutral metadata operation: the
+        # sampling calls and their order above are unchanged.
+        if record_replay:
+            source_pixel_index = global_pixel_indices(
+                choose, [y1, y2, x1, x2], whole_image.shape[1])
+        else:
+            source_pixel_index = None
 
         # rgb
         rgb = whole_image.copy()[y1:y2, x1:x2, :][:,:,::-1]
@@ -315,6 +339,11 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
         all_score.append(score)
         all_dets.append(inst)
         all_model.append(model_points)
+        if record_replay:
+            all_model_index.append(
+                np.arange(len(model_points), dtype=np.int64)
+                if model_point_index is None else np.asarray(model_point_index, dtype=np.int64))
+            all_source_pixel_index.append(source_pixel_index)
         if per_det_cad:
             all_projection_model.append(projection_model_points)
 
@@ -330,6 +359,13 @@ def get_instance_data(frame, cad_path, dets, det_score_thresh, cfg):
     ret_dict['shape_mask'] = torch.stack(all_shape_mask).to(DEVICE)
     ret_dict['crop_bbox_yxyx'] = torch.stack(all_crop_bbox).to(DEVICE)
     ret_dict['score'] = torch.FloatTensor(all_score).to(DEVICE)
+    if record_replay:
+        ret_dict['source_pixel_index'] = torch.stack([
+            torch.from_numpy(v.astype(np.int64, copy=False)) for v in all_source_pixel_index
+        ]).to(DEVICE)
+        ret_dict['cad_sample_index'] = torch.stack([
+            torch.from_numpy(v.astype(np.int64, copy=False)) for v in all_model_index
+        ]).to(DEVICE)
 
     ninstance = ret_dict['pts'].size(0)
     if per_det_cad:

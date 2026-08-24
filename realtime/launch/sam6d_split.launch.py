@@ -39,6 +39,18 @@ def _setup(context, *args, **kwargs):
         raise RuntimeError(f"설정 파일이 없다: {cfg_path}")
     cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
     out_dir = _abs(cfg.get("output", {}).get("dir", "output/rt_split"))
+    explorer_on = bool((cfg.get("output", {}).get("pem_explorer") or {}).get("enabled"))
+    if explorer_on and out_dir.exists():
+        protected = (
+            "explorer_manifest.json", "explorer_index.jsonl", "candidates.bin",
+            "replay.bin", "detections.jsonl", "frames.jsonl", "run_meta.json",
+            "receiver.jsonl", "masks",
+        )
+        existing = [name for name in protected if (out_dir / name).exists()]
+        if existing:
+            raise RuntimeError(
+                f"Explorer output already contains run data; refusing replacement: "
+                f"{out_dir} ({', '.join(existing)})")
     out_dir.mkdir(parents=True, exist_ok=True)
     ready = out_dir / "READY"
     try:
@@ -54,7 +66,12 @@ def _setup(context, *args, **kwargs):
         cmd=[sys.executable, str(REPO / "realtime" / "sam6d_infer.py"),
              "--config", str(cfg_path)],
         cwd=str(out_dir), output="screen", sigterm_timeout="30")
-    acts = [recv, infer]
+    # External bag playback (bag.play:false) still relies on inference idle_exit_s.
+    # Always propagate a clean inference exit to the whole launch so the receiver is
+    # not left running after the compact recorder has finalized its manifest.
+    acts = [RegisterEventHandler(OnProcessExit(
+                target_action=infer, on_exit=[EmitEvent(event=Shutdown())])),
+            recv, infer]
 
     bag = cfg.get("bag", {}) or {}
     if bool(bag.get("play", False)):
@@ -73,10 +90,7 @@ def _setup(context, *args, **kwargs):
         player = ExecuteProcess(cmd=play, output="screen")
         acts += [gate,
                  RegisterEventHandler(OnProcessExit(target_action=gate,
-                                                    on_exit=[player])),
-                 # 추론 프로세스는 입력이 끊기면 스스로 끝난다(idle_exit_s) → 그때 전체 종료
-                 RegisterEventHandler(OnProcessExit(target_action=infer,
-                                                    on_exit=[EmitEvent(event=Shutdown())]))]
+                                                    on_exit=[player]))]
     return acts
 
 

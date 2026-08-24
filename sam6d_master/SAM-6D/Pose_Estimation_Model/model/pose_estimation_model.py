@@ -39,6 +39,10 @@ class Net(nn.Module):
                 for key in ('diagnostic_ref_R', 'diagnostic_ref_t', 'diagnostic_ref_valid'):
                     if end_points.get(key) is not None:
                         d[key] = end_points[key]
+                if (diag.get('explorer_v2') or {}).get('enabled'):
+                    for key in ('source_pixel_index', 'cad_sample_index'):
+                        if end_points.get(key) is not None:
+                            d[key] = end_points[key]
             # 원색(RGB) 진단 채널. 모델 쪽 색은 템플릿 캐시가 들고 오고(dense_co),
             # 관측 쪽 색은 이미 들어와 있는 crop 을 정규화만 되돌려 그 자리에서 뽑는다
             # (추가 자산·추가 이미지 로드 없음).
