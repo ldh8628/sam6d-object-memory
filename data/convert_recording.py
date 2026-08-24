@@ -183,7 +183,10 @@ def main():
     def make_cinfo(stamp):
         ci = CameraInfo(); ci.header.stamp = stamp; ci.header.frame_id = 'camera_color_optical_frame'
         ci.width = W; ci.height = H; ci.distortion_model = 'plumb_bob'
-        ci.d = [0.0]*5
+        # 실제 계수를 싣는다. 'plumb_bob' 은 같은 5계수 모델의 ROS 이름이고,
+        # align() 이 이미 이 계수로 depth 를 왜곡된 color 격자에 얹었으므로
+        # 소비자가 이 값으로 undistort 하면 depth 와 어긋난다는 점에 주의.
+        ci.d = [float(x) for x in kc]
         ci.k = [fxc, 0.0, ppxc, 0.0, fyc, ppyc, 0.0, 0.0, 1.0]
         ci.r = [1.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 1.0]
         ci.p = [fxc, 0.0, ppxc, 0.0, 0.0, fyc, ppyc, 0.0, 0.0, 0.0, 1.0, 0.0]
@@ -201,6 +204,28 @@ def main():
             continue
         cw, ch, cenc, cbytes = read_image_msg(cm[0])
         dw, dh, denc, dbytes = read_image_msg(dm[0])
+
+        # --- 입력 검증 (첫 프레임에서 한 번) ---------------------------------
+        # 예전에는 cenc/denc 를 파싱해놓고 버린 뒤 무조건 'bgr8' 로 단정했다.
+        # rgb8 이 들어오면 R/B 가 뒤바뀐 채 아무도 눈치채지 못한 채 통과한다.
+        if n == 0:
+            if cenc not in ('bgr8', 'rgb8'):
+                print(f"color 인코딩이 bgr8/rgb8 이 아니다: {cenc!r} — 중단"); sys.exit(1)
+            if denc not in ('mono16', '16UC1'):
+                print(f"depth 인코딩이 16bit 가 아니다: {denc!r} — 중단"); sys.exit(1)
+            if (cw, ch) != (W, H):
+                print(f"color 이미지 {cw}x{ch} != camera_info {W}x{H} — 중단"); sys.exit(1)
+            if (dw, dh) != (W, H):
+                print(f"depth {dw}x{dh} != color {W}x{H} — 중단 "
+                      f"(정렬 격자가 color 해상도로 만들어져 있다)"); sys.exit(1)
+            print(f"[{name}] 입력 검증 OK: color={cenc} depth={denc} {W}x{H}")
+        if len(cbytes) != cw*ch*3:
+            print(f"color 바이트 수 이상: {len(cbytes)} != {cw*ch*3} (frame {i}) — 중단")
+            sys.exit(1)
+        if len(dbytes) != dw*dh*2:
+            print(f"depth 바이트 수 이상: {len(dbytes)} != {dw*dh*2} (frame {i}) — 중단")
+            sys.exit(1)
+
         depth = np.frombuffer(dbytes, dtype=np.uint16).reshape(dh, dw)
         aligned = align(depth)
 
@@ -210,7 +235,11 @@ def main():
 
         cimg = Image(); cimg.header.stamp = stamp; cimg.header.frame_id = 'camera_color_optical_frame'
         cimg.height = ch; cimg.width = cw; cimg.encoding = 'bgr8'; cimg.is_bigendian = 0
-        cimg.step = cw*3; cimg.data = bytes(cbytes)
+        cimg.step = cw*3
+        if cenc == 'rgb8':                       # 선언과 실제를 맞춘다
+            cimg.data = np.frombuffer(cbytes, np.uint8).reshape(ch, cw, 3)[:, :, ::-1].tobytes()
+        else:
+            cimg.data = bytes(cbytes)
 
         dimg = Image(); dimg.header.stamp = stamp; dimg.header.frame_id = 'camera_color_optical_frame'
         dimg.height = H; dimg.width = W; dimg.encoding = '16UC1'; dimg.is_bigendian = 0
@@ -225,7 +254,41 @@ def main():
             print(f"  wrote {n} frames...")
     del writer
     con.close()
+
+    # 변환 조건을 bag 옆에 남긴다. 예전에는 stride/offset/time-source 가 어디에도
+    # 기록되지 않아 잘린 bag 과 전체 bag 을 구분할 방법이 없었다.
+    info = {
+        'source': os.path.abspath(rec),
+        'db3': os.path.basename(db),
+        'frames_written': n,
+        'associations': len(assoc),
+        'stride': args.stride,
+        'max': args.max,
+        'time_source': args.time_source,
+        'offset_ns': args.offset_ns,
+        'color_size': [W, H],
+        'color_encoding': cenc if n else None,
+        'depth_encoding': denc if n else None,
+        'depth_units': depth_units,
+        'baseline_depth_to_color_m': float(t_d2c[0]),
+        'K': [fxc, 0.0, ppxc, 0.0, fyc, ppyc, 0.0, 0.0, 1.0],
+        'D': [float(x) for x in kc],
+        'distortion_model_source': 'Inverse Brown Conrady',
+        'topics': [T_COLOR, T_DEPTH, T_CINFO, T_DINFO],
+    }
+    with open(os.path.join(args.out_bag, 'conversion_info.json'), 'w') as f:
+        json.dump(info, f, indent=1)
+
+    expected = len(range(0, len(assoc), args.stride))
+    if args.max:
+        expected = min(expected, args.max)
+    if n == 0:
+        print(f"[{name}] 프레임을 하나도 쓰지 못했다 — 실패"); sys.exit(1)
+    if n < expected:
+        print(f"[{name}] 경고: {expected - n} 프레임이 누락됐다 ({n}/{expected})")
     print(f"[{name}] DONE: {n} synchronized aligned RGB-D frames -> {args.out_bag}")
+    print(f"[{name}] baseline(depth->color) = {t_d2c[0]:+.6f} m | D = "
+          + ', '.join(f'{x:+.6f}' for x in kc))
 
 
 if __name__ == '__main__':
