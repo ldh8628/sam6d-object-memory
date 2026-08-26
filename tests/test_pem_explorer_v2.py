@@ -283,6 +283,18 @@ def test_split_launch_registers_infer_exit_handler_even_for_external_bag():
     assert "output and diagnostic capture_profile must match exactly" in infer
 
 
+def test_all_frames_launch_is_one_sequential_capture_and_propagates_failure():
+    source = Path("realtime/launch/all_frames_sam6d.launch.py").read_text(
+        encoding="utf-8")
+    assert source.count("ExecuteProcess(") == 1
+    assert '"tools" / "capture_pem_explorer.py"' in source
+    assert '"--config", LaunchConfiguration("config")' in source
+    assert "if event.returncode:" in source
+    assert "raise RuntimeError" in source
+    for forbidden in ("sam6d_receiver_node.py", "shm_channel", "ros2", "bag", "--rate"):
+        assert forbidden not in source
+
+
 def test_replay_layout_has_no_candidate_images_or_features():
     blob = pack_replay(replay_payload())
     assert len(blob) == 2048 * 4 + 196 * 2 + (196 + 7) // 8 + 1024 * 2

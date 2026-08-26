@@ -15,9 +15,9 @@ runtime:
     enabled: true
     mask_iou_min: 0.420998
     texture_min_score: 0.449562
-    cluster_rotation_deg: 20
-    cluster_translation_mm: 25
-    cluster_min_occupancy: 0.5
+    cluster_rotation_deg: 30
+    cluster_translation_mm: 50
+    cluster_min_occupancy: 0.45
   pem_diagnostic:
     enabled: true
     rotation_threshold_deg: 30

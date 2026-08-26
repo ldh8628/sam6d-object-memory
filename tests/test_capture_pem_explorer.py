@@ -1,5 +1,6 @@
 import importlib.util
 from pathlib import Path
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -34,11 +35,10 @@ def capture_config(output, bag, profile="exhaustive_visualization"):
 
 def test_full_config_is_fixed_profile_and_existing_output_fails_before_model(tmp_path,
                                                                             monkeypatch):
-    output = tmp_path / "longcircle2_visualization"
+    output = tmp_path / "output" / "longcircle2_visualization"
     bag = tmp_path / "data" / "bag"; bag.mkdir(parents=True)
     config_path = tmp_path / "full.yaml"
     config_path.write_text(yaml.safe_dump(capture_config(output, bag)), encoding="utf-8")
-    monkeypatch.setattr(MOD, "FIXED_OUTPUT", output)
     monkeypatch.setattr(MOD, "REPO", tmp_path)
     cfg, explorer, resolved_output, resolved_bag, resolved_config = MOD.load_capture_config(
         config_path)
@@ -49,18 +49,17 @@ def test_full_config_is_fixed_profile_and_existing_output_fails_before_model(tmp
     assert resolved_bag == bag.resolve()
     assert resolved_config == config_path.resolve()
 
-    output.mkdir()
+    output.mkdir(parents=True)
     with pytest.raises(FileExistsError, match="refusing to replace"):
         MOD.capture(config_path)
 
 
 @pytest.mark.parametrize("mutation", ["output_profile", "diagnostic_profile", "output_path"])
-def test_capture_config_rejects_non_exhaustive_or_nonfixed_contract(tmp_path, monkeypatch,
-                                                                    mutation):
-    output = tmp_path / "expected"
+def test_capture_config_rejects_non_exhaustive_or_external_output(tmp_path, monkeypatch,
+                                                                  mutation):
+    output = tmp_path / "output" / "expected"
     bag = tmp_path / "data" / "bag"; bag.mkdir(parents=True)
     cfg = capture_config(output, bag)
-    monkeypatch.setattr(MOD, "FIXED_OUTPUT", output)
     monkeypatch.setattr(MOD, "REPO", tmp_path)
     if mutation == "output_profile":
         cfg["output"]["pem_explorer"]["capture_profile"] = "realtime_inference"
@@ -102,3 +101,31 @@ def test_public_frame_diagnostics_never_serializes_candidate_arrays():
     assert public["pem_candidates"] == [{
         "object": "Bear", "bbox": [1, 2, 3, 4], "final_pose": {"valid": False},
     }]
+
+
+def test_rosbags_image_decoder_handles_bgr_and_uint16_depth():
+    bgr = np.arange(18, dtype=np.uint8).reshape(2, 3, 3)
+    depth = np.arange(6, dtype=np.uint16).reshape(2, 3)
+    color_msg = SimpleNamespace(height=2, width=3, step=9, encoding="bgr8",
+                                is_bigendian=0, data=bgr.reshape(-1))
+    depth_msg = SimpleNamespace(height=2, width=3, step=6, encoding="16UC1",
+                                is_bigendian=0, data=depth.view(np.uint8).reshape(-1))
+    assert np.array_equal(MOD._decode_image(color_msg, "color"), bgr)
+    assert np.array_equal(MOD._decode_image(depth_msg, "depth"), depth)
+
+
+def test_preview_writer_creates_all_intra_h264_and_rejects_count_mismatch(tmp_path):
+    writer = MOD.PreviewWriter(tmp_path / "preview.mp4", 64, 48, 29.4928449)
+    for value in (0, 80, 160):
+        writer.write(np.full((48, 64, 3), value, np.uint8))
+    metadata = writer.close(expected_count=3)
+    assert metadata["codec"] == "h264"
+    assert metadata["all_intra"] is True
+    assert metadata["frame_count"] == 3
+    assert metadata["width"] == 64 and metadata["height"] == 48
+    assert len(metadata["sha256"]) == 64
+
+    short = MOD.PreviewWriter(tmp_path / "short.mp4", 64, 48, 30.0)
+    short.write(np.zeros((48, 64, 3), np.uint8))
+    with pytest.raises(MOD.CaptureError, match="received 1 frames, expected 2"):
+        short.close(expected_count=2)

@@ -11,6 +11,7 @@ import statistics
 import sys
 import threading
 from collections import defaultdict, deque
+from functools import lru_cache
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path, PurePosixPath
@@ -23,7 +24,7 @@ REPO = Path(__file__).resolve().parents[1]
 DATA_ROOT = (REPO / "data").resolve()
 sys.path.insert(0, str(REPO / "realtime"))
 from pem_explorer_record import (  # noqa: E402
-    CANDIDATE_BYTES, FLAG_TEXTURE_MEASURED, SCHEMA, read_attempt,
+    CANDIDATE_BYTES, FLAG_TEXTURE_MEASURED, SCHEMA, read_attempt, sha256_file,
 )
 
 STATIC = Path(__file__).resolve().parent / "pem_explorer_live"
@@ -83,31 +84,50 @@ def classify_run(path):
         if (manifest.get("schema") != SCHEMA or manifest.get("schema_version") != 2 or
                 manifest.get("candidate_record_bytes") != CANDIDATE_BYTES):
             return {"kind": "incomplete", "reason": "unsupported explorer schema"}
-        required = ("explorer_index.jsonl", "candidates.bin", "replay.bin")
-        if (not manifest.get("completed") or
-                any(not (path / name).is_file() or (path / name).is_symlink()
-                    for name in required)):
-            return {"kind": "incomplete",
-                    "reason": "run is not finalized; rerun the capture from the start",
-                    "manifest": manifest}
-        try:
-            expected = int(manifest.get("candidate_count", -1)) * CANDIDATE_BYTES
-        except (TypeError, ValueError):
-            expected = -1
-        if expected < 0 or (path / "candidates.bin").stat().st_size != expected:
-            return {"kind": "incomplete", "reason": "candidate binary size mismatch",
-                    "manifest": manifest}
-        try:
-            _validate_completed_v2(path, manifest)
-        except (OSError, ValueError, KeyError, TypeError, PermissionError) as exc:
-            return {"kind": "incomplete", "reason": f"invalid completed run: {exc}",
-                    "manifest": manifest}
-        return {"kind": "explorer_v2", "manifest": manifest}
+        if manifest.get("completed"):
+            return _classify_completed_run(path.resolve(), manifest_path.stat().st_mtime_ns)
+        return {"kind": "incomplete",
+                "reason": "run is not finalized; rerun the capture from the start",
+                "manifest": manifest}
     if (path / "detections.jsonl").is_file():
         return {"kind": "partial", "reason": "300개 후보 정보 미수집"}
     if (path / "index.html").is_file():
         return {"kind": "legacy", "url": f"/legacy/{path.name}/index.html"}
     return {"kind": "unknown", "reason": "recognized result files not found"}
+
+
+@lru_cache(maxsize=None)
+def _classify_completed_run(path, _manifest_mtime_ns):
+    """Completed runs are immutable; validate each directory once per server process."""
+    path = Path(path)
+    try:
+        manifest = json.loads((path / "explorer_manifest.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return {"kind": "incomplete", "reason": f"invalid manifest: {exc}"}
+    required = ("explorer_index.jsonl", "candidates.bin", "replay.bin")
+    if (manifest.get("schema") != SCHEMA or manifest.get("schema_version") != 2 or
+            manifest.get("candidate_record_bytes") != CANDIDATE_BYTES or
+            not manifest.get("completed")):
+        return {"kind": "incomplete", "reason": "unsupported explorer schema",
+                "manifest": manifest}
+    if any(not (path / name).is_file() or (path / name).is_symlink()
+           for name in required):
+        return {"kind": "incomplete",
+                "reason": "run is not finalized; rerun the capture from the start",
+                "manifest": manifest}
+    try:
+        expected = int(manifest.get("candidate_count", -1)) * CANDIDATE_BYTES
+    except (TypeError, ValueError):
+        expected = -1
+    if expected < 0 or (path / "candidates.bin").stat().st_size != expected:
+        return {"kind": "incomplete", "reason": "candidate binary size mismatch",
+                "manifest": manifest}
+    try:
+        _validate_completed_v2(path, manifest)
+    except (OSError, ValueError, KeyError, TypeError, PermissionError) as exc:
+        return {"kind": "incomplete", "reason": f"invalid completed run: {exc}",
+                "manifest": manifest}
+    return {"kind": "explorer_v2", "manifest": manifest}
 
 
 def _run_priority(row):
@@ -226,6 +246,19 @@ def _validate_completed_v2(run_dir, manifest):
             measured = int(row.get("texture_measured_count", 0))
             if count not in {0, 300} or (count and measured != count):
                 raise ValueError("exhaustive attempt does not contain 300 measured textures")
+    preview = manifest.get("preview_video")
+    if preview is not None:
+        target = run_dir / "preview.mp4"
+        if (not isinstance(preview, dict) or preview.get("file") != "preview.mp4"
+                or preview.get("codec") != "h264" or preview.get("all_intra") is not True
+                or target.is_symlink() or not target.is_file()
+                or int(preview.get("frame_count", -1)) != len(frames)
+                or not math.isfinite(float(preview.get("fps", 0)))
+                or float(preview.get("fps", 0)) <= 0
+                or int(preview.get("width", 0)) <= 0 or int(preview.get("height", 0)) <= 0
+                or int(preview.get("size_bytes", -1)) != target.stat().st_size
+                or preview.get("sha256") != sha256_file(target)):
+            raise ValueError("preview video metadata or content mismatch")
 
 
 def _contained_data_path(value):
@@ -566,6 +599,8 @@ class ExplorerServer(ThreadingHTTPServer):
             "objects": objects, "frames": frames, "status_counts": dict(status_counts),
             "policy": dict(POLICY), "manifest": state["manifest"],
         }
+        if state["manifest"].get("preview_video"):
+            payload["preview_video"] = state["manifest"]["preview_video"]
         self.report_cache[run] = payload
         return payload
 
@@ -684,6 +719,11 @@ class Handler(BaseHTTPRequestHandler):
                                    state.get("reason", "analysis unavailable"))
             if action == "report":
                 return self._json(self.server.report(run, state))
+            if action == "preview":
+                preview = state["manifest"].get("preview_video")
+                if not preview:
+                    raise FileNotFoundError("validated preview.mp4 is unavailable")
+                return self._file(run_dir / "preview.mp4")
             query = parse_qs(parsed.query)
             if action == "frame":
                 stamp = int(query.get("stamp_ns", ["-1"])[0])
@@ -796,7 +836,7 @@ class Handler(BaseHTTPRequestHandler):
                 "Content-Security-Policy",
                 "default-src 'self'; script-src 'self'; style-src 'self'; "
                 "img-src 'self' data: blob:; connect-src 'self'; worker-src 'self'; "
-                "frame-src 'self'")
+                "frame-src 'self'; media-src 'self' blob:")
         self.send_header("Content-Length", str(len(blob)))
         self.end_headers(); self.wfile.write(blob)
 

@@ -304,7 +304,7 @@ class ExplorerRecorder:
         for stream in (self._index, self._candidates, self._replay):
             stream.flush()
 
-    def close(self, completed=False):
+    def close(self, completed=False, preview_video=None):
         for stream in (self._index, self._candidates, self._replay):
             if not stream.closed:
                 stream.flush(); os.fsync(stream.fileno()); stream.close()
@@ -324,6 +324,8 @@ class ExplorerRecorder:
                            self._last_stamp_ns + tolerance >= int(expected)))
         texture_complete = (self._capture_profile != "exhaustive_visualization" or
                             self._shadow_texture_complete)
+        if preview_video is not None:
+            self._manifest["preview_video"] = dict(preview_video)
         completed = bool(completed and reached_end and texture_complete)
         self._manifest["frames_processed"] = self._processed_frames
         self._manifest["first_stamp_ns"] = self._first_stamp_ns

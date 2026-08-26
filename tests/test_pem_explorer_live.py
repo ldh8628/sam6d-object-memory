@@ -167,7 +167,27 @@ def test_landing_and_live_explorer_keep_legacy_dom_contract():
         "실시간 드롭·미처리", "Geometry Top-1", "data.candidates.length", "stage6000",
         "openSlotStatus", "저장된 PEM 시도 없음", "provenance_mismatch",
         "pseudo-GT", "drawAcceptedAxes", "accepted_pose"))
+    assert all(token in app for token in (
+        "response.blob()", "(frameIndex + 0.5)", 'addEventListener("seeked"'))
+    assert "if (hasCandidates) analyze" not in app
     assert "node.disabled" not in app
+
+
+def test_completed_run_validation_is_cached(monkeypatch, tmp_path):
+    run = tmp_path / "cached"
+    recorder = ExplorerRecorder(run, {})
+    recorder.close(completed=True)
+    calls = []
+    original = server_module._validate_completed_v2
+
+    def counted(*args):
+        calls.append(True)
+        return original(*args)
+
+    monkeypatch.setattr(server_module, "_validate_completed_v2", counted)
+    assert classify_run(run)["kind"] == "explorer_v2"
+    assert classify_run(run)["kind"] == "explorer_v2"
+    assert len(calls) == 1
 
 
 def test_discovery_prioritizes_full_then_realtime_then_legacy(tmp_path):

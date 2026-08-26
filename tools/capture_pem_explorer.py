@@ -2,8 +2,9 @@
 """Sequential, no-drop PEM Explorer capture from a trusted RGB-D SQLite bag.
 
 This command deliberately bypasses ROS and the latest-frame shared-memory channel.
-It persists compact candidates, replay indices and one bitset Mask PNG per attempted
-frame; RGB, depth, candidate renders and feature tensors remain in the source bag/RAM.
+It persists compact candidates, replay indices, one bitset Mask PNG per attempted
+frame and one All-I preview; individual RGB, depth, candidate renders and feature
+tensors remain in the source bag/RAM.
 """
 from __future__ import annotations
 
@@ -11,6 +12,7 @@ import argparse
 import json
 import math
 import sqlite3
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -41,11 +43,85 @@ from validate_rgbd_dataset import (  # noqa: E402
 
 
 CAPTURE_PROFILE = "exhaustive_visualization"
-FIXED_OUTPUT = REPO / "output" / "longcircle2_visualization"
 
 
 class CaptureError(RuntimeError):
     pass
+
+
+class PreviewWriter:
+    """Stream in-memory BGR frames to one validated All-I H.264 preview."""
+
+    def __init__(self, path, width, height, fps):
+        self.path = Path(path)
+        self.width, self.height, self.fps = int(width), int(height), float(fps)
+        self.frame_count = 0
+        self.closed = False
+        self.process = subprocess.Popen([
+            "ffmpeg", "-hide_banner", "-loglevel", "error",
+            "-f", "rawvideo", "-pixel_format", "bgr24",
+            "-video_size", f"{self.width}x{self.height}",
+            "-framerate", f"{self.fps:.12g}", "-i", "pipe:0", "-an",
+            "-c:v", "libx264", "-crf", "23", "-g", "1", "-keyint_min", "1",
+            "-sc_threshold", "0", "-pix_fmt", "yuv420p", "-movflags", "+faststart",
+            "-y", str(self.path),
+        ], stdin=subprocess.PIPE, stdout=subprocess.DEVNULL, stderr=subprocess.PIPE,
+           bufsize=0)
+
+    def write(self, bgr):
+        frame = np.asarray(bgr)
+        if frame.dtype != np.uint8 or frame.shape != (self.height, self.width, 3):
+            raise CaptureError(f"preview frame shape/type changed: {frame.shape} {frame.dtype}")
+        try:
+            remaining = memoryview(np.ascontiguousarray(frame)).cast("B")
+            while remaining:
+                written = self.process.stdin.write(remaining)
+                if not written:
+                    raise BrokenPipeError
+                remaining = remaining[written:]
+        except BrokenPipeError as exc:
+            raise CaptureError("ffmpeg preview encoder stopped early") from exc
+        self.frame_count += 1
+
+    def close(self, expected_count=None):
+        if self.closed:
+            raise CaptureError("preview encoder already closed")
+        self.closed = True
+        try:
+            self.process.stdin.close()
+        except BrokenPipeError:
+            pass
+        error = self.process.stderr.read().decode("utf-8", errors="replace").strip()
+        if self.process.wait() != 0:
+            raise CaptureError(f"ffmpeg preview encoding failed: {error or 'unknown error'}")
+        if expected_count is not None and self.frame_count != int(expected_count):
+            raise CaptureError(
+                f"preview received {self.frame_count} frames, expected {expected_count}")
+        try:
+            probe = subprocess.run([
+                "ffprobe", "-v", "error", "-count_frames", "-select_streams", "v:0",
+                "-show_entries", "stream=codec_name,width,height,nb_read_frames:frame=key_frame",
+                "-of", "json", str(self.path),
+            ], check=True, capture_output=True, text=True)
+            payload = json.loads(probe.stdout)
+            stream = payload["streams"][0]
+            frames = payload.get("frames", [])
+        except (OSError, subprocess.CalledProcessError, ValueError, KeyError,
+                IndexError, json.JSONDecodeError) as exc:
+            raise CaptureError(f"ffprobe preview validation failed: {exc}") from exc
+        encoded_count = int(stream.get("nb_read_frames", len(frames)))
+        if (stream.get("codec_name") != "h264" or int(stream.get("width", 0)) != self.width
+                or int(stream.get("height", 0)) != self.height
+                or encoded_count != self.frame_count or len(frames) != self.frame_count
+                or any(int(frame.get("key_frame", 0)) != 1 for frame in frames)):
+            raise CaptureError("preview codec, dimensions, frame count, or All-I validation failed")
+        return {
+            "file": "preview.mp4", "codec": "h264", "all_intra": True,
+            "frame_count": self.frame_count, "fps": self.fps,
+            "width": self.width, "height": self.height,
+            "size_bytes": self.path.stat().st_size,
+            "sha256": provenance_entry(self.path)["sha256"],
+        }
 
 
 def _resolve_repo_path(value):
@@ -75,8 +151,9 @@ def load_capture_config(config_path):
         raise CaptureError(
             f"runtime.pem_diagnostic.explorer_v2.capture_profile must be {CAPTURE_PROFILE}")
     output = _resolve_repo_path(cfg.get("output", {}).get("dir", ""))
-    if output != FIXED_OUTPUT.resolve():
-        raise CaptureError(f"full capture output is fixed at {FIXED_OUTPUT}")
+    output_root = (REPO / "output").resolve()
+    if output == output_root or output_root not in output.parents:
+        raise CaptureError(f"full capture output must remain under {output_root}")
     bag = _resolve_repo_path(explorer.get("source_bag") or cfg.get("bag", {}).get("path", ""))
     data_root = (REPO / "data").resolve()
     if bag != data_root and data_root not in bag.parents:
@@ -98,15 +175,29 @@ def _header_stamp_ns(message):
         message.header.stamp.nanosec)
 
 
+def _decode_image(message, kind):
+    height, width, step = int(message.height), int(message.width), int(message.step)
+    encoding = str(message.encoding).lower()
+    raw = np.asarray(message.data, dtype=np.uint8)
+    if height <= 0 or width <= 0 or step <= 0 or raw.size != height * step:
+        raise CaptureError(f"invalid {kind} image layout: {width}x{height}, step={step}")
+    rows = raw.reshape(height, step)
+    if kind == "color" and encoding in {"bgr8", "rgb8"} and step >= width * 3:
+        image = rows[:, :width * 3].reshape(height, width, 3).copy()
+        return cv2.cvtColor(image, cv2.COLOR_RGB2BGR) if encoding == "rgb8" else image
+    if kind == "depth" and encoding in {"16uc1", "mono16"} and step >= width * 2:
+        byteorder = ">u2" if int(message.is_bigendian) else "<u2"
+        return np.frombuffer(rows[:, :width * 2].copy(), dtype=byteorder).reshape(
+            height, width).astype(np.uint16, copy=False)
+    raise CaptureError(f"unsupported {kind} image encoding/layout: {message.encoding}, step={step}")
+
+
 def iter_trusted_bag_frames(validation, topics):
     """Yield exact RGB/depth/CameraInfo tuples in ascending trusted bag timestamp."""
     try:
-        from cv_bridge import CvBridge
-        from rclpy.serialization import deserialize_message
-        from rosidl_runtime_py.utilities import get_message
+        from rosbags.typesys import Stores, get_typestore
     except ImportError as exc:
-        raise CaptureError(
-            "ROS 2 Python image type support is required for offline bag decoding") from exc
+        raise CaptureError("rosbags is required for offline bag decoding") from exc
 
     required = {
         "rgb": topics.get("rgb", COLOR_TOPIC),
@@ -126,15 +217,13 @@ def iter_trusted_bag_frames(validation, topics):
         missing = sorted(set(required.values()) - set(topic_info))
         if missing:
             raise CaptureError(f"trusted bag topics disappeared after validation: {missing}")
-        classes = {name: get_message(topic_info[topic][1])
-                   for name, topic in required.items()}
+        typestore = get_typestore(Stores.ROS2_HUMBLE)
         cursors = {
             name: connection.execute(
                 "SELECT timestamp,data FROM messages WHERE topic_id=? ORDER BY timestamp",
                 (topic_info[topic][0],))
             for name, topic in required.items()
         }
-        bridge = CvBridge()
         while True:
             rows = {name: cursor.fetchone() for name, cursor in cursors.items()}
             ended = {name for name, row in rows.items() if row is None}
@@ -148,7 +237,7 @@ def iter_trusted_bag_frames(validation, topics):
                 raise CaptureError(f"trusted bag streams lost timestamp alignment: {stamps}")
             storage_stamp = storage_stamps.pop()
             messages = {
-                name: deserialize_message(row[1], classes[name])
+                name: typestore.deserialize_cdr(row[1], topic_info[required[name]][1])
                 for name, row in rows.items()
             }
             header_stamps = {name: _header_stamp_ns(message)
@@ -156,13 +245,9 @@ def iter_trusted_bag_frames(validation, topics):
             if set(header_stamps.values()) != {storage_stamp}:
                 raise CaptureError(
                     f"header/storage timestamp mismatch at {storage_stamp}: {header_stamps}")
-            rgb = np.asarray(bridge.imgmsg_to_cv2(
-                messages["rgb"], desired_encoding="rgb8"))
-            depth = np.asarray(bridge.imgmsg_to_cv2(
-                messages["depth"], desired_encoding="passthrough"))
-            if rgb.ndim != 3 or rgb.shape[2] != 3:
-                raise CaptureError(f"decoded RGB shape is invalid at {storage_stamp}: {rgb.shape}")
-            if depth.ndim != 2 or depth.shape != rgb.shape[:2]:
+            bgr = _decode_image(messages["rgb"], "color")
+            depth = _decode_image(messages["depth"], "depth")
+            if depth.ndim != 2 or depth.shape != bgr.shape[:2]:
                 raise CaptureError(
                     f"decoded aligned depth shape mismatch at {storage_stamp}: {depth.shape}")
             if depth.dtype != np.uint16:
@@ -175,7 +260,7 @@ def iter_trusted_bag_frames(validation, topics):
             yield {
                 "stamp_ns": storage_stamp,
                 "depth_stamp_ns": header_stamps["depth"],
-                "bgr": cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR),
+                "bgr": bgr,
                 "depth": depth,
                 "K": K,
             }
@@ -340,12 +425,21 @@ def capture(config_path):
     meta_path.write_text(json.dumps(meta, indent=2, ensure_ascii=False) + "\n",
                          encoding="utf-8")
 
+    duration_ns = validation.last_stamp_ns - validation.first_stamp_ns
+    if validation.pair_count < 2 or duration_ns <= 0:
+        raise CaptureError("preview FPS requires at least two increasing bag timestamps")
+    fps = (validation.pair_count - 1) * 1e9 / duration_ns
     processed = accepted = 0
     started = time.monotonic()
     completed = False
+    preview = preview_metadata = None
     try:
         for frame_seq, frame in enumerate(iter_trusted_bag_frames(
                 validation, cfg.get("topics", {}))):
+            if preview is None:
+                height, width = frame["bgr"].shape[:2]
+                preview = PreviewWriter(output / "preview.mp4", width, height, fps)
+            preview.write(frame["bgr"])
             t0 = time.time()
             rows, ms, n_boxes, label = core.process(
                 frame["bgr"], frame["depth"], frame["K"], want_mask=True,
@@ -378,8 +472,14 @@ def capture(config_path):
             raise CaptureError("processed first stamp does not match trusted bag")
         if recorder._last_stamp_ns != validation.last_stamp_ns:
             raise CaptureError("processed last stamp does not match trusted bag")
+        preview_metadata = preview.close(validation.pair_count)
         completed = True
     finally:
+        if preview is not None and not preview.closed:
+            try:
+                preview.close()
+            except CaptureError:
+                pass
         elapsed = max(1e-9, time.monotonic() - started)
         meta["summary"] = {
             "bag_frames": validation.pair_count, "frames_processed": processed,
@@ -390,7 +490,7 @@ def capture(config_path):
                              encoding="utf-8")
         detections.close()
         frames.close()
-        recorder.close(completed=completed)
+        recorder.close(completed=completed, preview_video=preview_metadata)
     return meta["summary"]
 
 

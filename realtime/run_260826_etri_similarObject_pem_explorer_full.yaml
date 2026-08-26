@@ -1,4 +1,4 @@
-# Opt-in research run for compact PEM Explorer v2 recording.
+# No-drop, sequential visualization capture from the 260826 similar-object SAM bag.
 topics:
   rgb: /camera/camera/color/image_raw
   depth: /camera/camera/aligned_depth_to_color/image_raw
@@ -10,13 +10,7 @@ ism:
 
 runtime:
   device: cuda:0
-  use_sim_time: true
-  sync_slop: 0.02
-  sync_queue: 30
-  qos_reliability: reliable
-  qos_depth: 30
   det_score_thresh: 0.2
-  idle_exit_s: 30
   verify:
     enabled: true
     mask_iou_min: 0.420998
@@ -26,25 +20,23 @@ runtime:
     cluster_min_occupancy: 0.45
   pem_diagnostic:
     enabled: true
-    # Records all 300 raw float32 candidates and replay indices. Texture is retained
-    # only where the production path already measured it; no Explorer shadow pass runs.
+    rotation_threshold_deg: 30
+    translation_threshold_mm: 100
+    reference_max_dt_ms: 25
     explorer_v2:
       enabled: true
-      capture_profile: realtime_inference
+      capture_profile: exhaustive_visualization
 
 output:
-  dir: output/longcircle2_manual
+  dir: output/260826_etri_similarObject_visualization
   diagnostics: true
   pem_explorer:
     enabled: true
-    capture_profile: realtime_inference
-    bag_frame_count: 2130
-    source_bag: data/longcircle2_sam
+    capture_profile: exhaustive_visualization
+    source_bag: data/260826_etri_similarObject
     max_bytes_per_attempt: 40960
     require_source_end: true
 
 bag:
   play: false
-  path: data/longcircle2_sam
-  rate: 1.0
-  clock: true
+  path: data/260826_etri_similarObject

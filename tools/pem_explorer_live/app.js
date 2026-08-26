@@ -18,6 +18,7 @@
   let selectedCandidate = null;
   let epoch = 0;
   let analysisEpoch = 0;
+  let previewVideo = null;
 
   const esc = value => String(value ?? "").replace(/[&<>"']/g, char => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;",
@@ -34,6 +35,64 @@
   const frameUrl = stamp => (
     `/api/run/${encodeURIComponent(run)}/frame?stamp_ns=${stamp}`
   );
+
+  async function preparePreview() {
+    if (!report.preview_video) {
+      $("#rgb-source").textContent = "RGB는 bag에서 메모리 JPEG 인코딩";
+      return;
+    }
+    const response = await fetch(`/api/run/${encodeURIComponent(run)}/preview`);
+    if (!response.ok) throw Error(`preview load failed: ${response.statusText}`);
+    const video = document.createElement("video");
+    video.muted = true;
+    video.preload = "auto";
+    video.src = URL.createObjectURL(await response.blob());
+    await new Promise((resolve, reject) => {
+      video.onloadedmetadata = resolve;
+      video.onerror = () => reject(Error("preview decode failed"));
+    });
+    previewVideo = video;
+    $("#rgb-source").textContent = "RGB는 All-I H.264 preview";
+  }
+
+  async function loadFrameImage(frameIndex) {
+    if (previewVideo) {
+      const target = (frameIndex + 0.5) / Number(report.preview_video.fps);
+      if (Math.abs(previewVideo.currentTime - target) > 1e-6) {
+        await new Promise((resolve, reject) => {
+          const done = () => {
+            previewVideo.removeEventListener("seeked", done);
+            previewVideo.removeEventListener("error", failed);
+            resolve();
+          };
+          const failed = () => {
+            previewVideo.removeEventListener("seeked", done);
+            previewVideo.removeEventListener("error", failed);
+            reject(Error("preview seek failed"));
+          };
+          previewVideo.addEventListener("seeked", done);
+          previewVideo.addEventListener("error", failed);
+          previewVideo.currentTime = target;
+        });
+      }
+      return previewVideo;
+    }
+    const image = new Image();
+    await new Promise((resolve, reject) => {
+      image.onload = resolve;
+      image.onerror = () => reject(Error("bag RGB load failed"));
+      image.src = frameUrl(report.frames[frameIndex].stamp_ns);
+    });
+    return image;
+  }
+
+  function drawFrameImage(source) {
+    const canvas = $("#frame-image");
+    const width = source.videoWidth || source.naturalWidth;
+    const height = source.videoHeight || source.naturalHeight;
+    canvas.width = width; canvas.height = height;
+    canvas.getContext("2d").drawImage(source, 0, 0, width, height);
+  }
 
   function clearPose() {
     const canvas = $("#pose-canvas");
@@ -74,20 +133,24 @@
     });
   }
 
-  function openSlotStatus(slot) {
-    epoch += 1;
-    analysisEpoch += 1;
-    clearPose();
-    drawAcceptedAxes(report.frames[index]);
+  function renderSlotStatus(slot) {
     $("#details").className = "details";
     $("#details").innerHTML = `
       <div class="detail-head"><div><p class="eyebrow">selected object</p>
         <h2>${esc(slot.object)}</h2></div><b>${esc(labels[slot.status] || slot.status)}</b>
       </div>
-      <p class="policy"><b>저장된 PEM 시도 없음</b><br>
-        <small>${slot.status === "unprocessed_realtime_drop"
+      <p class="policy"><b>${slot.attempt_id == null ? "저장된 PEM 시도 없음" : "저장된 PEM 결과"}</b><br>
+        <small>${slot.attempt_id != null
+          ? "객체 카드를 클릭하면 후보 상세를 불러옵니다."
+          : slot.status === "unprocessed_realtime_drop"
           ? "latest-frame 추론에서 이 bag frame을 처리하지 않았습니다. 검출 없음과 구분됩니다."
           : "이 처리 frame에는 해당 객체의 PEM 후보 또는 생산 pose가 없습니다."}</small></p>`;
+  }
+
+  function openSlotStatus(slot) {
+    epoch += 1;
+    analysisEpoch += 1;
+    renderSlotStatus(slot);
   }
 
   function renderCards(frame) {
@@ -111,31 +174,38 @@
     });
   }
 
-  function renderFrame() {
-    epoch += 1;
+  async function renderFrame(targetIndex) {
+    const myEpoch = ++epoch;
     analysisEpoch += 1;
-    const frame = report.frames[index];
-    $("#frame-slider").value = index;
-    $("#frame-search").value = index;
-    $("#frame-label").textContent = (
-      `#${index} · source ${frame.source_index} · ${frame.stamp_ns} · ` +
-      `${labels[frame.status] || frame.status}`
-    );
-    $("#frame-image").src = frameUrl(frame.stamp_ns);
-    clearPose();
-    drawAcceptedAxes(frame);
-    renderCards(frame);
+    const frame = report.frames[targetIndex];
     const slot = (frame.slots.find(item => (
       item.object === selectedObject && item.attempt_id != null
     )) || frame.slots.find(item => item.attempt_id != null));
-    if (slot) {
-      selectedObject = slot.object;
-      openAttempt(slot);
-    } else {
-      $("#details").className = "details empty";
-      $("#details").innerHTML = frame.processed
-        ? "<p>처리 완료 · 검출 또는 PEM 시도 없음</p>"
-        : "<p>latest-frame 추론에서 처리되지 않은 bag frame</p>";
+    try {
+      const image = await loadFrameImage(targetIndex);
+      if (myEpoch !== epoch) return;
+      index = targetIndex;
+      if (slot) selectedObject = slot.object;
+      drawFrameImage(image);
+      $("#frame-slider").value = index;
+      $("#frame-search").value = index;
+      $("#frame-label").textContent = (
+        `#${index} · source ${frame.source_index} · ${frame.stamp_ns} · ` +
+        `${labels[frame.status] || frame.status}`
+      );
+      clearPose();
+      drawAcceptedAxes(frame);
+      renderCards(frame);
+      if (slot) {
+        renderSlotStatus(slot);
+      } else {
+        $("#details").className = "details empty";
+        $("#details").innerHTML = frame.processed
+          ? "<p>처리 완료 · 검출 또는 PEM 시도 없음</p>"
+          : "<p>latest-frame 추론에서 처리되지 않은 bag frame</p>";
+      }
+    } catch (error) {
+      if (myEpoch === epoch) $("#notice").textContent = error.message;
     }
   }
 
@@ -145,13 +215,7 @@
     return `${entry.present ? "O" : "X"} · ${entry.match_count ?? 0} matches`;
   }
 
-  async function openAttempt(slot) {
-    const myEpoch = ++epoch;
-    try {
-      const data = await json(
-        `/api/run/${encodeURIComponent(run)}/candidates?attempt=${slot.attempt_id}`,
-      );
-      if (myEpoch !== epoch) return;
+  function renderAttempt(slot, data) {
       const hasCandidates = data.candidates.length > 0;
       selectedCandidate = hasCandidates ? (
         selectedCandidate ?? data.candidates.find(
@@ -202,7 +266,16 @@
       document.querySelectorAll("tbody tr").forEach(row => {
         row.onclick = () => analyze(slot.attempt_id, Number(row.dataset.index));
       });
-      if (hasCandidates) analyze(slot.attempt_id, selectedCandidate);
+  }
+
+  async function openAttempt(slot) {
+    const myEpoch = ++epoch;
+    try {
+      const data = await json(
+        `/api/run/${encodeURIComponent(run)}/candidates?attempt=${slot.attempt_id}`,
+      );
+      if (myEpoch !== epoch) return;
+      renderAttempt(slot, data);
     } catch (error) {
       if (myEpoch === epoch) {
         $("#details").className = "details";
@@ -272,6 +345,7 @@
     }
     try {
       report = await json(`/api/run/${encodeURIComponent(run)}/report`);
+      await preparePreview();
       const requested = Number(query.get("frame"));
       if (Number.isInteger(requested)) {
         index = Math.max(0, Math.min(report.frames.length - 1, requested));
@@ -292,19 +366,21 @@
       const search = $("#frame-search");
       slider.max = search.max = report.frames.length - 1;
       slider.oninput = event => {
-        index = Number(event.target.value); selectedCandidate = null; renderFrame();
+        selectedCandidate = null; renderFrame(Number(event.target.value));
       };
       search.onchange = event => {
-        index = Math.max(0, Math.min(report.frames.length - 1, Number(event.target.value) || 0));
-        selectedCandidate = null; renderFrame();
+        const target = Math.max(0, Math.min(
+          report.frames.length - 1, Number(event.target.value) || 0,
+        ));
+        selectedCandidate = null; renderFrame(target);
       };
       $("#prev").onclick = () => {
-        index = Math.max(0, index - 1); selectedCandidate = null; renderFrame();
+        selectedCandidate = null; renderFrame(Math.max(0, index - 1));
       };
       $("#next").onclick = () => {
-        index = Math.min(report.frames.length - 1, index + 1); selectedCandidate = null; renderFrame();
+        selectedCandidate = null; renderFrame(Math.min(report.frames.length - 1, index + 1));
       };
-      renderFrame();
+      renderFrame(index);
     } catch (error) {
       $("#notice").textContent = error.message;
     }

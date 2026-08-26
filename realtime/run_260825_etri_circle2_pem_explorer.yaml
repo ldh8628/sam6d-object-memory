@@ -1,4 +1,3 @@
-# Opt-in research run for compact PEM Explorer v2 recording.
 topics:
   rgb: /camera/camera/color/image_raw
   depth: /camera/camera/aligned_depth_to_color/image_raw
@@ -11,7 +10,7 @@ ism:
 runtime:
   device: cuda:0
   use_sim_time: true
-  sync_slop: 0.02
+  sync_slop: 0.5
   sync_queue: 30
   qos_reliability: reliable
   qos_depth: 30
@@ -26,25 +25,24 @@ runtime:
     cluster_min_occupancy: 0.45
   pem_diagnostic:
     enabled: true
-    # Records all 300 raw float32 candidates and replay indices. Texture is retained
-    # only where the production path already measured it; no Explorer shadow pass runs.
     explorer_v2:
       enabled: true
       capture_profile: realtime_inference
 
 output:
-  dir: output/longcircle2_manual
+  dir: output/explorer/260826_etri_circle2
   diagnostics: true
   pem_explorer:
     enabled: true
     capture_profile: realtime_inference
-    bag_frame_count: 2130
-    source_bag: data/longcircle2_sam
+    bag_frame_count: 4947
+    source_bag: data/260825_etri_circle2
     max_bytes_per_attempt: 40960
     require_source_end: true
 
 bag:
-  play: false
-  path: data/longcircle2_sam
+  play: true
+  path: data/260825_etri_circle2
   rate: 1.0
   clock: true
+  ready_timeout: 600
