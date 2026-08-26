@@ -1,0 +1,30 @@
+# Large datasets, inference outputs, model weights, and generated archives
+data/
+output/
+outputs/
+checkpoints/
+assets/
+*.pt
+*.pth
+*.onnx
+*.engine
+*.bag
+*.db3
+*.tar
+*.tar.gz
+*.tar.gz.part-*
+
+# Local/runtime files
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+venv/
+*.log
+*.tmp
+
+# Local IDE and machine state
+.vscode/
+.idea/
+*.swp

@@ -1,0 +1,47 @@
+%YAML:1.0
+
+File.version: "1.0"
+Camera.type: "PinHole"
+
+# from longcircle2 colour camera_info (RealSense SDK bag)
+Camera1.fx: 386.07700
+Camera1.fy: 385.50700
+Camera1.cx: 322.78400
+Camera1.cy: 250.28000
+
+Camera1.k1: -0.05636200
+Camera1.k2: 0.06772800
+Camera1.p1: 0.00034400
+Camera1.p2: 0.00089100
+Camera1.k3: -0.02240300
+
+Camera.width: 640
+Camera.height: 480
+Camera.fps: 30
+Camera.RGB: 0
+
+Stereo.ThDepth: 40.0
+Stereo.b: 0.09498
+
+RGBD.DepthMapFactor: 1000.0
+
+ORBextractor.nFeatures: 1250
+ORBextractor.scaleFactor: 1.2
+ORBextractor.nLevels: 8
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
+
+# --- gate experiment: persist the SLAM-camera map as an Atlas on shutdown ---
+# core writes "./<name>.osa" relative to the node cwd (this run output dir)
+System.SaveAtlasToFile: "map_260804_longcircle2"
+
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -3.5
+Viewer.ViewpointF: 500.0

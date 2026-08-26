@@ -1,0 +1,163 @@
+[INFO] [launch]: All log files can be found below /home/ldh9501/.ros/log/2026-07-14-16-15-36-326312-user-2981427
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [rgbd_node-1]: process started with pid [2981436]
+[rgbd_node-1] [INFO] [1784013336.380127431] [orbslam3_rgbd_node]: Publishing map points : /orbslam3/map_points
+[rgbd_node-1] [INFO] [1784013336.380757840] [orbslam3_rgbd_node]: Publishing dense map : /orbslam3/dense_map
+[rgbd_node-1] [INFO] [1784013336.381325074] [orbslam3_rgbd_node]: Loading ORB-SLAM3 vocabulary: /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/src/ORB_SLAM3/Vocabulary/ORBvoc.txt
+[rgbd_node-1] [INFO] [1784013336.381332776] [orbslam3_rgbd_node]: Loading ORB-SLAM3 settings: /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_105023_rgbd.yaml
+[rgbd_node-1] Camera.newHeight optional parameter does not exist...
+[rgbd_node-1] Camera.newWidth optional parameter does not exist...
+[rgbd_node-1] Viewer.imageViewScale optional parameter does not exist...
+[rgbd_node-1] System.LoadAtlasFromFile optional parameter does not exist...
+[rgbd_node-1] System.SaveAtlasToFile optional parameter does not exist...
+[rgbd_node-1] System.thFarPoints optional parameter does not exist...
+[rgbd_node-1] 
+[rgbd_node-1] ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+[rgbd_node-1] ORB-SLAM2 Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+[rgbd_node-1] This program comes with ABSOLUTELY NO WARRANTY;
+[rgbd_node-1] This is free software, and you are welcome to redistribute it
+[rgbd_node-1] under certain conditions. See LICENSE.txt.
+[rgbd_node-1] 
+[rgbd_node-1] Input sensor was set to: RGB-D
+[rgbd_node-1] Loading settings from /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_105023_rgbd.yaml
+[rgbd_node-1] 	-Loaded camera 1
+[rgbd_node-1] 	-Loaded image info
+[rgbd_node-1] 	-Loaded RGB-D calibration
+[rgbd_node-1] 	-Loaded ORB settings
+[rgbd_node-1] 	-Loaded viewer settings
+[rgbd_node-1] 	-Loaded Atlas settings
+[rgbd_node-1] 	-Loaded misc parameters
+[rgbd_node-1] ----------------------------------
+[rgbd_node-1] SLAM settings: 
+[rgbd_node-1] 	-Camera 1 parameters (Pinhole): [ 386.918 386.347 322.784 250.28 ]
+[rgbd_node-1] 	-Camera 1 distortion parameters: [  -0.056362 0.067728 0.000344 0.000891 -0.022403 ]
+[rgbd_node-1] 	-Original image size: [ 640 , 480 ]
+[rgbd_node-1] 	-Current image size: [ 640 , 480 ]
+[rgbd_node-1] 	-Sequence FPS: 30
+[rgbd_node-1] 	-RGB-D depth map factor: 1000
+[rgbd_node-1] 	-Features per image: 2000
+[rgbd_node-1] 	-ORB scale factor: 1.2
+[rgbd_node-1] 	-ORB number of scales: 8
+[rgbd_node-1] 	-Initial FAST threshold: 20
+[rgbd_node-1] 	-Min FAST threshold: 7
+[rgbd_node-1] 
+[rgbd_node-1] 
+[rgbd_node-1] Loading ORB Vocabulary. This could take a while...
+[rgbd_node-1] Vocabulary loaded!
+[rgbd_node-1] 
+[rgbd_node-1] Initialization of Atlas from scratch 
+[rgbd_node-1] Creation of new map with id: 0
+[rgbd_node-1] Creation of new map with last KF id: 0
+[rgbd_node-1] Seq. Name: 
+[rgbd_node-1] There are 1 cameras in the atlas
+[rgbd_node-1] Camera 0 is pinhole
+[rgbd_node-1] [INFO] [1784013338.622429377] [orbslam3_rgbd_node]: RGB-D mode (IMU disabled).
+[rgbd_node-1] [INFO] [1784013338.622897354] [orbslam3_rgbd_node]: Subscribed RGB topic: /camera/camera/color/image_raw
+[rgbd_node-1] [INFO] [1784013338.622907920] [orbslam3_rgbd_node]: Subscribed depth topic: /camera/camera/aligned_depth_to_color/image_raw
+[rgbd_node-1] [INFO] [1784013338.622910263] [orbslam3_rgbd_node]: Publishing pose: /orbslam3/pose
+[rgbd_node-1] [INFO] [1784013338.622912927] [orbslam3_rgbd_node]: Publishing odom: /orbslam3/odom
+[rgbd_node-1] [INFO] [1784013338.622914800] [orbslam3_rgbd_node]: Publishing TF: map -> camera_color_optical_frame
+[rgbd_node-1] [INFO] [1784013338.622916953] [orbslam3_rgbd_node]: ORB-SLAM3 RGB-D node started with viewer disabled.
+[INFO] [ros2-2]: process started with pid [2981736]
+[ros2-2] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1784013348.780361362] [rosbag2_storage]: Opened database '/home/ldh9501/temp_ws/CLI_environment/data_slam/260714_frame_data/converted/slam_105023/slam_105023_0.db3' for READ_ONLY.
+[ros2-2] [INFO] [1784013348.780406980] [rosbag2_player]: Set rate to 1
+[ros2-2] [INFO] [1784013348.782445295] [rosbag2_player]: Adding keyboard callbacks.
+[ros2-2] [INFO] [1784013348.782458364] [rosbag2_player]: Press SPACE for Pause/Resume
+[ros2-2] [INFO] [1784013348.782461279] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[ros2-2] [INFO] [1784013348.782463963] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[ros2-2] [INFO] [1784013348.782466096] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[ros2-2] [INFO] [1784013348.782677150] [rosbag2_storage]: Opened database '/home/ldh9501/temp_ws/CLI_environment/data_slam/260714_frame_data/converted/slam_105023/slam_105023_0.db3' for READ_ONLY.
+[rgbd_node-1] First KF:0; Map init KF:0
+[rgbd_node-1] New Map created with 1875 points
+[rgbd_node-1] [INFO] [1784013351.276631905] [orbslam3_rgbd_node]: Processed 30 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013353.253465280] [orbslam3_rgbd_node]: Processed 60 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013355.268071630] [orbslam3_rgbd_node]: Processed 90 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013357.269138033] [orbslam3_rgbd_node]: Processed 120 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013359.271915940] [orbslam3_rgbd_node]: Processed 150 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013361.269836750] [orbslam3_rgbd_node]: Processed 180 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013363.282951162] [orbslam3_rgbd_node]: Processed 210 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013365.284113680] [orbslam3_rgbd_node]: Processed 240 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013367.288847993] [orbslam3_rgbd_node]: Processed 270 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013369.289274975] [orbslam3_rgbd_node]: Processed 300 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013371.287010382] [orbslam3_rgbd_node]: Processed 330 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013373.291154007] [orbslam3_rgbd_node]: Processed 360 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013375.290846917] [orbslam3_rgbd_node]: Processed 390 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013377.293665897] [orbslam3_rgbd_node]: Processed 420 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013379.303984470] [orbslam3_rgbd_node]: Processed 450 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013381.307996123] [orbslam3_rgbd_node]: Processed 480 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013383.290654521] [orbslam3_rgbd_node]: Processed 510 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013385.316028731] [orbslam3_rgbd_node]: Processed 540 RGB-D frames.
+[rgbd_node-1] *Loop detected
+[rgbd_node-1] LOOP_GAP|cur_id=86|matched_id=3|ts_cur=1783993862.041818|ts_matched=1783993829.003159|cur_xyz=-0.390255,0.133927,-0.267105|matched_xyz=-0.037934,0.001885,0.586541|gap_m=0.932885|sim3t=0.066816,-0.009389,0.375437|sim3_scale=1.000000
+[rgbd_node-1] Local Mapping STOP
+[rgbd_node-1] Local Mapping RELEASE
+[rgbd_node-1] Local Mapping STOP
+[rgbd_node-1] Local Mapping RELEASE
+[rgbd_node-1] [INFO] [1784013387.307374774] [orbslam3_rgbd_node]: Processed 570 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013389.321437428] [orbslam3_rgbd_node]: Processed 600 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013391.321629192] [orbslam3_rgbd_node]: Processed 630 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013393.320356967] [orbslam3_rgbd_node]: Processed 660 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013395.336982596] [orbslam3_rgbd_node]: Processed 690 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013397.313421567] [orbslam3_rgbd_node]: Processed 720 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013399.329783606] [orbslam3_rgbd_node]: Processed 750 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013401.343818900] [orbslam3_rgbd_node]: Processed 780 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013403.357344305] [orbslam3_rgbd_node]: Processed 810 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013405.332276459] [orbslam3_rgbd_node]: Processed 840 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013407.346580405] [orbslam3_rgbd_node]: Processed 870 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013409.346992531] [orbslam3_rgbd_node]: Processed 900 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013411.343345560] [orbslam3_rgbd_node]: Processed 930 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013413.360827620] [orbslam3_rgbd_node]: Processed 960 RGB-D frames.
+[rgbd_node-1] *Loop detected
+[rgbd_node-1] LOOP_GAP|cur_id=150|matched_id=57|ts_cur=1783993891.298595|ts_matched=1783993849.757971|cur_xyz=0.141744,0.025706,1.949504|matched_xyz=-1.994625,0.011555,1.676096|gap_m=2.153840|sim3t=-0.103902,-0.047655,1.808871|sim3_scale=1.000000
+[rgbd_node-1] Local Mapping STOP
+[rgbd_node-1] Local Mapping RELEASE
+[rgbd_node-1] [INFO] [1784013415.386040039] [orbslam3_rgbd_node]: Processed 990 RGB-D frames.
+[rgbd_node-1] Local Mapping STOP
+[rgbd_node-1] Local Mapping RELEASE
+[rgbd_node-1] [INFO] [1784013417.347947367] [orbslam3_rgbd_node]: Processed 1020 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013419.366541943] [orbslam3_rgbd_node]: Processed 1050 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013421.374395431] [orbslam3_rgbd_node]: Processed 1080 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013423.355954546] [orbslam3_rgbd_node]: Processed 1110 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013425.368168579] [orbslam3_rgbd_node]: Processed 1140 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013427.368770495] [orbslam3_rgbd_node]: Processed 1170 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013429.384651417] [orbslam3_rgbd_node]: Processed 1200 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013431.375976834] [orbslam3_rgbd_node]: Processed 1230 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013433.396885435] [orbslam3_rgbd_node]: Processed 1260 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013435.380198704] [orbslam3_rgbd_node]: Processed 1290 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013437.387312128] [orbslam3_rgbd_node]: Processed 1320 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013439.390461973] [orbslam3_rgbd_node]: Processed 1350 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013441.402867969] [orbslam3_rgbd_node]: Processed 1380 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013443.401920688] [orbslam3_rgbd_node]: Processed 1410 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013445.398914224] [orbslam3_rgbd_node]: Processed 1440 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013447.390166247] [orbslam3_rgbd_node]: Processed 1470 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013449.402197637] [orbslam3_rgbd_node]: Processed 1500 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013451.403761138] [orbslam3_rgbd_node]: Processed 1530 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013453.418725302] [orbslam3_rgbd_node]: Processed 1560 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013455.420116676] [orbslam3_rgbd_node]: Processed 1590 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013457.429208505] [orbslam3_rgbd_node]: Processed 1620 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013459.402885164] [orbslam3_rgbd_node]: Processed 1650 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013461.439776591] [orbslam3_rgbd_node]: Processed 1680 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013463.430989549] [orbslam3_rgbd_node]: Processed 1710 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013465.444353793] [orbslam3_rgbd_node]: Processed 1740 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013467.471075724] [orbslam3_rgbd_node]: Processed 1770 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013469.431603034] [orbslam3_rgbd_node]: Processed 1800 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013471.448145267] [orbslam3_rgbd_node]: Processed 1830 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013473.440859517] [orbslam3_rgbd_node]: Processed 1860 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013475.441340027] [orbslam3_rgbd_node]: Processed 1890 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013477.442423239] [orbslam3_rgbd_node]: Processed 1920 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013479.451141736] [orbslam3_rgbd_node]: Processed 1950 RGB-D frames.
+[rgbd_node-1] [INFO] [1784013481.452226404] [orbslam3_rgbd_node]: Processed 1980 RGB-D frames.
+[INFO] [ros2-2]: process has finished cleanly [pid 2981736]
+[INFO] [rgbd_node-1]: sending signal 'SIGINT' to process[rgbd_node-1]
+[rgbd_node-1] [INFO] [1784013482.698947454] [rclcpp]: signal_handler(signum=2)
+[rgbd_node-1] [INFO] [1784013482.757964228] [orbslam3_rgbd_node]: Shutting down ORB-SLAM3.
+[rgbd_node-1] Shutdown
+[rgbd_node-1] [INFO] [1784013482.779076236] [orbslam3_rgbd_node]: Saved 23981 ORB-SLAM3 map points to /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/output/260714/slam_105023/orbslam3_map_points.pcd
+[rgbd_node-1] 
+[rgbd_node-1] Saving camera trajectory to CameraTrajectory.txt ...
+[rgbd_node-1] 
+[rgbd_node-1] Saving keyframe trajectory to KeyFrameTrajectory.txt ...
+[rgbd_node-1] [INFO] [1784013483.364838790] [orbslam3_rgbd_node]: Dense map reprojected with optimized poses: 400/400 frames matched (0 dropped), 1011609 voxels.
+[rgbd_node-1] [INFO] [1784013484.248657345] [orbslam3_rgbd_node]: Saved 1011609 dense map points to /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/output/260714/slam_105023/orbslam3_dense_map.pcd
+[rgbd_node-1] [INFO] [1784013484.248770003] [orbslam3_rgbd_node]: TIMING: frames_tracked=1996 track_ms mean=18.5 median=18.3 p95=23.8 max=63.9 min=11.7 mean_fps=54.1
+[INFO] [rgbd_node-1]: process has finished cleanly [pid 2981436]

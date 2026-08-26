@@ -1,0 +1,84 @@
+[INFO] [launch]: All log files can be found below /home/ldh9501/.ros/log/2026-07-14-16-31-29-842971-user-3026729
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [rgbd_node-1]: process started with pid [3026757]
+[rgbd_node-1] [INFO] [1784014289.907619608] [orbslam3_rgbd_node]: Publishing map points : /orbslam3/map_points
+[rgbd_node-1] [INFO] [1784014289.920706218] [orbslam3_rgbd_node]: Publishing dense map : /orbslam3/dense_map
+[rgbd_node-1] [INFO] [1784014289.921483731] [orbslam3_rgbd_node]: Loading ORB-SLAM3 vocabulary: /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/src/ORB_SLAM3/Vocabulary/ORBvoc.txt
+[rgbd_node-1] [INFO] [1784014289.921527256] [orbslam3_rgbd_node]: Loading ORB-SLAM3 settings: /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_110532_rgbd.yaml
+[rgbd_node-1] 
+[rgbd_node-1] ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+[rgbd_node-1] ORB-SLAM2 Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+[rgbd_node-1] This program comes with ABSOLUTELY NO WARRANTY;
+[rgbd_node-1] This is free software, and you are welcome to redistribute it
+[rgbd_node-1] under certain conditions. See LICENSE.txt.
+[rgbd_node-1] 
+[rgbd_node-1] Input sensor was set to: RGB-D
+[rgbd_node-1] Loading settings from /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_110532_rgbd.yaml
+[rgbd_node-1] 	-Loaded camera 1
+[rgbd_node-1] 	-Loaded image info
+[rgbd_node-1] 	-Loaded RGB-D calibration
+[rgbd_node-1] 	-Loaded ORB settings
+[rgbd_node-1] 	-Loaded viewer settings
+[rgbd_node-1] 	-Loaded Atlas settings
+[rgbd_node-1] 	-Loaded misc parameters
+[rgbd_node-1] ----------------------------------
+[rgbd_node-1] Camera.newHeight optional parameter does not exist...
+[rgbd_node-1] Camera.newWidth optional parameter does not exist...
+[rgbd_node-1] Viewer.imageViewScale optional parameter does not exist...
+[rgbd_node-1] System.LoadAtlasFromFile optional parameter does not exist...
+[rgbd_node-1] System.SaveAtlasToFile optional parameter does not exist...
+[rgbd_node-1] System.thFarPoints optional parameter does not exist...
+[rgbd_node-1] SLAM settings: 
+[rgbd_node-1] 	-Camera 1 parameters (Pinhole): [ 387.728 387.217 322.719 244.823 ]
+[rgbd_node-1] 	-Camera 1 distortion parameters: [  -0.0549 0.063086 3e-06 0.000582 -0.020351 ]
+[rgbd_node-1] 	-Original image size: [ 640 , 480 ]
+[rgbd_node-1] 	-Current image size: [ 640 , 480 ]
+[rgbd_node-1] 	-Sequence FPS: 30
+[rgbd_node-1] 	-RGB-D depth map factor: 1000
+[rgbd_node-1] 	-Features per image: 2000
+[rgbd_node-1] 	-ORB scale factor: 1.2
+[rgbd_node-1] 	-ORB number of scales: 8
+[rgbd_node-1] 	-Initial FAST threshold: 20
+[rgbd_node-1] 	-Min FAST threshold: 7
+[rgbd_node-1] 
+[rgbd_node-1] 
+[rgbd_node-1] Loading ORB Vocabulary. This could take a while...
+[rgbd_node-1] Vocabulary loaded!
+[rgbd_node-1] 
+[rgbd_node-1] Initialization of Atlas from scratch 
+[rgbd_node-1] Creation of new map with id: 0
+[rgbd_node-1] Creation of new map with last KF id: 0
+[rgbd_node-1] Seq. Name: 
+[rgbd_node-1] There are 1 cameras in the atlas
+[rgbd_node-1] Camera 0 is pinhole
+[rgbd_node-1] [INFO] [1784014292.535062615] [orbslam3_rgbd_node]: RGB-D mode (IMU disabled).
+[rgbd_node-1] [INFO] [1784014292.535596134] [orbslam3_rgbd_node]: Subscribed RGB topic: /camera/camera/color/image_raw
+[rgbd_node-1] [INFO] [1784014292.535604656] [orbslam3_rgbd_node]: Subscribed depth topic: /camera/camera/aligned_depth_to_color/image_raw
+[rgbd_node-1] [INFO] [1784014292.535607280] [orbslam3_rgbd_node]: Publishing pose: /orbslam3/pose
+[rgbd_node-1] [INFO] [1784014292.535610125] [orbslam3_rgbd_node]: Publishing odom: /orbslam3/odom
+[rgbd_node-1] [INFO] [1784014292.535612358] [orbslam3_rgbd_node]: Publishing TF: map -> camera_color_optical_frame
+[rgbd_node-1] [INFO] [1784014292.535615082] [orbslam3_rgbd_node]: ORB-SLAM3 RGB-D node started with viewer disabled.
+[INFO] [ros2-2]: process started with pid [3027808]
+[ros2-2] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1784014301.981488241] [rosbag2_storage]: Opened database '/home/ldh9501/temp_ws/CLI_environment/data_slam/260714_frame_data/converted/sam_110532_dense/sam_110532_dense_0.db3' for READ_ONLY.
+[ros2-2] [INFO] [1784014301.981560319] [rosbag2_player]: Set rate to 0.5
+[ros2-2] [INFO] [1784014301.984846816] [rosbag2_player]: Adding keyboard callbacks.
+[ros2-2] [INFO] [1784014301.984879015] [rosbag2_player]: Press SPACE for Pause/Resume
+[ros2-2] [INFO] [1784014301.984883702] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[ros2-2] [INFO] [1784014301.984886976] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[ros2-2] [INFO] [1784014301.984889650] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[ros2-2] [INFO] [1784014301.985269459] [rosbag2_storage]: Opened database '/home/ldh9501/temp_ws/CLI_environment/data_slam/260714_frame_data/converted/sam_110532_dense/sam_110532_dense_0.db3' for READ_ONLY.
+[rgbd_node-1] First KF:0; Map init KF:0
+[rgbd_node-1] New Map created with 1456 points
+[rgbd_node-1] [INFO] [1784014306.479047596] [orbslam3_rgbd_node]: Processed 30 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014310.178622307] [orbslam3_rgbd_node]: Processed 60 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014314.099455946] [orbslam3_rgbd_node]: Processed 90 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014318.184192680] [orbslam3_rgbd_node]: Processed 120 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014322.259261840] [orbslam3_rgbd_node]: Processed 150 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014326.316554382] [orbslam3_rgbd_node]: Processed 180 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014330.506668167] [orbslam3_rgbd_node]: Processed 210 RGB-D frames.
+[rgbd_node-1] Sophus ensure failed in function 'static Sophus::SO3<Scalar_> Sophus::SO3<Scalar_, Options>::expAndTheta(const Tangent&, Scalar*) [with Scalar_ = float; int Options = 0; Tangent = Eigen::Matrix<float, 3, 1>; Scalar = float]', file '/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/src/ORB_SLAM3/Thirdparty/Sophus/sophus/so3.hpp', line 614.
+[rgbd_node-1] SO3::exp failed! omega: -nan -nan -nan, real: -nan, img: -nan
+[ERROR] [rgbd_node-1]: process has died [pid 3026757, exit code -6, cmd '/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/install/orbslam3_ros2/lib/orbslam3_ros2/rgbd_node --ros-args -r __node:=orbslam3_rgbd_node --params-file /tmp/launch_params_5viahd5o'].
+[INFO] [ros2-2]: sending signal 'SIGINT' to process[ros2-2]
+[ros2-2] [INFO] [1784014333.514490335] [rclcpp]: signal_handler(signum=2)
+[INFO] [ros2-2]: process has finished cleanly [pid 3027808]

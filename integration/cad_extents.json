@@ -1,0 +1,192 @@
+{
+ "Bear": {
+  "min_mm": [
+   -57.35,
+   -58.59,
+   -65.0
+  ],
+  "max_mm": [
+   57.35,
+   58.59,
+   65.0
+  ],
+  "size_mm": [
+   114.7,
+   117.17,
+   130.0
+  ],
+  "vertices": 162828,
+  "cad": "/home/ldh9501/temp_ws/CLI_environment/sam6d_ws/data/cad/Bear/bear_color_with_normal_vertexcolor.ply"
+ },
+ "Dinosaur": {
+  "min_mm": [
+   -56.69,
+   -63.23,
+   -65.08
+  ],
+  "max_mm": [
+   56.55,
+   63.38,
+   64.92
+  ],
+  "size_mm": [
+   113.24,
+   126.61,
+   130.0
+  ],
+  "vertices": 591129,
+  "cad": "/home/ldh9501/temp_ws/CLI_environment/sam6d_ws/data/cad/Dinosaur/Dinosaur_color_with_normal_vertexcolor.ply"
+ },
+ "Febreze_high": {
+  "min_mm": [
+   -48.39,
+   -29.82,
+   -97.63
+  ],
+  "max_mm": [
+   51.75,
+   29.82,
+   100.4
+  ],
+  "size_mm": [
+   100.14,
+   59.64,
+   198.03
+  ],
+  "vertices": 230208,
+  "cad": "/home/ldh9501/temp_ws/CLI_environment/sam6d_ws/data/cad/Febreze_high/Febreze_color_with_normal_vertexcolor.ply"
+ },
+ "Mugcup_high": {
+  "min_mm": [
+   -55.94,
+   -39.79,
+   -50.12
+  ],
+  "max_mm": [
+   56.14,
+   39.89,
+   49.88
+  ],
+  "size_mm": [
+   112.07,
+   79.68,
+   100.0
+  ],
+  "vertices": 53640,
+  "cad": "/home/ldh9501/temp_ws/CLI_environment/sam6d_ws/data/cad/Mugcup_color_high/Mugcup_color_with_normal_vertexcolor.ply"
+ },
+ "Rabbit": {
+  "min_mm": [
+   -56.26,
+   -51.36,
+   -60.07
+  ],
+  "max_mm": [
+   56.11,
+   51.47,
+   59.93
+  ],
+  "size_mm": [
+   112.37,
+   102.83,
+   120.0
+  ],
+  "vertices": 599034,
+  "cad": "/home/ldh9501/temp_ws/CLI_environment/sam6d_ws/data/cad/Rabbit/Rabbit_color_with_normal_vertexcolor.ply"
+ },
+ "Sauce_high": {
+  "min_mm": [
+   -32.1,
+   -27.66,
+   -81.5
+  ],
+  "max_mm": [
+   32.1,
+   27.65,
+   81.5
+  ],
+  "size_mm": [
+   64.2,
+   55.31,
+   163.0
+  ],
+  "vertices": 3801600,
+  "cad": "/home/ldh9501/temp_ws/CLI_environment/sam6d_ws/data/cad/Sauce_high/Sauce_color_with_normal_vertexcolor.ply"
+ },
+ "Sikhye_high": {
+  "min_mm": [
+   -32.98,
+   -32.98,
+   -61.0
+  ],
+  "max_mm": [
+   32.98,
+   32.98,
+   61.0
+  ],
+  "size_mm": [
+   65.97,
+   65.97,
+   122.0
+  ],
+  "vertices": 2409216,
+  "cad": "/home/ldh9501/temp_ws/CLI_environment/sam6d_ws/data/cad/Sikhye_high/Sikhye_color_with_normal_vertexcolor.ply"
+ },
+ "choco_hazelnut_high": {
+  "min_mm": [
+   -125.0,
+   -94.74,
+   -19.92
+  ],
+  "max_mm": [
+   125.0,
+   94.74,
+   19.92
+  ],
+  "size_mm": [
+   250.0,
+   189.48,
+   39.85
+  ],
+  "vertices": 589824,
+  "cad": "/home/ldh9501/temp_ws/CLI_environment/sam6d_ws/data/cad/choco_hazelnut_color_high/choco_hazelnut_color_with_normal_vertexcolor.ply"
+ },
+ "milk": {
+  "min_mm": [
+   -36.88,
+   -36.88,
+   0.82
+  ],
+  "max_mm": [
+   36.88,
+   36.88,
+   195.82
+  ],
+  "size_mm": [
+   73.75,
+   73.75,
+   195.0
+  ],
+  "vertices": 16302,
+  "cad": "/home/ldh9501/temp_ws/CLI_environment/sam6d_ws/data/cad/milk/Milk.ply"
+ },
+ "saffron": {
+  "min_mm": [
+   -88.59,
+   -55.44,
+   -150.12
+  ],
+  "max_mm": [
+   88.3,
+   55.77,
+   149.88
+  ],
+  "size_mm": [
+   176.89,
+   111.21,
+   300.0
+  ],
+  "vertices": 600228,
+  "cad": "/home/ldh9501/temp_ws/CLI_environment/sam6d_ws/data/cad/saffron/saffron_color_with_normal_vertexcolor.ply"
+ }
+}

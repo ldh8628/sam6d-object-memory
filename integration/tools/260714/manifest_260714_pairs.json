@@ -1,0 +1,134 @@
+[
+ {
+  "name": "slam_105023",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/105023__unlabeled/SLAM",
+  "role": "slam",
+  "pair": "105023_105018",
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_105023_rgbd.yaml"
+ },
+ {
+  "name": "sam_105018",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/105023__unlabeled/SAM",
+  "role": "sam",
+  "pair": "105023_105018",
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_105018_rgbd.yaml"
+ },
+ {
+  "name": "slam_105319",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/105319__unlabeled/SLAM",
+  "role": "slam",
+  "pair": "105319_105314",
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_105319_rgbd.yaml"
+ },
+ {
+  "name": "sam_105314",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/105319__unlabeled/SAM",
+  "role": "sam",
+  "pair": "105319_105314",
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_105314_rgbd.yaml"
+ },
+ {
+  "name": "slam_105657",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/105657__unlabeled/SLAM",
+  "role": "slam",
+  "pair": "105657_105652",
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_105657_rgbd.yaml"
+ },
+ {
+  "name": "sam_105652",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/105657__unlabeled/SAM",
+  "role": "sam",
+  "pair": "105657_105652",
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_105652_rgbd.yaml"
+ },
+ {
+  "name": "slam_110109",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/110109__unlabeled/SLAM",
+  "role": "slam",
+  "pair": "110109_110104",
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_110109_rgbd.yaml"
+ },
+ {
+  "name": "sam_110104",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/110109__unlabeled/SAM",
+  "role": "sam",
+  "pair": "110109_110104",
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_110104_rgbd.yaml"
+ },
+ {
+  "name": "slam_110536",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/110536__unlabeled/SLAM",
+  "role": "slam",
+  "pair": "110536_110532",
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_110536_rgbd.yaml"
+ },
+ {
+  "name": "sam_110532",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/110536__unlabeled/SAM",
+  "role": "sam",
+  "pair": "110536_110532",
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_110532_rgbd.yaml"
+ },
+ {
+  "name": "slam_110637",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/110637__unlabeled/SLAM",
+  "role": "slam",
+  "pair": "110637_110633",
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_110637_rgbd.yaml"
+ },
+ {
+  "name": "sam_110633",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/110637__unlabeled/SAM",
+  "role": "sam",
+  "pair": "110637_110633",
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_110633_rgbd.yaml"
+ }
+]

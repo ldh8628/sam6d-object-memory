@@ -1,0 +1,43 @@
+%YAML:1.0
+
+File.version: "1.0"
+Camera.type: "PinHole"
+
+# Color intrinsics from recording_20260714_105023 (D455, 640x480) -- auto-generated
+Camera1.fx: 386.918
+Camera1.fy: 386.347
+Camera1.cx: 322.784
+Camera1.cy: 250.280
+
+Camera1.k1: -0.056362
+Camera1.k2: 0.067728
+Camera1.p1: 0.000344
+Camera1.p2: 0.000891
+Camera1.k3: -0.022403
+
+Camera.width: 640
+Camera.height: 480
+Camera.fps: 30
+Camera.RGB: 1
+
+Stereo.ThDepth: 40.0
+Stereo.b: 0.0592
+
+RGBD.DepthMapFactor: 1000.0
+
+ORBextractor.nFeatures: 2000
+ORBextractor.scaleFactor: 1.2
+ORBextractor.nLevels: 8
+ORBextractor.iniThFAST: 20
+ORBextractor.minThFAST: 7
+
+Viewer.KeyFrameSize: 0.05
+Viewer.KeyFrameLineWidth: 1.0
+Viewer.GraphLineWidth: 0.9
+Viewer.PointSize: 2.0
+Viewer.CameraSize: 0.08
+Viewer.CameraLineWidth: 3.0
+Viewer.ViewpointX: 0.0
+Viewer.ViewpointY: -0.7
+Viewer.ViewpointZ: -3.5
+Viewer.ViewpointF: 500.0

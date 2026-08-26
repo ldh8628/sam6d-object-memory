@@ -1,0 +1,18 @@
+{
+  "_comment": "Optional. build_inputs.py discovers rigs by looking for subdirectories that contain a 'raw' folder; this file only adds descriptions and per-rig switches. Delete it and everything still runs on defaults.",
+  "layout": {
+    "raw": "raw",
+    "standard": "rgbd_standard",
+    "settings": "settings"
+  },
+  "rigs": {
+    "husky_a200_0881": {
+      "description": "Husky A200 (D455F #419222301870 + VLP-16 + Xsens)",
+      "make_settings": true
+    },
+    "laptop_win_qn90665": {
+      "description": "Windows laptop (D455F #408222300890, RGB-D only)",
+      "make_settings": true
+    }
+  }
+}

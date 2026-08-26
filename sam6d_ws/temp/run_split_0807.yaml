@@ -1,0 +1,24 @@
+# 분리 실행 설정 — 수신 프로세스 + 추론 프로세스 (0807/185223)
+topics:
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+  caminfo: /camera/camera/color/camera_info
+
+ism:
+  config: configs/yolo_ism_objects.yaml
+  objects: []
+
+runtime:
+  device: cuda:0
+  use_sim_time: true
+  sync_slop: 0.02
+  sync_queue: 30
+  qos_reliability: reliable   # 영상 토픽에 best_effort 를 쓰면 대량 유실된다(NOTES 24절)
+  qos_depth: 30
+  det_score_thresh: 0.2
+  status_period_s: 1.0
+  idle_exit_s: 20          # 입력이 이만큼 끊기면 추론 프로세스가 스스로 끝난다
+
+output:
+  dir: temp/rt_split_rel
+  diagnostics: true

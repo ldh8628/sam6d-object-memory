@@ -1,30 +1,37 @@
-# Large datasets, inference outputs, model weights, and generated archives
-data/
-output/
-outputs/
-checkpoints/
-assets/
-*.pt
-*.pth
-*.onnx
-*.engine
-*.bag
-*.db3
-*.tar
-*.tar.gz
-*.tar.gz.part-*
+# Build products (colcon / cmake)
+**/build/
+**/build_*/
+**/install/
+**/install_*/
+**/log/
+CMakeFiles/
+*.o
+*.so
+*.a
 
-# Local/runtime files
+# Python runtime
 __pycache__/
 *.py[cod]
 .pytest_cache/
-.mypy_cache/
-.venv/
-venv/
-*.log
-*.tmp
+*.egg-info/
 
-# Local IDE and machine state
+# Bags / maps / large regenerable outputs
+*.db3
+*.osa
+*.pcd
+*.bag
+orbslam_ws/output/
+orbslam_ws/data/rgbd_bag/
+integration/data/
+integration/output/
+objectmemory_ws/input/
+objectmemory_ws/output/
+
+# ORB-SLAM3 vocabulary: ship the 41 MB tarball, not the 139 MB text
+orbslam_ws/src/ORB_SLAM3/Vocabulary/ORBvoc.txt
+
+# Editor / OS
 .vscode/
 .idea/
+.DS_Store
 *.swp

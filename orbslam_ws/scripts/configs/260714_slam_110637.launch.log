@@ -1,0 +1,1051 @@
+[INFO] [launch]: All log files can be found below /home/ldh9501/.ros/log/2026-07-14-16-37-40-776424-user-3056175
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [rgbd_node-1]: process started with pid [3056209]
+[rgbd_node-1] [INFO] [1784014660.868215044] [orbslam3_rgbd_node]: Publishing map points : /orbslam3/map_points
+[rgbd_node-1] [INFO] [1784014660.869557618] [orbslam3_rgbd_node]: Publishing dense map : /orbslam3/dense_map
+[rgbd_node-1] [INFO] [1784014660.870373231] [orbslam3_rgbd_node]: Loading ORB-SLAM3 vocabulary: /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/src/ORB_SLAM3/Vocabulary/ORBvoc.txt
+[rgbd_node-1] [INFO] [1784014660.870564858] [orbslam3_rgbd_node]: Loading ORB-SLAM3 settings: /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_110637_rgbd.yaml
+[rgbd_node-1] Camera.newHeight optional parameter does not exist...
+[rgbd_node-1] Camera.newWidth optional parameter does not exist...
+[rgbd_node-1] Viewer.imageViewScale optional parameter does not exist...
+[rgbd_node-1] System.LoadAtlasFromFile optional parameter does not exist...
+[rgbd_node-1] System.SaveAtlasToFile optional parameter does not exist...
+[rgbd_node-1] System.thFarPoints optional parameter does not exist...
+[rgbd_node-1] 
+[rgbd_node-1] ORB-SLAM3 Copyright (C) 2017-2020 Carlos Campos, Richard Elvira, Juan J. Gómez, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+[rgbd_node-1] ORB-SLAM2 Copyright (C) 2014-2016 Raúl Mur-Artal, José M.M. Montiel and Juan D. Tardós, University of Zaragoza.
+[rgbd_node-1] This program comes with ABSOLUTELY NO WARRANTY;
+[rgbd_node-1] This is free software, and you are welcome to redistribute it
+[rgbd_node-1] under certain conditions. See LICENSE.txt.
+[rgbd_node-1] 
+[rgbd_node-1] Input sensor was set to: RGB-D
+[rgbd_node-1] Loading settings from /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_110637_rgbd.yaml
+[rgbd_node-1] 	-Loaded camera 1
+[rgbd_node-1] 	-Loaded image info
+[rgbd_node-1] 	-Loaded RGB-D calibration
+[rgbd_node-1] 	-Loaded ORB settings
+[rgbd_node-1] 	-Loaded viewer settings
+[rgbd_node-1] 	-Loaded Atlas settings
+[rgbd_node-1] 	-Loaded misc parameters
+[rgbd_node-1] ----------------------------------
+[rgbd_node-1] SLAM settings: 
+[rgbd_node-1] 	-Camera 1 parameters (Pinhole): [ 387.128 386.557 322.784 250.28 ]
+[rgbd_node-1] 	-Camera 1 distortion parameters: [  -0.056362 0.067728 0.000344 0.000891 -0.022403 ]
+[rgbd_node-1] 	-Original image size: [ 640 , 480 ]
+[rgbd_node-1] 	-Current image size: [ 640 , 480 ]
+[rgbd_node-1] 	-Sequence FPS: 30
+[rgbd_node-1] 	-RGB-D depth map factor: 1000
+[rgbd_node-1] 	-Features per image: 2000
+[rgbd_node-1] 	-ORB scale factor: 1.2
+[rgbd_node-1] 	-ORB number of scales: 8
+[rgbd_node-1] 	-Initial FAST threshold: 20
+[rgbd_node-1] 	-Min FAST threshold: 7
+[rgbd_node-1] 
+[rgbd_node-1] 
+[rgbd_node-1] Loading ORB Vocabulary. This could take a while...
+[rgbd_node-1] Vocabulary loaded!
+[rgbd_node-1] 
+[rgbd_node-1] Initialization of Atlas from scratch 
+[rgbd_node-1] Creation of new map with id: 0
+[rgbd_node-1] Creation of new map with last KF id: 0
+[rgbd_node-1] Seq. Name: 
+[rgbd_node-1] There are 1 cameras in the atlas
+[rgbd_node-1] Camera 0 is pinhole
+[rgbd_node-1] [INFO] [1784014663.652302702] [orbslam3_rgbd_node]: RGB-D mode (IMU disabled).
+[rgbd_node-1] [INFO] [1784014663.653276753] [orbslam3_rgbd_node]: Subscribed RGB topic: /camera/camera/color/image_raw
+[rgbd_node-1] [INFO] [1784014663.653298756] [orbslam3_rgbd_node]: Subscribed depth topic: /camera/camera/aligned_depth_to_color/image_raw
+[rgbd_node-1] [INFO] [1784014663.653303313] [orbslam3_rgbd_node]: Publishing pose: /orbslam3/pose
+[rgbd_node-1] [INFO] [1784014663.653306558] [orbslam3_rgbd_node]: Publishing odom: /orbslam3/odom
+[rgbd_node-1] [INFO] [1784014663.653309462] [orbslam3_rgbd_node]: Publishing TF: map -> camera_color_optical_frame
+[rgbd_node-1] [INFO] [1784014663.653313228] [orbslam3_rgbd_node]: ORB-SLAM3 RGB-D node started with viewer disabled.
+[INFO] [ros2-2]: process started with pid [3057086]
+[ros2-2] stdin is not a terminal device. Keyboard handling disabled.[INFO] [1784014672.947703363] [rosbag2_storage]: Opened database '/home/ldh9501/temp_ws/CLI_environment/data_slam/260714_frame_data/converted/slam_110637/slam_110637_0.db3' for READ_ONLY.
+[ros2-2] [INFO] [1784014672.948020288] [rosbag2_player]: Set rate to 1
+[ros2-2] [INFO] [1784014672.950916231] [rosbag2_player]: Adding keyboard callbacks.
+[ros2-2] [INFO] [1784014672.950939325] [rosbag2_player]: Press SPACE for Pause/Resume
+[ros2-2] [INFO] [1784014672.950944193] [rosbag2_player]: Press CURSOR_RIGHT for Play Next Message
+[ros2-2] [INFO] [1784014672.950948039] [rosbag2_player]: Press CURSOR_UP for Increase Rate 10%
+[ros2-2] [INFO] [1784014672.950951283] [rosbag2_player]: Press CURSOR_DOWN for Decrease Rate 10%
+[ros2-2] [INFO] [1784014672.951254909] [rosbag2_storage]: Opened database '/home/ldh9501/temp_ws/CLI_environment/data_slam/260714_frame_data/converted/slam_110637/slam_110637_0.db3' for READ_ONLY.
+[rgbd_node-1] First KF:0; Map init KF:0
+[rgbd_node-1] New Map created with 1609 points
+[rgbd_node-1] [INFO] [1784014676.289653737] [orbslam3_rgbd_node]: Processed 30 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014678.252275355] [orbslam3_rgbd_node]: Processed 60 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014680.264064099] [orbslam3_rgbd_node]: Processed 90 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014682.258263263] [orbslam3_rgbd_node]: Processed 120 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014684.419088436] [orbslam3_rgbd_node]: Processed 150 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014686.301142447] [orbslam3_rgbd_node]: Processed 180 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014688.379945748] [orbslam3_rgbd_node]: Processed 210 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014690.272966390] [orbslam3_rgbd_node]: Processed 240 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014692.349597736] [orbslam3_rgbd_node]: Processed 270 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014694.307060094] [orbslam3_rgbd_node]: Processed 300 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014696.325033245] [orbslam3_rgbd_node]: Processed 330 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014698.378578424] [orbslam3_rgbd_node]: Processed 360 RGB-D frames.
+[rgbd_node-1] *Loop detected
+[rgbd_node-1] LOOP_GAP|cur_id=67|matched_id=3|ts_cur=1783994825.102536|ts_matched=1783994802.277042|cur_xyz=0.040259,0.072419,-1.444990|matched_xyz=0.103981,-0.001811,0.077932|gap_m=1.526061|sim3t=0.028623,-0.020858,1.294561|sim3_scale=1.000000
+[rgbd_node-1] Local Mapping STOP
+[rgbd_node-1] Local Mapping RELEASE
+[rgbd_node-1] Local Mapping STOP
+[rgbd_node-1] Local Mapping RELEASE
+[rgbd_node-1] [INFO] [1784014700.337613482] [orbslam3_rgbd_node]: Processed 390 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014702.319049748] [orbslam3_rgbd_node]: Processed 420 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014704.372613774] [orbslam3_rgbd_node]: Processed 450 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014706.389370136] [orbslam3_rgbd_node]: Processed 480 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014708.464952372] [orbslam3_rgbd_node]: Processed 510 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014710.407575879] [orbslam3_rgbd_node]: Processed 540 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014712.394631417] [orbslam3_rgbd_node]: Processed 570 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014714.339209431] [orbslam3_rgbd_node]: Processed 600 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014716.445841332] [orbslam3_rgbd_node]: Processed 630 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014718.585823135] [orbslam3_rgbd_node]: Processed 660 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014720.376620799] [orbslam3_rgbd_node]: Processed 690 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014722.554901512] [orbslam3_rgbd_node]: Processed 720 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014724.393748872] [orbslam3_rgbd_node]: Processed 750 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014726.339350869] [orbslam3_rgbd_node]: Processed 780 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014728.400202559] [orbslam3_rgbd_node]: Processed 810 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014730.471070986] [orbslam3_rgbd_node]: Processed 840 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014732.503199123] [orbslam3_rgbd_node]: Processed 870 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014734.493837449] [orbslam3_rgbd_node]: Processed 900 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014736.372269303] [orbslam3_rgbd_node]: Processed 930 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014738.381268526] [orbslam3_rgbd_node]: Processed 960 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014740.409112361] [orbslam3_rgbd_node]: Processed 990 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014742.473327958] [orbslam3_rgbd_node]: Processed 1020 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014744.503609754] [orbslam3_rgbd_node]: Processed 1050 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014746.493837413] [orbslam3_rgbd_node]: Processed 1080 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014748.401824845] [orbslam3_rgbd_node]: Processed 1110 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014750.503708410] [orbslam3_rgbd_node]: Processed 1140 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014752.581575645] [orbslam3_rgbd_node]: Processed 1170 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014754.503896733] [orbslam3_rgbd_node]: Processed 1200 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014756.410546244] [orbslam3_rgbd_node]: Processed 1230 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014758.409036723] [orbslam3_rgbd_node]: Processed 1260 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014760.428466375] [orbslam3_rgbd_node]: Processed 1290 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014762.500521746] [orbslam3_rgbd_node]: Processed 1320 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014764.580788597] [orbslam3_rgbd_node]: Processed 1350 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014766.578633531] [orbslam3_rgbd_node]: Processed 1380 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014768.536382620] [orbslam3_rgbd_node]: Processed 1410 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014770.467500700] [orbslam3_rgbd_node]: Processed 1440 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014772.535700613] [orbslam3_rgbd_node]: Processed 1470 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014774.657340614] [orbslam3_rgbd_node]: Processed 1500 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014776.628977370] [orbslam3_rgbd_node]: Processed 1530 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014778.514996352] [orbslam3_rgbd_node]: Processed 1560 RGB-D frames.
+[rgbd_node-1] [INFO] [1784014780.475956450] [orbslam3_rgbd_node]: Processed 1590 RGB-D frames.
+[rgbd_node-1] [WARN] [1784014780.942301806] []: Messages of type 1 arrived out of order (will print only once)
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 1
+[rgbd_node-1] Stored map with ID: 0
+[rgbd_node-1] Creation of new map with last KF id: 85
+[rgbd_node-1] First KF:85; Map init KF:85
+[rgbd_node-1] New Map created with 1864 points
+[rgbd_node-1] [WARN] [1784014781.051200122] []: Messages of type 0 arrived out of order (will print only once)
+[rgbd_node-1] TRACK_REF_KF: Less than 15 matches!!
+[rgbd_node-1] Fail to track local map!
+[rgbd_node-1] LM: Active map reset recieved
+[rgbd_node-1] LM: Active map reset, waiting...
+[rgbd_node-1] LM: Reseting current map in Local Mapping...
+[rgbd_node-1] LM: End reseting Local Mapping...
+[rgbd_node-1] LM: Reset free the mutex
+[rgbd_node-1] LM: Active map reset, Done!!!
+[rgbd_node-1] mnFirstFrameId = 0
+[rgbd_node-1] mnInitialFrameId = 1600
+[rgbd_node-1] 8 Frames set to lost
+[rgbd_node-1] First KF:86; Map init KF:85
+[rgbd_node-1] New Map created with 1888 points
+[rgbd_node-1] virtual int g2o::SparseOptimizer::optimize(int, bool): 0 vertices to optimize, maybe forgot to call initializeOptimization()
+[rgbd_node-1] virtual int g2o::SparseOptimizer::optimize(int, bool): 0 vertices to optimize, maybe forgot to call initializeOptimization()
+[rgbd_node-1] virtual int g2o::SparseOptimizer::optimize(int, bool): 0 vertices to optimize, maybe forgot to call initializeOptimization()
+[rgbd_node-1] Fail to track local map!
+[rgbd_node-1] LM: Active map reset recieved
+[rgbd_node-1] LM: Active map reset, waiting...
+[rgbd_node-1] LM: Reseting current map in Local Mapping...
+[rgbd_node-1] LM: End reseting Local Mapping...
+[rgbd_node-1] LM: Reset free the mutex
+[rgbd_node-1] LM: Active map reset, Done!!!
+[rgbd_node-1] mnFirstFrameId = 0
+[rgbd_node-1] mnInitialFrameId = 1609
+[rgbd_node-1] 0 Frames set to lost
+[rgbd_node-1] First KF:87; Map init KF:86
+[rgbd_node-1] New Map created with 1887 points
+[rgbd_node-1] TRACK_REF_KF: Less than 15 matches!!
+[rgbd_node-1] Fail to track local map!
+[rgbd_node-1] LM: Active map reset recieved
+[rgbd_node-1] LM: Active map reset, waiting...
+[rgbd_node-1] LM: Reseting current map in Local Mapping...
+[rgbd_node-1] LM: End reseting Local Mapping...
+[rgbd_node-1] LM: Reset free the mutex
+[rgbd_node-1] LM: Active map reset, Done!!!
+[rgbd_node-1] mnFirstFrameId = 0
+[rgbd_node-1] mnInitialFrameId = 1611
+[rgbd_node-1] 0 Frames set to lost
+[rgbd_node-1] First KF:88; Map init KF:87
+[rgbd_node-1] New Map created with 1899 points
+[rgbd_node-1] TRACK_REF_KF: Less than 15 matches!!
+[rgbd_node-1] Fail to track local map!
+[rgbd_node-1] LM: Active map reset recieved
+[rgbd_node-1] LM: Active map reset, waiting...
+[rgbd_node-1] LM: Reseting current map in Local Mapping...
+[rgbd_node-1] LM: End reseting Local Mapping...
+[rgbd_node-1] LM: Reset free the mutex
+[rgbd_node-1] LM: Active map reset, Done!!!
+[rgbd_node-1] mnFirstFrameId = 0
+[rgbd_node-1] mnInitialFrameId = 1613
+[rgbd_node-1] 0 Frames set to lost
+[rgbd_node-1] First KF:89; Map init KF:88
+[rgbd_node-1] New Map created with 1889 points
+[rgbd_node-1] TRACK_REF_KF: Less than 15 matches!!
+[rgbd_node-1] Fail to track local map!
+[rgbd_node-1] LM: Active map reset recieved
+[rgbd_node-1] LM: Active map reset, waiting...
+[rgbd_node-1] LM: Reseting current map in Local Mapping...
+[rgbd_node-1] LM: End reseting Local Mapping...
+[rgbd_node-1] LM: Reset free the mutex
+[rgbd_node-1] LM: Active map reset, Done!!!
+[rgbd_node-1] mnFirstFrameId = 0
+[rgbd_node-1] mnInitialFrameId = 1615
+[rgbd_node-1] 0 Frames set to lost
+[rgbd_node-1] First KF:90; Map init KF:89
+[rgbd_node-1] New Map created with 1892 points
+[rgbd_node-1] TRACK_REF_KF: Less than 15 matches!!
+[rgbd_node-1] Fail to track local map!
+[rgbd_node-1] [INFO] [1784014781.449911768] [orbslam3_rgbd_node]: Processed 1620 RGB-D frames.
+[rgbd_node-1] LM: Active map reset recieved
+[rgbd_node-1] LM: Active map reset, waiting...
+[rgbd_node-1] LM: Reseting current map in Local Mapping...
+[rgbd_node-1] LM: End reseting Local Mapping...
+[rgbd_node-1] LM: Reset free the mutex
+[rgbd_node-1] LM: Active map reset, Done!!!
+[rgbd_node-1] mnFirstFrameId = 0
+[rgbd_node-1] mnInitialFrameId = 1617
+[rgbd_node-1] 0 Frames set to lost
+[rgbd_node-1] First KF:91; Map init KF:90
+[rgbd_node-1] New Map created with 1883 points
+[rgbd_node-1] TRACK_REF_KF: Less than 15 matches!!
+[rgbd_node-1] Fail to track local map!
+[rgbd_node-1] LM: Active map reset recieved
+[rgbd_node-1] LM: Active map reset, waiting...
+[rgbd_node-1] LM: Reseting current map in Local Mapping...
+[rgbd_node-1] LM: End reseting Local Mapping...
+[rgbd_node-1] LM: Reset free the mutex
+[rgbd_node-1] LM: Active map reset, Done!!!
+[rgbd_node-1] mnFirstFrameId = 0
+[rgbd_node-1] mnInitialFrameId = 1619
+[rgbd_node-1] 0 Frames set to lost
+[rgbd_node-1] First KF:92; Map init KF:91
+[rgbd_node-1] New Map created with 1884 points
+[rgbd_node-1] TRACK_REF_KF: Less than 15 matches!!
+[rgbd_node-1] Fail to track local map!
+[rgbd_node-1] LM: Active map reset recieved
+[rgbd_node-1] LM: Active map reset, waiting...
+[rgbd_node-1] LM: Reseting current map in Local Mapping...
+[rgbd_node-1] LM: End reseting Local Mapping...
+[rgbd_node-1] LM: Reset free the mutex
+[rgbd_node-1] LM: Active map reset, Done!!!
+[rgbd_node-1] mnFirstFrameId = 0
+[rgbd_node-1] mnInitialFrameId = 1621
+[rgbd_node-1] 0 Frames set to lost
+[rgbd_node-1] First KF:93; Map init KF:92
+[rgbd_node-1] New Map created with 1886 points
+[rgbd_node-1] TRACK_REF_KF: Less than 15 matches!!
+[rgbd_node-1] Fail to track local map!
+[rgbd_node-1] LM: Active map reset recieved
+[rgbd_node-1] LM: Active map reset, waiting...
+[rgbd_node-1] LM: Reseting current map in Local Mapping...
+[rgbd_node-1] LM: End reseting Local Mapping...
+[rgbd_node-1] LM: Reset free the mutex
+[rgbd_node-1] LM: Active map reset, Done!!!
+[rgbd_node-1] mnFirstFrameId = 0
+[rgbd_node-1] mnInitialFrameId = 1623
+[rgbd_node-1] 0 Frames set to lost
+[rgbd_node-1] First KF:94; Map init KF:93
+[rgbd_node-1] New Map created with 1885 points
+[rgbd_node-1] TRACK_REF_KF: Less than 15 matches!!
+[rgbd_node-1] Fail to track local map!
+[rgbd_node-1] LM: Active map reset recieved
+[rgbd_node-1] LM: Active map reset, waiting...
+[rgbd_node-1] LM: Reseting current map in Local Mapping...
+[rgbd_node-1] LM: End reseting Local Mapping...
+[rgbd_node-1] LM: Reset free the mutex
+[rgbd_node-1] LM: Active map reset, Done!!!
+[rgbd_node-1] mnFirstFrameId = 0
+[rgbd_node-1] mnInitialFrameId = 1625
+[rgbd_node-1] 0 Frames set to lost
+[rgbd_node-1] First KF:95; Map init KF:94
+[rgbd_node-1] New Map created with 1916 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 2
+[rgbd_node-1] Stored map with ID: 1
+[rgbd_node-1] Creation of new map with last KF id: 96
+[rgbd_node-1] First KF:96; Map init KF:96
+[rgbd_node-1] New Map created with 1914 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 3
+[rgbd_node-1] Stored map with ID: 2
+[rgbd_node-1] Creation of new map with last KF id: 96
+[rgbd_node-1] First KF:97; Map init KF:96
+[rgbd_node-1] New Map created with 1910 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 4
+[rgbd_node-1] Stored map with ID: 3
+[rgbd_node-1] Creation of new map with last KF id: 98
+[rgbd_node-1] First KF:98; Map init KF:98
+[rgbd_node-1] New Map created with 1916 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 5
+[rgbd_node-1] Stored map with ID: 4
+[rgbd_node-1] Creation of new map with last KF id: 98
+[rgbd_node-1] First KF:99; Map init KF:98
+[rgbd_node-1] New Map created with 1913 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 6
+[rgbd_node-1] Stored map with ID: 5
+[rgbd_node-1] Creation of new map with last KF id: 100
+[rgbd_node-1] First KF:100; Map init KF:100
+[rgbd_node-1] New Map created with 1939 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 7
+[rgbd_node-1] Stored map with ID: 6
+[rgbd_node-1] Creation of new map with last KF id: 100
+[rgbd_node-1] First KF:101; Map init KF:100
+[rgbd_node-1] New Map created with 1912 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 8
+[rgbd_node-1] Stored map with ID: 7
+[rgbd_node-1] Creation of new map with last KF id: 102
+[rgbd_node-1] First KF:102; Map init KF:102
+[rgbd_node-1] New Map created with 1915 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 9
+[rgbd_node-1] Stored map with ID: 8
+[rgbd_node-1] Creation of new map with last KF id: 102
+[rgbd_node-1] First KF:103; Map init KF:102
+[rgbd_node-1] New Map created with 1932 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 10
+[rgbd_node-1] Stored map with ID: 9
+[rgbd_node-1] Creation of new map with last KF id: 104
+[rgbd_node-1] First KF:104; Map init KF:104
+[rgbd_node-1] New Map created with 1880 points
+[rgbd_node-1] [INFO] [1784014782.622518910] [orbslam3_rgbd_node]: Processed 1650 RGB-D frames.
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 11
+[rgbd_node-1] Stored map with ID: 10
+[rgbd_node-1] Creation of new map with last KF id: 104
+[rgbd_node-1] First KF:105; Map init KF:104
+[rgbd_node-1] New Map created with 1896 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 12
+[rgbd_node-1] Stored map with ID: 11
+[rgbd_node-1] Creation of new map with last KF id: 106
+[rgbd_node-1] First KF:106; Map init KF:106
+[rgbd_node-1] New Map created with 1911 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 13
+[rgbd_node-1] Stored map with ID: 12
+[rgbd_node-1] Creation of new map with last KF id: 106
+[rgbd_node-1] First KF:107; Map init KF:106
+[rgbd_node-1] New Map created with 1920 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 14
+[rgbd_node-1] Stored map with ID: 13
+[rgbd_node-1] Creation of new map with last KF id: 108
+[rgbd_node-1] First KF:108; Map init KF:108
+[rgbd_node-1] New Map created with 1899 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 15
+[rgbd_node-1] Stored map with ID: 14
+[rgbd_node-1] Creation of new map with last KF id: 108
+[rgbd_node-1] First KF:109; Map init KF:108
+[rgbd_node-1] New Map created with 1924 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 16
+[rgbd_node-1] Stored map with ID: 15
+[rgbd_node-1] Creation of new map with last KF id: 110
+[rgbd_node-1] First KF:110; Map init KF:110
+[rgbd_node-1] New Map created with 1894 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 17
+[rgbd_node-1] Stored map with ID: 16
+[rgbd_node-1] Creation of new map with last KF id: 110
+[rgbd_node-1] First KF:111; Map init KF:110
+[rgbd_node-1] New Map created with 1916 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 18
+[rgbd_node-1] Stored map with ID: 17
+[rgbd_node-1] Creation of new map with last KF id: 112
+[rgbd_node-1] First KF:112; Map init KF:112
+[rgbd_node-1] New Map created with 1891 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 19
+[rgbd_node-1] Stored map with ID: 18
+[rgbd_node-1] Creation of new map with last KF id: 112
+[rgbd_node-1] First KF:113; Map init KF:112
+[rgbd_node-1] New Map created with 1895 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 20
+[rgbd_node-1] Stored map with ID: 19
+[rgbd_node-1] Creation of new map with last KF id: 114
+[rgbd_node-1] First KF:114; Map init KF:114
+[rgbd_node-1] New Map created with 1870 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 21
+[rgbd_node-1] Stored map with ID: 20
+[rgbd_node-1] Creation of new map with last KF id: 114
+[rgbd_node-1] First KF:115; Map init KF:114
+[rgbd_node-1] New Map created with 1889 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 22
+[rgbd_node-1] Stored map with ID: 21
+[rgbd_node-1] Creation of new map with last KF id: 116
+[rgbd_node-1] First KF:116; Map init KF:116
+[rgbd_node-1] New Map created with 1888 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 23
+[rgbd_node-1] Stored map with ID: 22
+[rgbd_node-1] Creation of new map with last KF id: 116
+[rgbd_node-1] First KF:117; Map init KF:116
+[rgbd_node-1] New Map created with 1875 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 24
+[rgbd_node-1] Stored map with ID: 23
+[rgbd_node-1] Creation of new map with last KF id: 118
+[rgbd_node-1] First KF:118; Map init KF:118
+[rgbd_node-1] New Map created with 1880 points
+[rgbd_node-1] [INFO] [1784014783.577300946] [orbslam3_rgbd_node]: Processed 1680 RGB-D frames.
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 25
+[rgbd_node-1] Stored map with ID: 24
+[rgbd_node-1] Creation of new map with last KF id: 118
+[rgbd_node-1] First KF:119; Map init KF:118
+[rgbd_node-1] New Map created with 1860 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 26
+[rgbd_node-1] Stored map with ID: 25
+[rgbd_node-1] Creation of new map with last KF id: 120
+[rgbd_node-1] First KF:120; Map init KF:120
+[rgbd_node-1] New Map created with 1880 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 27
+[rgbd_node-1] Stored map with ID: 26
+[rgbd_node-1] Creation of new map with last KF id: 120
+[rgbd_node-1] First KF:121; Map init KF:120
+[rgbd_node-1] New Map created with 1889 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 28
+[rgbd_node-1] Stored map with ID: 27
+[rgbd_node-1] Creation of new map with last KF id: 122
+[rgbd_node-1] First KF:122; Map init KF:122
+[rgbd_node-1] New Map created with 1892 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 29
+[rgbd_node-1] Stored map with ID: 28
+[rgbd_node-1] Creation of new map with last KF id: 122
+[rgbd_node-1] First KF:123; Map init KF:122
+[rgbd_node-1] New Map created with 1923 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 30
+[rgbd_node-1] Stored map with ID: 29
+[rgbd_node-1] Creation of new map with last KF id: 124
+[rgbd_node-1] First KF:124; Map init KF:124
+[rgbd_node-1] New Map created with 1896 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 31
+[rgbd_node-1] Stored map with ID: 30
+[rgbd_node-1] Creation of new map with last KF id: 124
+[rgbd_node-1] First KF:125; Map init KF:124
+[rgbd_node-1] New Map created with 1914 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 32
+[rgbd_node-1] Stored map with ID: 31
+[rgbd_node-1] Creation of new map with last KF id: 126
+[rgbd_node-1] First KF:126; Map init KF:126
+[rgbd_node-1] New Map created with 1899 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 33
+[rgbd_node-1] Stored map with ID: 32
+[rgbd_node-1] Creation of new map with last KF id: 126
+[rgbd_node-1] First KF:127; Map init KF:126
+[rgbd_node-1] New Map created with 1920 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 34
+[rgbd_node-1] Stored map with ID: 33
+[rgbd_node-1] Creation of new map with last KF id: 128
+[rgbd_node-1] First KF:128; Map init KF:128
+[rgbd_node-1] New Map created with 1902 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 35
+[rgbd_node-1] Stored map with ID: 34
+[rgbd_node-1] Creation of new map with last KF id: 128
+[rgbd_node-1] First KF:129; Map init KF:128
+[rgbd_node-1] New Map created with 1916 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 36
+[rgbd_node-1] Stored map with ID: 35
+[rgbd_node-1] Creation of new map with last KF id: 130
+[rgbd_node-1] First KF:130; Map init KF:130
+[rgbd_node-1] New Map created with 1909 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 37
+[rgbd_node-1] Stored map with ID: 36
+[rgbd_node-1] Creation of new map with last KF id: 130
+[rgbd_node-1] First KF:131; Map init KF:130
+[rgbd_node-1] New Map created with 1888 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 38
+[rgbd_node-1] Stored map with ID: 37
+[rgbd_node-1] Creation of new map with last KF id: 132
+[rgbd_node-1] First KF:132; Map init KF:132
+[rgbd_node-1] New Map created with 1883 points
+[rgbd_node-1] [INFO] [1784014784.712357504] [orbslam3_rgbd_node]: Processed 1710 RGB-D frames.
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 39
+[rgbd_node-1] Stored map with ID: 38
+[rgbd_node-1] Creation of new map with last KF id: 132
+[rgbd_node-1] First KF:133; Map init KF:132
+[rgbd_node-1] New Map created with 1873 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 40
+[rgbd_node-1] Stored map with ID: 39
+[rgbd_node-1] Creation of new map with last KF id: 134
+[rgbd_node-1] First KF:134; Map init KF:134
+[rgbd_node-1] New Map created with 1875 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 41
+[rgbd_node-1] Stored map with ID: 40
+[rgbd_node-1] Creation of new map with last KF id: 134
+[rgbd_node-1] First KF:135; Map init KF:134
+[rgbd_node-1] New Map created with 1885 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 42
+[rgbd_node-1] Stored map with ID: 41
+[rgbd_node-1] Creation of new map with last KF id: 136
+[rgbd_node-1] First KF:136; Map init KF:136
+[rgbd_node-1] New Map created with 1900 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 43
+[rgbd_node-1] Stored map with ID: 42
+[rgbd_node-1] Creation of new map with last KF id: 136
+[rgbd_node-1] First KF:137; Map init KF:136
+[rgbd_node-1] New Map created with 1875 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 44
+[rgbd_node-1] Stored map with ID: 43
+[rgbd_node-1] Creation of new map with last KF id: 138
+[rgbd_node-1] First KF:138; Map init KF:138
+[rgbd_node-1] New Map created with 1889 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 45
+[rgbd_node-1] Stored map with ID: 44
+[rgbd_node-1] Creation of new map with last KF id: 138
+[rgbd_node-1] First KF:139; Map init KF:138
+[rgbd_node-1] New Map created with 1865 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 46
+[rgbd_node-1] Stored map with ID: 45
+[rgbd_node-1] Creation of new map with last KF id: 140
+[rgbd_node-1] First KF:140; Map init KF:140
+[rgbd_node-1] New Map created with 1870 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 47
+[rgbd_node-1] Stored map with ID: 46
+[rgbd_node-1] Creation of new map with last KF id: 140
+[rgbd_node-1] First KF:141; Map init KF:140
+[rgbd_node-1] New Map created with 1862 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 48
+[rgbd_node-1] Stored map with ID: 47
+[rgbd_node-1] Creation of new map with last KF id: 142
+[rgbd_node-1] First KF:142; Map init KF:142
+[rgbd_node-1] New Map created with 1887 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 49
+[rgbd_node-1] Stored map with ID: 48
+[rgbd_node-1] Creation of new map with last KF id: 142
+[rgbd_node-1] First KF:143; Map init KF:142
+[rgbd_node-1] New Map created with 1892 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 50
+[rgbd_node-1] Stored map with ID: 49
+[rgbd_node-1] Creation of new map with last KF id: 144
+[rgbd_node-1] First KF:144; Map init KF:144
+[rgbd_node-1] New Map created with 1858 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 51
+[rgbd_node-1] Stored map with ID: 50
+[rgbd_node-1] Creation of new map with last KF id: 144
+[rgbd_node-1] First KF:145; Map init KF:144
+[rgbd_node-1] New Map created with 1865 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 52
+[rgbd_node-1] Stored map with ID: 51
+[rgbd_node-1] Creation of new map with last KF id: 146
+[rgbd_node-1] First KF:146; Map init KF:146
+[rgbd_node-1] New Map created with 1877 points
+[rgbd_node-1] [INFO] [1784014785.753168793] [orbslam3_rgbd_node]: Processed 1740 RGB-D frames.
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 53
+[rgbd_node-1] Stored map with ID: 52
+[rgbd_node-1] Creation of new map with last KF id: 146
+[rgbd_node-1] First KF:147; Map init KF:146
+[rgbd_node-1] New Map created with 1886 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 54
+[rgbd_node-1] Stored map with ID: 53
+[rgbd_node-1] Creation of new map with last KF id: 148
+[rgbd_node-1] First KF:148; Map init KF:148
+[rgbd_node-1] New Map created with 1878 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 55
+[rgbd_node-1] Stored map with ID: 54
+[rgbd_node-1] Creation of new map with last KF id: 148
+[rgbd_node-1] First KF:149; Map init KF:148
+[rgbd_node-1] New Map created with 1883 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 56
+[rgbd_node-1] Stored map with ID: 55
+[rgbd_node-1] Creation of new map with last KF id: 150
+[rgbd_node-1] First KF:150; Map init KF:150
+[rgbd_node-1] New Map created with 1868 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 57
+[rgbd_node-1] Stored map with ID: 56
+[rgbd_node-1] Creation of new map with last KF id: 150
+[rgbd_node-1] First KF:151; Map init KF:150
+[rgbd_node-1] New Map created with 1886 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 58
+[rgbd_node-1] Stored map with ID: 57
+[rgbd_node-1] Creation of new map with last KF id: 152
+[rgbd_node-1] First KF:152; Map init KF:152
+[rgbd_node-1] New Map created with 1893 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 59
+[rgbd_node-1] Stored map with ID: 58
+[rgbd_node-1] Creation of new map with last KF id: 152
+[rgbd_node-1] First KF:153; Map init KF:152
+[rgbd_node-1] New Map created with 1891 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 60
+[rgbd_node-1] Stored map with ID: 59
+[rgbd_node-1] Creation of new map with last KF id: 154
+[rgbd_node-1] First KF:154; Map init KF:154
+[rgbd_node-1] New Map created with 1861 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 61
+[rgbd_node-1] Stored map with ID: 60
+[rgbd_node-1] Creation of new map with last KF id: 154
+[rgbd_node-1] First KF:155; Map init KF:154
+[rgbd_node-1] New Map created with 1864 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 62
+[rgbd_node-1] Stored map with ID: 61
+[rgbd_node-1] Creation of new map with last KF id: 156
+[rgbd_node-1] First KF:156; Map init KF:156
+[rgbd_node-1] New Map created with 1843 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 63
+[rgbd_node-1] Stored map with ID: 62
+[rgbd_node-1] Creation of new map with last KF id: 156
+[rgbd_node-1] First KF:157; Map init KF:156
+[rgbd_node-1] New Map created with 1838 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 64
+[rgbd_node-1] Stored map with ID: 63
+[rgbd_node-1] Creation of new map with last KF id: 158
+[rgbd_node-1] First KF:158; Map init KF:158
+[rgbd_node-1] New Map created with 1840 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 65
+[rgbd_node-1] Stored map with ID: 64
+[rgbd_node-1] Creation of new map with last KF id: 158
+[rgbd_node-1] First KF:159; Map init KF:158
+[rgbd_node-1] New Map created with 1831 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 66
+[rgbd_node-1] Stored map with ID: 65
+[rgbd_node-1] Creation of new map with last KF id: 160
+[rgbd_node-1] First KF:160; Map init KF:160
+[rgbd_node-1] New Map created with 1855 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 67
+[rgbd_node-1] Stored map with ID: 66
+[rgbd_node-1] Creation of new map with last KF id: 160
+[rgbd_node-1] First KF:161; Map init KF:160
+[rgbd_node-1] New Map created with 1845 points
+[rgbd_node-1] [INFO] [1784014786.811829079] [orbslam3_rgbd_node]: Processed 1770 RGB-D frames.
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 68
+[rgbd_node-1] Stored map with ID: 67
+[rgbd_node-1] Creation of new map with last KF id: 162
+[rgbd_node-1] First KF:162; Map init KF:162
+[rgbd_node-1] New Map created with 1838 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 69
+[rgbd_node-1] Stored map with ID: 68
+[rgbd_node-1] Creation of new map with last KF id: 162
+[rgbd_node-1] First KF:163; Map init KF:162
+[rgbd_node-1] New Map created with 1813 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 70
+[rgbd_node-1] Stored map with ID: 69
+[rgbd_node-1] Creation of new map with last KF id: 164
+[rgbd_node-1] First KF:164; Map init KF:164
+[rgbd_node-1] New Map created with 1825 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 71
+[rgbd_node-1] Stored map with ID: 70
+[rgbd_node-1] Creation of new map with last KF id: 164
+[rgbd_node-1] First KF:165; Map init KF:164
+[rgbd_node-1] New Map created with 1820 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 72
+[rgbd_node-1] Stored map with ID: 71
+[rgbd_node-1] Creation of new map with last KF id: 166
+[rgbd_node-1] First KF:166; Map init KF:166
+[rgbd_node-1] New Map created with 1785 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 73
+[rgbd_node-1] Stored map with ID: 72
+[rgbd_node-1] Creation of new map with last KF id: 166
+[rgbd_node-1] First KF:167; Map init KF:166
+[rgbd_node-1] New Map created with 1799 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 74
+[rgbd_node-1] Stored map with ID: 73
+[rgbd_node-1] Creation of new map with last KF id: 168
+[rgbd_node-1] First KF:168; Map init KF:168
+[rgbd_node-1] New Map created with 1750 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 75
+[rgbd_node-1] Stored map with ID: 74
+[rgbd_node-1] Creation of new map with last KF id: 168
+[rgbd_node-1] First KF:169; Map init KF:168
+[rgbd_node-1] New Map created with 1763 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 76
+[rgbd_node-1] Stored map with ID: 75
+[rgbd_node-1] Creation of new map with last KF id: 170
+[rgbd_node-1] First KF:170; Map init KF:170
+[rgbd_node-1] New Map created with 1704 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 77
+[rgbd_node-1] Stored map with ID: 76
+[rgbd_node-1] Creation of new map with last KF id: 170
+[rgbd_node-1] First KF:171; Map init KF:170
+[rgbd_node-1] New Map created with 1680 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 78
+[rgbd_node-1] Stored map with ID: 77
+[rgbd_node-1] Creation of new map with last KF id: 172
+[rgbd_node-1] First KF:172; Map init KF:172
+[rgbd_node-1] New Map created with 1715 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 79
+[rgbd_node-1] Stored map with ID: 78
+[rgbd_node-1] Creation of new map with last KF id: 172
+[rgbd_node-1] First KF:173; Map init KF:172
+[rgbd_node-1] New Map created with 1682 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 80
+[rgbd_node-1] Stored map with ID: 79
+[rgbd_node-1] Creation of new map with last KF id: 174
+[rgbd_node-1] First KF:174; Map init KF:174
+[rgbd_node-1] New Map created with 1643 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 81
+[rgbd_node-1] Stored map with ID: 80
+[rgbd_node-1] Creation of new map with last KF id: 174
+[rgbd_node-1] First KF:175; Map init KF:174
+[rgbd_node-1] New Map created with 1621 points
+[rgbd_node-1] [INFO] [1784014787.770879424] [orbslam3_rgbd_node]: Processed 1800 RGB-D frames.
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 82
+[rgbd_node-1] Stored map with ID: 81
+[rgbd_node-1] Creation of new map with last KF id: 176
+[rgbd_node-1] First KF:176; Map init KF:176
+[rgbd_node-1] New Map created with 1609 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 83
+[rgbd_node-1] Stored map with ID: 82
+[rgbd_node-1] Creation of new map with last KF id: 176
+[rgbd_node-1] First KF:177; Map init KF:176
+[rgbd_node-1] New Map created with 1629 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 84
+[rgbd_node-1] Stored map with ID: 83
+[rgbd_node-1] Creation of new map with last KF id: 178
+[rgbd_node-1] First KF:178; Map init KF:178
+[rgbd_node-1] New Map created with 1580 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 85
+[rgbd_node-1] Stored map with ID: 84
+[rgbd_node-1] Creation of new map with last KF id: 178
+[rgbd_node-1] First KF:179; Map init KF:178
+[rgbd_node-1] New Map created with 1594 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 86
+[rgbd_node-1] Stored map with ID: 85
+[rgbd_node-1] Creation of new map with last KF id: 180
+[rgbd_node-1] First KF:180; Map init KF:180
+[rgbd_node-1] New Map created with 1581 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 87
+[rgbd_node-1] Stored map with ID: 86
+[rgbd_node-1] Creation of new map with last KF id: 180
+[rgbd_node-1] First KF:181; Map init KF:180
+[rgbd_node-1] New Map created with 1561 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 88
+[rgbd_node-1] Stored map with ID: 87
+[rgbd_node-1] Creation of new map with last KF id: 182
+[rgbd_node-1] First KF:182; Map init KF:182
+[rgbd_node-1] New Map created with 1550 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 89
+[rgbd_node-1] Stored map with ID: 88
+[rgbd_node-1] Creation of new map with last KF id: 182
+[rgbd_node-1] First KF:183; Map init KF:182
+[rgbd_node-1] New Map created with 1553 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 90
+[rgbd_node-1] Stored map with ID: 89
+[rgbd_node-1] Creation of new map with last KF id: 184
+[rgbd_node-1] First KF:184; Map init KF:184
+[rgbd_node-1] New Map created with 1543 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 91
+[rgbd_node-1] Stored map with ID: 90
+[rgbd_node-1] Creation of new map with last KF id: 184
+[rgbd_node-1] First KF:185; Map init KF:184
+[rgbd_node-1] New Map created with 1540 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 92
+[rgbd_node-1] Stored map with ID: 91
+[rgbd_node-1] Creation of new map with last KF id: 186
+[rgbd_node-1] First KF:186; Map init KF:186
+[rgbd_node-1] New Map created with 1519 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 93
+[rgbd_node-1] Stored map with ID: 92
+[rgbd_node-1] Creation of new map with last KF id: 186
+[rgbd_node-1] First KF:187; Map init KF:186
+[rgbd_node-1] New Map created with 1525 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 94
+[rgbd_node-1] Stored map with ID: 93
+[rgbd_node-1] Creation of new map with last KF id: 188
+[rgbd_node-1] First KF:188; Map init KF:188
+[rgbd_node-1] New Map created with 1527 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 95
+[rgbd_node-1] Stored map with ID: 94
+[rgbd_node-1] Creation of new map with last KF id: 188
+[rgbd_node-1] First KF:189; Map init KF:188
+[rgbd_node-1] New Map created with 1526 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 96
+[rgbd_node-1] Stored map with ID: 95
+[rgbd_node-1] Creation of new map with last KF id: 190
+[rgbd_node-1] First KF:190; Map init KF:190
+[rgbd_node-1] New Map created with 1499 points
+[rgbd_node-1] [INFO] [1784014788.824524646] [orbslam3_rgbd_node]: Processed 1830 RGB-D frames.
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 97
+[rgbd_node-1] Stored map with ID: 96
+[rgbd_node-1] Creation of new map with last KF id: 190
+[rgbd_node-1] First KF:191; Map init KF:190
+[rgbd_node-1] New Map created with 1514 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 98
+[rgbd_node-1] Stored map with ID: 97
+[rgbd_node-1] Creation of new map with last KF id: 192
+[rgbd_node-1] First KF:192; Map init KF:192
+[rgbd_node-1] New Map created with 1520 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 99
+[rgbd_node-1] Stored map with ID: 98
+[rgbd_node-1] Creation of new map with last KF id: 192
+[rgbd_node-1] First KF:193; Map init KF:192
+[rgbd_node-1] New Map created with 1512 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 100
+[rgbd_node-1] Stored map with ID: 99
+[rgbd_node-1] Creation of new map with last KF id: 194
+[rgbd_node-1] First KF:194; Map init KF:194
+[rgbd_node-1] New Map created with 1515 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 101
+[rgbd_node-1] Stored map with ID: 100
+[rgbd_node-1] Creation of new map with last KF id: 194
+[rgbd_node-1] First KF:195; Map init KF:194
+[rgbd_node-1] New Map created with 1527 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 102
+[rgbd_node-1] Stored map with ID: 101
+[rgbd_node-1] Creation of new map with last KF id: 196
+[rgbd_node-1] First KF:196; Map init KF:196
+[rgbd_node-1] New Map created with 1545 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 103
+[rgbd_node-1] Stored map with ID: 102
+[rgbd_node-1] Creation of new map with last KF id: 196
+[rgbd_node-1] First KF:197; Map init KF:196
+[rgbd_node-1] New Map created with 1500 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 104
+[rgbd_node-1] Stored map with ID: 103
+[rgbd_node-1] Creation of new map with last KF id: 198
+[rgbd_node-1] First KF:198; Map init KF:198
+[rgbd_node-1] New Map created with 1537 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 105
+[rgbd_node-1] Stored map with ID: 104
+[rgbd_node-1] Creation of new map with last KF id: 198
+[rgbd_node-1] First KF:199; Map init KF:198
+[rgbd_node-1] New Map created with 1535 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 106
+[rgbd_node-1] Stored map with ID: 105
+[rgbd_node-1] Creation of new map with last KF id: 200
+[rgbd_node-1] First KF:200; Map init KF:200
+[rgbd_node-1] New Map created with 1542 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 107
+[rgbd_node-1] Stored map with ID: 106
+[rgbd_node-1] Creation of new map with last KF id: 200
+[rgbd_node-1] First KF:201; Map init KF:200
+[rgbd_node-1] New Map created with 1536 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 108
+[rgbd_node-1] Stored map with ID: 107
+[rgbd_node-1] Creation of new map with last KF id: 202
+[rgbd_node-1] First KF:202; Map init KF:202
+[rgbd_node-1] New Map created with 1527 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 109
+[rgbd_node-1] Stored map with ID: 108
+[rgbd_node-1] Creation of new map with last KF id: 202
+[rgbd_node-1] First KF:203; Map init KF:202
+[rgbd_node-1] New Map created with 1861 points
+[rgbd_node-1] [INFO] [1784014789.928938858] [orbslam3_rgbd_node]: Processed 1860 RGB-D frames.
+[rgbd_node-1] TRACK_REF_KF: Less than 15 matches!!
+[rgbd_node-1] Fail to track local map!
+[rgbd_node-1] LM: Active map reset recieved
+[rgbd_node-1] LM: Active map reset, waiting...
+[rgbd_node-1] LM: Reseting current map in Local Mapping...
+[rgbd_node-1] LM: End reseting Local Mapping...
+[rgbd_node-1] LM: Reset free the mutex
+[rgbd_node-1] LM: Active map reset, Done!!!
+[rgbd_node-1] mnFirstFrameId = 0
+[rgbd_node-1] mnInitialFrameId = 1859
+[rgbd_node-1] 0 Frames set to lost
+[rgbd_node-1] First KF:204; Map init KF:203
+[rgbd_node-1] New Map created with 1539 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 110
+[rgbd_node-1] Stored map with ID: 109
+[rgbd_node-1] Creation of new map with last KF id: 205
+[rgbd_node-1] First KF:205; Map init KF:205
+[rgbd_node-1] New Map created with 1550 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 111
+[rgbd_node-1] Stored map with ID: 110
+[rgbd_node-1] Creation of new map with last KF id: 205
+[rgbd_node-1] First KF:206; Map init KF:205
+[rgbd_node-1] New Map created with 1539 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 112
+[rgbd_node-1] Stored map with ID: 111
+[rgbd_node-1] Creation of new map with last KF id: 207
+[rgbd_node-1] First KF:207; Map init KF:207
+[rgbd_node-1] New Map created with 1525 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 113
+[rgbd_node-1] Stored map with ID: 112
+[rgbd_node-1] Creation of new map with last KF id: 207
+[rgbd_node-1] First KF:208; Map init KF:207
+[rgbd_node-1] New Map created with 1522 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 114
+[rgbd_node-1] Stored map with ID: 113
+[rgbd_node-1] Creation of new map with last KF id: 209
+[rgbd_node-1] First KF:209; Map init KF:209
+[rgbd_node-1] New Map created with 1508 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 115
+[rgbd_node-1] Stored map with ID: 114
+[rgbd_node-1] Creation of new map with last KF id: 209
+[rgbd_node-1] First KF:210; Map init KF:209
+[rgbd_node-1] New Map created with 1532 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 116
+[rgbd_node-1] Stored map with ID: 115
+[rgbd_node-1] Creation of new map with last KF id: 211
+[rgbd_node-1] First KF:211; Map init KF:211
+[rgbd_node-1] New Map created with 1525 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 117
+[rgbd_node-1] Stored map with ID: 116
+[rgbd_node-1] Creation of new map with last KF id: 211
+[rgbd_node-1] First KF:212; Map init KF:211
+[rgbd_node-1] New Map created with 1522 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 118
+[rgbd_node-1] Stored map with ID: 117
+[rgbd_node-1] Creation of new map with last KF id: 213
+[rgbd_node-1] First KF:213; Map init KF:213
+[rgbd_node-1] New Map created with 1531 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 119
+[rgbd_node-1] Stored map with ID: 118
+[rgbd_node-1] Creation of new map with last KF id: 213
+[rgbd_node-1] First KF:214; Map init KF:213
+[rgbd_node-1] New Map created with 1533 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 120
+[rgbd_node-1] Stored map with ID: 119
+[rgbd_node-1] Creation of new map with last KF id: 215
+[rgbd_node-1] First KF:215; Map init KF:215
+[rgbd_node-1] New Map created with 1495 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 121
+[rgbd_node-1] Stored map with ID: 120
+[rgbd_node-1] Creation of new map with last KF id: 215
+[rgbd_node-1] First KF:216; Map init KF:215
+[rgbd_node-1] New Map created with 1524 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 122
+[rgbd_node-1] Stored map with ID: 121
+[rgbd_node-1] Creation of new map with last KF id: 217
+[rgbd_node-1] First KF:217; Map init KF:217
+[rgbd_node-1] New Map created with 1512 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 123
+[rgbd_node-1] Stored map with ID: 122
+[rgbd_node-1] Creation of new map with last KF id: 217
+[rgbd_node-1] [INFO] [1784014790.929345187] [orbslam3_rgbd_node]: Processed 1890 RGB-D frames.
+[rgbd_node-1] First KF:218; Map init KF:217
+[rgbd_node-1] New Map created with 1494 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 124
+[rgbd_node-1] Stored map with ID: 123
+[rgbd_node-1] Creation of new map with last KF id: 219
+[rgbd_node-1] First KF:219; Map init KF:219
+[rgbd_node-1] New Map created with 1526 points
+[rgbd_node-1] ERROR: Frame with a timestamp older than previous frame detected!
+[rgbd_node-1] Creation of new map with id: 125
+[rgbd_node-1] Stored map with ID: 124
+[rgbd_node-1] Creation of new map with last KF id: 219
+[rgbd_node-1] First KF:220; Map init KF:219
+[rgbd_node-1] New Map created with 1845 points
+[INFO] [ros2-2]: process has finished cleanly [pid 3057086]
+[INFO] [rgbd_node-1]: sending signal 'SIGINT' to process[rgbd_node-1]
+[rgbd_node-1] [INFO] [1784014791.339876662] [rclcpp]: signal_handler(signum=2)
+[rgbd_node-1] [INFO] [1784014791.422268035] [orbslam3_rgbd_node]: Shutting down ORB-SLAM3.
+[rgbd_node-1] Shutdown
+[rgbd_node-1] [INFO] [1784014791.424672109] [orbslam3_rgbd_node]: Saved 1845 ORB-SLAM3 map points to /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/output/260714/slam_110637/orbslam3_map_points.pcd
+[rgbd_node-1] 
+[rgbd_node-1] Saving camera trajectory to CameraTrajectory.txt ...
+[rgbd_node-1] 
+[rgbd_node-1] Saving keyframe trajectory to KeyFrameTrajectory.txt ...
+[rgbd_node-1] [INFO] [1784014792.615756581] [orbslam3_rgbd_node]: Dense map reprojected with optimized poses: 352/380 frames matched (28 dropped), 910395 voxels.
+[rgbd_node-1] [INFO] [1784014793.967890045] [orbslam3_rgbd_node]: Saved 910395 dense map points to /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/output/260714/slam_110637/orbslam3_dense_map.pcd
+[rgbd_node-1] [INFO] [1784014793.968004998] [orbslam3_rgbd_node]: TIMING: frames_tracked=1898 track_ms mean=26.4 median=24.7 p95=45.6 max=169.2 min=7.5 mean_fps=37.9
+[INFO] [rgbd_node-1]: process has finished cleanly [pid 3056209]

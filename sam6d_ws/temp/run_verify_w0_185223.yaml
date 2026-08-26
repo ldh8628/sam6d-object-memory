@@ -1,0 +1,38 @@
+# Stage V 파리티 2 — 검증은 켜되 색 가중 0 · guard 0 → 선택은 final3 와 같아야 한다
+# (판정/신뢰도만 새로 붙는다). 색 채널만이 차이의 원인임을 고정하는 대조군.
+topics:
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+  caminfo: /camera/camera/color/camera_info
+
+ism:
+  config: configs/yolo_ism_objects.yaml
+  objects: []
+
+runtime:
+  device: cuda:0
+  use_sim_time: true
+  sync_slop: 0.02
+  sync_queue: 30
+  qos_reliability: reliable
+  qos_depth: 30
+  det_score_thresh: 0.2
+  # AL/AQ 검증 결과: 기하 상위 100 후보를 z(기하)+0.5·z(텍스처) 로 재정렬
+  #   (appearance_rerank 는 zs(appe)+w_geo*zs(geo) 이므로 w_geo=2.0 이 같은 순위)
+  #   milk 246건 물리기준: 78.0% -> 82.9% (McNemar p=0.043)
+  appe_rerank: {topk: 100, w_geo: 2.0, stride: 1}
+  verify: {enabled: true, w_col: 0.0, geo_guard: 0.0}
+  status_period_s: 1.0
+  idle_exit_s: 20
+
+output:
+  dir: temp/rt_verify_w0_185223
+  diagnostics: true
+
+bag:
+  play: true
+  path: /home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/185223__circle_ccw_8laps/sam
+  rate: 1.0
+  clock: true
+  ready_timeout: 600
+  remap: {}

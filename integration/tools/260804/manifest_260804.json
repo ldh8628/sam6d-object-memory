@@ -1,0 +1,32 @@
+[
+ {
+  "name": "longcircle2",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260804_office/longcircle2/SLAM",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/integration/tools/260804/settings/orb_longcircle2.yaml",
+  "frames": 2166,
+  "duration_sec": 72.2,
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "lidar": "/velodyne_points",
+  "imu": "/xsens/imu/data",
+  "lidar_msgs": 721,
+  "imu_msgs": 14432
+ },
+ {
+  "name": "stablization",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260804_office/stablization/SLAM",
+  "settings": "/home/ldh9501/temp_ws/CLI_environment/integration/tools/260804/settings/orb_stablization.yaml",
+  "frames": 778,
+  "duration_sec": 25.9,
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "lidar": "/velodyne_points",
+  "imu": "/xsens/imu/data",
+  "lidar_msgs": 259,
+  "imu_msgs": 5182
+ }
+]

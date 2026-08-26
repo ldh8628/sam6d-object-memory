@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "object-memory"
+version = "0.1.0"
+description = "Standalone object memory core for SLAM-assisted SAM-6D object ID association"
+requires-python = ">=3.10"
+
+[tool.pytest.ini_options]
+testpaths = ["scripts_test"]
+pythonpath = ["src", "scripts_test"]
+addopts = "-q"
+
+[tool.setuptools.packages.find]
+where = ["src"]

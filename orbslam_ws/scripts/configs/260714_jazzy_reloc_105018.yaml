@@ -1,0 +1,36 @@
+# Realtime-transition step S5b -- PURE LOCALIZATION run under ROS 2 Jazzy.
+# Localizes 105018 inside the 105023 map with localization_mode: true, which now
+# takes the patched path (Tracking::ActivatePriorMapForLocalization): the loaded
+# Atlas map becomes the ACTIVE map and the first frames go through Relocalization
+# instead of StereoInitialization. Local mapping stays stopped, so the prior map
+# is not modified.
+#
+# Prereq: copy map_260714_105023.osa from the mapping run into this output dir
+# (the core loads "./map_260714_105023.osa" relative to the node cwd).
+dataset: 260714_jazzy_reloc_105018
+bag:
+  path: /home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/105023__unlabeled/SAM
+  play: true
+  clock: true
+  rate: 1.0
+  start_delay: 12.0
+orbslam3:
+  settings_path: /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_105018_rgbd_localize.yaml
+topics:
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+frames:
+  world: map
+  camera: camera_color_optical_frame
+runtime:
+  save_map_points_on_shutdown: true
+  localization_mode: true
+dense_map:
+  enabled: true
+  save_pcd: true
+  pcd_output_path: orbslam3_dense_map.pcd
+output:
+  dir: /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/output/260714_jazzy/reloc_105018
+  map_points_path: orbslam3_map_points.pcd
+visualization:
+  enabled: false

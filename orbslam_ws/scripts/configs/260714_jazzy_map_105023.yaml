@@ -1,0 +1,32 @@
+# Realtime-transition step S5a -- MAPPING run under ROS 2 Jazzy (env: orb3slam).
+# Same inputs as the validated PoC config 260714_map_105023.yaml, but writes to a
+# SEPARATE output dir so the existing reference artifacts are not overwritten.
+# The node runs with cwd = output.dir, which is where ORB-SLAM3 drops
+# "./map_260714_105023.osa" (the core forces a cwd-relative Atlas path).
+dataset: 260714_jazzy_map_105023
+bag:
+  path: /home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260714/105023__unlabeled/SLAM
+  play: true
+  clock: true
+  rate: 1.0            # 1.0 = play the bag at real time (live-equivalent input)
+  start_delay: 12.0
+orbslam3:
+  settings_path: /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_260714_105023_rgbd_mapping.yaml
+topics:
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+frames:
+  world: map
+  camera: camera_color_optical_frame
+runtime:
+  save_map_points_on_shutdown: true
+  localization_mode: false
+dense_map:
+  enabled: true
+  save_pcd: true
+  pcd_output_path: orbslam3_dense_map.pcd
+output:
+  dir: /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/output/260714_jazzy/map_105023
+  map_points_path: orbslam3_map_points.pcd
+visualization:
+  enabled: false

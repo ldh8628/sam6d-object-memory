@@ -1,0 +1,32 @@
+# AF2 재실행 — milk 자산 교체(Milk_high) 후, baseline(rt_185223)과 같은 split 모드
+topics:
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+  caminfo: /camera/camera/color/camera_info
+
+ism:
+  config: configs/yolo_ism_objects.yaml
+  objects: []
+
+runtime:
+  device: cuda:0
+  use_sim_time: true
+  sync_slop: 0.02
+  sync_queue: 30
+  qos_reliability: reliable
+  qos_depth: 30
+  det_score_thresh: 0.2
+  status_period_s: 1.0
+  idle_exit_s: 20
+
+output:
+  dir: temp/rt_af3_185223
+  diagnostics: true
+
+bag:
+  play: true
+  path: /home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/185223__circle_ccw_8laps/sam
+  rate: 1.0
+  clock: true
+  ready_timeout: 600
+  remap: {}

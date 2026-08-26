@@ -1,0 +1,30 @@
+# 0807 chungbuk realistic revisit test -- PURE LOCALIZATION run (recorded 18:35:24, ~5 min after the map session).
+# Prereq: copy map_0807_182943.osa into this run output dir.
+# Same physical camera (D455F #253822302376) as every other 0807 SLAM session;
+# the room is the same but route, object/shelf layout and lighting differ between
+# sessions, which is exactly the condition the realtime system must survive.
+dataset: 0807_jazzy_reloc_183504
+bag:
+  path: /home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260807_chungbuk/183504__straight_then_circle_ccw/SLAM
+  play: true
+  clock: true
+  rate: 1.0
+  start_delay: 12.0
+orbslam3:
+  settings_path: /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/data/orbslam3_0807_slam_localize.yaml
+topics:
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+frames:
+  world: map
+  camera: camera_color_optical_frame
+runtime:
+  save_map_points_on_shutdown: true
+  localization_mode: true
+dense_map:
+  enabled: false
+output:
+  dir: /home/ldh9501/temp_ws/CLI_environment/orbslam_ws/output/0807_jazzy/reloc_183504
+  map_points_path: orbslam3_map_points.pcd
+visualization:
+  enabled: false

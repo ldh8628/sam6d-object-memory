@@ -1,0 +1,15 @@
+[
+ {
+  "name": "smoke_185223",
+  "bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260807_chungbuk/185223__circle_ccw_8laps/SLAM",
+  "lidar_bag": "/home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260807_chungbuk/cpr-a200-0881_velodyne_husky_20260807_185223",
+  "frames": 600,
+  "duration_sec": 40.0,
+  "rgb": "/camera/camera/color/image_raw",
+  "depth": "/camera/camera/aligned_depth_to_color/image_raw",
+  "camera_info": "/camera/camera/color/camera_info",
+  "frame_id": "camera_color_optical_frame",
+  "lidar": "/velodyne_points",
+  "lidar_msgs": 2924
+ }
+]
