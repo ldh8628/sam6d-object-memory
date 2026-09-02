@@ -415,14 +415,6 @@ class Sam6DRealtimeNode(Node):
                     lambda m: self._on_pose(m, self.psrc.add_self), 50, callback_group=par2)
             self.get_logger().info(f"[map_prior] 자세 구독: {self.psrc.mode}")
 
-    def _on_pose(self, msg, add):
-        """자세를 버퍼에 넣기만 한다. 정합은 프레임의 capture stamp 로 한다."""
-        t = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
-        p, q = msg.pose.position, msg.pose.orientation
-        T = np.eye(4)
-        T[:3, :3] = mp_rot(np.array([q.x, q.y, q.z, q.w]))
-        T[:3, 3] = (p.x, p.y, p.z)
-        add(t, T)
         MODEL = importlib.import_module(self.pcfg.model_name)
         self.pem = MODEL.Net(self.pcfg.model).to(self.device).eval()
         gorilla.solver.load_checkpoint(
@@ -463,6 +455,15 @@ class Sam6DRealtimeNode(Node):
         self.ric.trimesh.load_mesh = lambda key, *a, **k: self._pts[key]
         os.chdir(cwd)
         self.get_logger().info(f"[load] PEM 템플릿·모델점 {len(self._tem)} 객체 (CAD 불필요)")
+
+    def _on_pose(self, msg, add):
+        """자세를 버퍼에 넣기만 한다. 정합은 프레임의 capture stamp 로 한다."""
+        t = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
+        p, q = msg.pose.position, msg.pose.orientation
+        T = np.eye(4)
+        T[:3, :3] = mp_rot(np.array([q.x, q.y, q.z, q.w]))
+        T[:3, 3] = (p.x, p.y, p.z)
+        add(t, T)
 
     def _write_meta(self):
         meta = {

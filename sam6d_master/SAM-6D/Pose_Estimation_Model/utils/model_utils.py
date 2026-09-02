@@ -609,7 +609,14 @@ def appearance_rerank(pred_rs, pred_ts, geo_scores, appe, info=None, gate=None):
             # 없다). 그래서 판정하지 않고 shortlist 전체를 압축해 남긴다 — 나중에
             # SLAM 궤적 기준을 붙이면 "정답이 후보 안에 있었는데 어느 관문에서
             # 죽었는가"를 재추론 없이 되돌려 볼 수 있다.
-            covb = gate['stat']['cov'][b][sel].detach().cpu().numpy()
+            # ★ 마스크 항을 **전부** 남긴다. cov 만 남기면 결합 점수
+            #   S = cov · prec^w_p · shape 를 사후에 재현할 수 없어 스윕이 무의미해진다
+            #   (실측: cov 는 후보 대부분이 1.0 이라 단독으로는 아무것도 안 걸러진다).
+            st = gate['stat']
+            covb = st['cov'][b][sel].detach().cpu().numpy()
+            prb = st['prec'][b][sel].detach().cpu().numpy()
+            rab = st['r_area'][b][sel].detach().cpu().numpy()
+            dtb = st['dtheta'][b][sel].detach().cpu().numpy()
             chb = gc.detach().cpu().numpy()
             Rq = R.detach().cpu().numpy()
             tr_ = Rq[:, 0, 0] + Rq[:, 1, 1] + Rq[:, 2, 2]
@@ -617,12 +624,17 @@ def appearance_rerank(pred_rs, pred_ts, geo_scores, appe, info=None, gate=None):
             dd = np.maximum(4.0 * qw, 1e-8)
             info.setdefault('gate_cases', {})[b] = {
                 'win': win, 'win_ng': int(np.argmax(s_e)),
+                'ecc': round(float(st['ecc'][b]), 3),
+                'use_shape': bool(st['use_shape'][b]),
+                # [qx qy qz qw geo s cov prec r_area dtheta ch]
                 'q': [[round(float((Rq[k, 2, 1] - Rq[k, 1, 2]) / dd[k]), 4),
                        round(float((Rq[k, 0, 2] - Rq[k, 2, 0]) / dd[k]), 4),
                        round(float((Rq[k, 1, 0] - Rq[k, 0, 1]) / dd[k]), 4),
                        round(float(qw[k]), 4),
                        round(float(g_np[k]), 4), round(float(s_np[k]), 4),
-                       round(float(covb[k]), 3), int(chb[k])] for k in range(len(Rq))],
+                       round(float(covb[k]), 3), round(float(prb[k]), 3),
+                       round(float(rab[k]), 3), round(float(dtb[k]), 1),
+                       int(chb[k])] for k in range(len(Rq))],
             }
 
         if info is not None:
@@ -810,10 +822,14 @@ def compute_coarse_Rt(
         if bool(mg.get('dump_cases', True)):
             # 트리거: 승자가 바뀜 / 거른 후보가 있음 / fail-open 으로만 살아남음 /
             #        Stage V 가 확신하지 못함. 그 밖은 남길 이유가 없다.
+            # dump_all 은 문턱 스윕용 — 중립 설정에서는 아무도 안 걸러서 트리거가
+            # 한 번도 안 걸린다. 그때만 켠다(운영 기본은 트리거 방식).
+            dump_all = bool(mg.get('dump_all', False))
             ver = info.get('verify') or [None] * len(info['gate'])
             for b, row in enumerate(info['gate']):
                 v = (ver[b] or {}).get('verdict') if b < len(ver) else None
-                trig = (row['changed'] or row['n_keep'] < row['n_eval']
+                trig = (dump_all
+                        or row['changed'] or row['n_keep'] < row['n_eval']
                         or row['admit'] == 'rank1' or row['off']
                         or v in ('CORRECTED', 'AMBIGUOUS'))
                 if trig and b in cases:

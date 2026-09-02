@@ -1,0 +1,33 @@
+# 스모크 테스트용 — convert_recording.py 로 만든 0807/185223 앞 40초 슬라이스
+topics:
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+  caminfo: /camera/camera/color/camera_info
+
+ism:
+  config: configs/yolo_ism_objects.yaml
+  objects: []
+
+runtime:
+  device: cuda:0
+  use_sim_time: true
+  sync_slop: 0.02
+  sync_queue: 30
+  qos_reliability: reliable
+  qos_depth: 30
+  det_score_thresh: 0.2
+  status_period_s: 1.0
+  idle_exit_s: 20
+
+bag:
+  play: true
+  # 2026-08-25 재구성 전에는 600프레임(40초)짜리 smoke 변환본을 가리켰다.
+  # 그 희소본은 더 만들지 않으므로 이제 전체 길이(295초) bag 이다 — max_frames 로 잘라 쓴다.
+  path: /home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260807_chungbuk/185223__circle_ccw_8laps/SLAM
+  rate: 1.0
+  clock: true
+  ready_timeout: 600
+
+output:
+  dir: output/smoke_185223
+  diagnostics: true

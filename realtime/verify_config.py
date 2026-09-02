@@ -63,8 +63,20 @@ DEFAULT_MASK_GATE = {
     "theta0": 30.0,        # shape = exp(-dtheta/theta0)
     "ecc_min": 1.6,        # 관측 마스크 이심률이 이 아래면 주축이 잡음 → dtheta 항 사용 안 함
     # -- (A) 후보 게이트: 상대 --
-    "gate_guard": 0.85,    # S >= gate_guard * S.max() 인 후보만 통과
-    "min_keep": 5,         # 그래도 S 상위 이만큼은 남긴다
+    # ⚠ 2026-08-24 실측으로 **끔**(gate_guard 0 = 걸러내지 않음). 두 bag 전량에서
+    #   후보를 거르는 것이 **순손실**이었다:
+    #     0807 (검출 3,516, 기준 튼튼): 현행 대비 교정 16 : 파손 33 → 순 -17,
+    #                                   gross 10.0% → 10.5%
+    #     260804 (검출 2,939)         : 교정 21 : 파손 23 → 순 -2
+    #   문턱 스윕도 같은 말을 한다 — 정답 선택률이 guard 0.00 에서 최대이고
+    #   (0807 87.2% → 0.85 에서 86.6% → 0.95 에서 84.8%) 단조 감소한다.
+    #   즉 **어떤 문턱에서도 이득이 없다.** 생존률도 0.85 에서 99.1%(0807)/96.0%(260804)로
+    #   정답 후보를 1~4% 지운다. 살릴 문턱이 없으므로 거르지 않는다.
+    #   ★ 그래도 enabled 는 True 로 둔다 — 점수는 계산하되 자격을 깎지 않으면
+    #     결과가 예전과 **비트 단위로 같으면서**(실측 확인) ism_suspect 판정과
+    #     cov/prec/r_area/dtheta 진단, gate_cases 덤프를 그대로 얻는다.
+    "gate_guard": 0.0,     # S >= gate_guard * S.max() 인 후보만 통과 (0 = 거르지 않음)
+    "min_keep": 300,       # 그래도 S 상위 이만큼은 남긴다
     "min_bbox_px": 24,     # bbox 한 변이 이보다 작으면 게이트 해제(격자 양자화 잡음)
     # -- (B) ISM 오인식 판별: 절대. **기본은 표시만, 거절하지 않는다** --
     # 판별 근거는 **cov_best 와 r_area_best** 다. S 에는 prec 항이 있어 가림에 민감해서
@@ -75,6 +87,9 @@ DEFAULT_MASK_GATE = {
     # -- 진단 --
     "dump": False,         # 후보별 항을 verify.cands 에 덤프(분석용, 판정 무관)
     "dump_cases": True,    # 후보가 지워진 케이스를 gate_cases.jsonl 로 보관(사후 분석용)
+    # 문턱 스윕용. 중립 설정(gate_guard 0 / min_keep 300)에서는 아무도 안 걸러서
+    # 트리거가 한 번도 안 걸린다 — 스윕 데이터를 받으려면 트리거를 우회해야 한다.
+    "dump_all": False,
     "max_cases": 5000,
 }
 
@@ -86,7 +101,14 @@ DEFAULT_MASK_GATE = {
 #   ch2 로만 들어온 후보는 절대 ch2 에 투표하지 못한다.
 # ★ 사전은 자격만 주고 승자를 뽑지 않는다. 승자는 여전히 텍스처 점수 argmax 다.
 DEFAULT_MAP_PRIOR = {
-    "enabled": True,
+    # ⚠ 2026-08-24 실측으로 **기본 OFF**. 이득이 증명되지 않았다:
+    #   현행 대비 0807 교정 16 : 파손 21 → 순 -5 / 260804 교정 22 : 파손 14 → 순 +8.
+    #   둘 다 잡음 범위다.
+    # ★ 그리고 겉보기 이득은 **순환이다.** admit 별로 쪼개면 both 는 gross 0.2%,
+    #   mask 는 27.9% 로 극적으로 보이지만, 채점 기준 자체가 같은 map-frame 최빈 자세라
+    #   "승자가 지도 최빈과 맞다" = "승자가 기준과 맞다" 가 되어 버린다. 이 분해로
+    #   ch2 를 정당화하면 안 된다. 순환이 아닌 평가가 생기기 전까지 켜지 않는다.
+    "enabled": False,
     # -- 포즈 공급 --
     "pose_source": "both",         # slam_extrinsic | self_localization | both | trajectory_file | none
     "pose_topic": "/orbslam3/pose",          # slam_extrinsic 용 (SLAM 카메라)

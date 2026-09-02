@@ -391,8 +391,13 @@ def load_extrinsic(path):
     return X
 
 
-def load_trajectory(path):
-    """TUM 궤적(`t tx ty tz qx qy qz qw`) → PoseBuffer. bag 검증용."""
+def load_trajectory(path, X=None):
+    """TUM 궤적(`t tx ty tz qx qy qz qw`) → PoseBuffer. bag 검증용.
+
+    X 를 주면 **SLAM 카메라 궤적 → SAM 카메라**로 옮긴다(T_map_camSAM = T_map_camSLAM·X).
+    0807 은 이미 SAM 카메라 궤적이라 X 가 필요 없지만, 260804 는 SLAM 것뿐이라 필요하다.
+    병진도 같이 옮겨야 한다 — temp/verify_eval.load_traj 와 같은 규약이다.
+    """
     pb = PoseBuffer(window_s=1e9)
     n = 0
     with open(path) as f:
@@ -403,9 +408,15 @@ def load_trajectory(path):
             v = line.split()
             if len(v) < 8:
                 continue
+            R = _rot(np.array([float(v[4]), float(v[5]), float(v[6]), float(v[7])]))
+            P = np.array([float(v[1]), float(v[2]), float(v[3])])
+            if X is not None:
+                Xm = np.asarray(X, dtype=float).reshape(4, 4)
+                P = P + R @ Xm[:3, 3]
+                R = R @ Xm[:3, :3]
             T = np.eye(4)
-            T[:3, :3] = _rot(np.array([float(v[4]), float(v[5]), float(v[6]), float(v[7])]))
-            T[:3, 3] = [float(v[1]), float(v[2]), float(v[3])]
+            T[:3, :3] = R
+            T[:3, 3] = P
             pb.add(float(v[0]), T)
             n += 1
     return pb, n
@@ -434,8 +445,9 @@ class PoseSource:
         self.own = PoseBuffer(w, tol, gap)
         self.traj = None
         if self.mode == "trajectory_file" and c.get("trajectory"):
-            self.traj, n = load_trajectory(c["trajectory"])
-            self.log(f"[map_prior] 궤적 {n}개 적재: {c['trajectory']}")
+            self.traj, n = load_trajectory(c["trajectory"], self.X)
+            self.log(f"[map_prior] 궤적 {n}개 적재: {c['trajectory']}"
+                     + (" (extrinsic 적용)" if self.X is not None else ""))
         if self.mode in ("slam_extrinsic", "both") and self.X is None:
             self.log("[map_prior] ⚠ extrinsic 이 없다 — slam 경로는 쓰지 않는다"
                      " (self_localization 만 유효)")

@@ -29,7 +29,7 @@ output:
 
 bag:
   play: true
-  path: /home/ldh9501/temp_ws/CLI_environment/data_slam/260804_office/260804_SAM_converted/longcircle2/ros2_standard
+  path: /home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260804_office/longcircle2/SAM
   rate: 1.0
   clock: true
   ready_timeout: 600

@@ -25,7 +25,7 @@ output:
 
 bag:
   play: true
-  path: /home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/185223__circle_ccw_8laps/sam
+  path: /home/ldh9501/temp_ws/CLI_environment/data_slam_converted/260807_chungbuk/185223__circle_ccw_8laps/SAM
   rate: 1.0
   clock: true
   ready_timeout: 600

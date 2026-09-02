@@ -60,12 +60,21 @@ SETTINGS = {
     "mg_parity": {"appe_rerank": _APPE,
                   "verify": {"enabled": True, "w_col": 1.0, "geo_guard": 0.9},
                   "mask_gate": {"enabled": True, "gate_guard": 0.0, "min_keep": 300,
-                                "topk": 300, "ism_reject": False},
+                                "topk": 300, "ism_reject": False, "dump_all": True},
                   "map_prior": None},
     "mg_on": {"appe_rerank": _APPE,
               "verify": {"enabled": True, "w_col": 1.0, "geo_guard": 0.9},
               "mask_gate": {"enabled": True},
               "map_prior": None},
+    # ch1 + ch2. 자세는 --traj 로 들어온다(없으면 ch2 는 조용히 쉰다).
+    # 현재 기본값 그대로(키를 빼면 verify_config 의 기본값이 적용된다) — 새 기본이
+    # 예전 운영(mg_null)과 비트 단위로 같은지 확인하는 설정이다.
+    "default": {"appe_rerank": _APPE,
+                "verify": {"enabled": True, "w_col": 1.0, "geo_guard": 0.9}},
+    "mp_on": {"appe_rerank": _APPE,
+              "verify": {"enabled": True, "w_col": 1.0, "geo_guard": 0.9},
+              "mask_gate": {"enabled": True},
+              "map_prior": {"enabled": True}},
 }
 
 # 대칭 선언(objectmemory core/fusion.py 의 보수적 표와 같다)
@@ -308,6 +317,7 @@ def read_frames(bag, stride, limit, slop_ns=20_000_000):
 def run(args):
     import torch
     from sam6d_core import Sam6DCore
+    from map_prior import MapPrior
     from verify_config import build_appe_cfg
 
     K, frames = read_frames(args.bag, args.stride, args.limit)
@@ -316,27 +326,204 @@ def run(args):
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
 
+    # ch2(Map 사전)용 카메라 자세. 궤적이 없으면 ch2 는 조용히 쉰다(fail-open).
+    traj = None
+    if args.traj:
+        X = np.load(args.extrinsic) if args.extrinsic else None
+        traj = load_traj(args.traj, X)
+        print(f"[traj] {len(traj[0])}개 적재: {args.traj}"
+              + (f" (+extrinsic {args.extrinsic})" if X is not None else ""), flush=True)
+
     core = Sam6DCore(args.config, [], args.device)
     for name in args.settings.split(","):
         rt = SETTINGS[name]
         ar, _ = build_appe_cfg(rt)
         core.pem.cfg.appe_rerank = ar
+        # ⚠ 설정마다 ch2 를 새로 만든다. Sam6DCore.__init__ 에서 한 번만 만들어지므로
+        #   그대로 두면 앞 설정의 등록 상태가 뒤 설정으로 새어 비교가 깨진다.
+        core.map_prior = MapPrior(ar.get("map_prior") if ar else None, log=print)
+        mgc = (ar or {}).get("mask_gate") or {}
+        core.gate_cases, core.gate_cases_dropped = [], 0
+        core._max_cases = (int(mgc.get("max_cases", 5000))
+                           if mgc.get("dump_cases", True) else 0)
         print(f"[run] {name}: {ar}", flush=True)
         rows = []
+        n_pose = 0
         for i, (t, bgr, dep) in enumerate(frames):
             torch.manual_seed(SEED + i)
             np.random.seed(SEED + i)
-            det, _ms, _nb, _ = core.process(bgr, dep, K)
+            T = None
+            if traj is not None and core.map_prior.enabled:
+                Rc, Pc = traj_at(*traj, t / 1e9)
+                if Rc is not None:
+                    T = np.eye(4); T[:3, :3] = Rc; T[:3, 3] = Pc
+                    n_pose += 1
+            det, _ms, _nb, _ = core.process(bgr, dep, K, stamp_ns=t, T_map_cam=T)
             for d in det:
                 rows.append({"stamp_ns": t, "i": i, **{k: d[k] for k in
-                             ("object", "score", "R", "t_mm") if k in d},
+                             ("object", "score", "R", "t_mm", "bbox") if k in d},
                              **({"verify": d["verify"]} if "verify" in d else {}),
-                             **({"gate": d["gate"]} if "gate" in d else {})})
-            if i % 50 == 0:
+                             **({"gate": d["gate"]} if "gate" in d else {}),
+                             **({"map": d["map"]} if "map" in d else {})})
+            if i % 200 == 0:
                 print(f"  {i}/{len(frames)}  누적검출 {len(rows)}", flush=True)
         (out / f"{name}.jsonl").write_text(
             "".join(json.dumps(r) + "\n" for r in rows), encoding="utf-8")
-        print(f"[run] {name}: 검출 {len(rows)} → {out / (name + '.jsonl')}", flush=True)
+        msg = f"[run] {name}: 검출 {len(rows)} → {out / (name + '.jsonl')}"
+        if traj is not None and core.map_prior.enabled:
+            msg += f" · 자세 붙은 프레임 {n_pose}/{len(frames)}"
+        print(msg, flush=True)
+        # 문턱 스윕용 후보 덤프. 검출 행을 부풀리지 않도록 따로 쓴다.
+        if core.gate_cases:
+            (out / f"{name}.cases.jsonl").write_text(
+                "".join(json.dumps(c) + "\n" for c in core.gate_cases), encoding="utf-8")
+            print(f"[run] {name}: 후보덤프 {len(core.gate_cases)}건"
+                  + (f" (초과 {core.gate_cases_dropped} 버림)" if core.gate_cases_dropped else "")
+                  + f" → {out / (name + '.cases.jsonl')}", flush=True)
+
+
+# ----------------------------------------------------------------- 문턱 스윕
+def _q2R(q):
+    """[qx qy qz qw] -> 3x3."""
+    x, y, z, w = q
+    n = math.sqrt(x * x + y * y + z * z + w * w) or 1.0
+    x, y, z, w = x / n, y / n, z / n, w / n
+    return np.array([[1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
+                     [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
+                     [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)]])
+
+
+def sweep(args):
+    """문턱을 **재추론 없이** 고른다.
+
+    중립 설정(gate_guard 0 · min_keep 300 · dump_all)의 후보 덤프에는 검출마다
+    후보의 [qx qy qz qw geo s cov ch] 가 들어 있다. 여기에 궤적 기준을 붙이면
+    "그 문턱이었으면 정답 후보가 살아남았을까 / 승자가 누구였을까"를 전부 후처리로 잰다.
+    설정마다 재추론하면 설정당 수십 분이 드는데 이러면 한 번으로 끝난다.
+
+    두 가지를 본다:
+      생존률 = 정답 후보(기준과 30° 안)가 문턱을 통과하는 비율 → 1.0 에서 떨어지면 안 된다
+      선택률 = 그 문턱에서 텍스처 점수 승자가 정답인 비율      → 클수록 좋다
+    """
+    if not args.traj:
+        raise SystemExit("--sweep 은 --traj 가 있어야 한다(정답 기준이 필요하다)")
+    names = args.settings.split(",")
+    runs = {n: load(Path(args.out) / f"{n}.jsonl") for n in names}
+    err = _traj_err(args, names, runs)          # 부수효과로 기준을 세운다
+    # 기준 자세를 다시 얻는다 — _traj_err 는 오차만 돌려주므로 여기서 한 번 더 만든다.
+    X = np.load(args.extrinsic) if args.extrinsic else None
+    ts, Rs, Ps = load_traj(args.traj, X)
+    keys = sorted({(i, o) for n in names for i, objs in runs[n].items() for o in objs})
+    cases = []
+    for i, o in keys:
+        row = next((runs[n][i][o] for n in names if o in runs[n].get(i, {})), None)
+        if row is None or "bbox" not in row:
+            continue
+        cases.append({"i": i, "object": o, "stamp": row["stamp_ns"], "t_mm": row["t_mm"],
+                      "bbox": row["bbox"], "R": row["R"],
+                      "ref_src": [runs[n][i][o]["R"] for n in names
+                                  if o in runs[n].get(i, {})]})
+    map_mode_reference(cases, ts, Rs, Ps)
+    ref_by = {}
+    for c in cases:
+        if c["ref"] is not None:
+            ref_by.setdefault((c["stamp"], c["object"]), c["ref"])
+
+    # 후보 덤프를 검출 단위로 읽는다. 순서는 run() 이 쓴 순서 = 검출 순서다.
+    dump = Path(args.out) / f"{args.sweep}.cases.jsonl"
+    if not dump.is_file():
+        raise SystemExit(f"{dump} 가 없다 — mg_parity 를 dump_all 로 돌렸는가?")
+    rows = [json.loads(l) for l in open(dump, encoding="utf-8")]
+    src = load(Path(args.out) / f"{args.sweep}.jsonl")
+    order = [(i, o) for i in sorted(src) for o in sorted(src[i])]
+    if len(order) != len(rows):
+        print(f"⚠ 덤프 {len(rows)}건 vs 검출 {len(order)}건 — 트리거가 걸린 것만 덤프됐다."
+              f" dump_all 없이 돌린 실행이면 스윕이 편향된다.")
+    stamp_of = {(i, o): src[i][o]["stamp_ns"] for i, o in order}
+
+    OK = 30.0
+    items = []
+    for (i, o), r in zip(order, rows):
+        ref = ref_by.get((stamp_of[(i, o)], o))
+        if ref is None or r.get("object") != o:
+            continue
+        q = np.array(r["q"], float)   # [K,11] qx qy qz qw geo s cov prec r_area dtheta ch
+        angs = np.array([ang_deg(ref, _q2R(v[:4]), o) for v in q])
+        items.append({"obj": o, "ang": angs, "geo": q[:, 4], "s": q[:, 5],
+                      "cov": q[:, 6], "prec": q[:, 7], "r_area": q[:, 8],
+                      "dth": q[:, 9], "ecc": r.get("ecc", 0.0),
+                      "use_shape": bool(r.get("use_shape", False))})
+    if not items:
+        raise SystemExit("스윕할 케이스가 없다 — 기준이 선 검출과 덤프가 안 맞는다")
+    print(f"\n[스윕] 케이스 {len(items)}건 · 케이스당 후보 {len(items[0]['ang'])}개 "
+          f"· 정답 기준 {OK}°")
+
+    have = sum(1 for it in items if (it["ang"] <= OK).any())
+
+    def score(it, terms, w_p, theta0, ecc_min):
+        """운영 게이트와 **같은 식**으로 S 를 다시 만든다(mask_compare_gate 참고)."""
+        S = it["cov"].copy()
+        if "prec" in terms:
+            S = S * np.clip(it["prec"], 1e-6, None) ** w_p
+        if "shape" in terms and it["ecc"] >= ecc_min:
+            S = S * np.exp(-np.radians(it["dth"]) / math.radians(theta0))
+        return S
+
+    def evaluate(terms, w_p, theta0, ecc_min, g, min_keep):
+        surv, pick, nkeep = 0, 0, []
+        for it in items:
+            S = score(it, terms, w_p, theta0, ecc_min)
+            keep = S >= g * S.max()
+            if min_keep > 0:
+                keep[np.argsort(-S)[:min_keep]] = True
+            keep[int(np.argmax(it["geo"]))] = True        # 기하 1등은 언제나
+            nkeep.append(int(keep.sum()))
+            good = it["ang"] <= OK
+            if good.any() and (good & keep).any():
+                surv += 1
+            w = int(np.argmax(np.where(keep, it["s"], -np.inf)))
+            if it["ang"][w] <= OK:
+                pick += 1
+        return (100 * surv / max(have, 1), 100 * pick / len(items), float(np.median(nkeep)))
+
+    T, WP, TH, EC, MK = "cov,prec,shape", 0.5, 30.0, 1.6, 5
+    print(f"\n[1] gate_guard  (terms={T} w_p={WP} theta0={TH} ecc_min={EC} min_keep={MK})")
+    print(f"{'gate_guard':>11s}{'생존률':>9s}{'선택률':>9s}{'중앙생존수':>11s}{'정답보유':>9s}")
+    for g in (0.0, 0.70, 0.75, 0.80, 0.85, 0.90, 0.95, 0.98):
+        sv, pk, nk = evaluate(T, WP, TH, EC, g, MK)
+        print(f"{g:11.2f}{sv:8.1f}%{pk:8.1f}%{nk:11.0f}{have:9d}")
+    print("  생존률 = 정답 후보를 가진 케이스 중 그 후보가 문턱을 통과한 비율(1.0 이어야 한다)")
+    print("  선택률 = 전체 케이스 중 텍스처 승자가 정답인 비율")
+
+    print(f"\n[2] 결합 항  (gate_guard={0.85})")
+    print(f"{'terms':>18s}{'w_p':>6s}{'theta0':>8s}{'생존률':>9s}{'선택률':>9s}{'중앙생존수':>11s}")
+    for terms, w_p, th in (("cov", 0.0, TH), ("cov,prec", 0.5, TH), ("cov,prec", 1.0, TH),
+                           ("cov,prec,shape", 0.5, 15.0), ("cov,prec,shape", 0.5, 30.0),
+                           ("cov,prec,shape", 0.5, 60.0), ("cov,prec,shape", 1.0, 30.0)):
+        sv, pk, nk = evaluate(terms, w_p, th, EC, 0.85, MK)
+        print(f"{terms:>18s}{w_p:6.1f}{th:8.0f}{sv:8.1f}%{pk:8.1f}%{nk:11.0f}")
+
+    print(f"\n[3] min_keep  (gate_guard=0.85, terms={T})")
+    print(f"{'min_keep':>9s}{'생존률':>9s}{'선택률':>9s}{'중앙생존수':>11s}")
+    for mk in (0, 1, 5, 10, 20):
+        sv, pk, nk = evaluate(T, WP, TH, EC, 0.85, mk)
+        print(f"{mk:9d}{sv:8.1f}%{pk:8.1f}%{nk:11.0f}")
+
+    # 용도 B — ISM 오인식 판별의 분리도
+    print(f"\n[용도 B] cov_best / r_area 로 '정답 후보가 아예 없는 검출'을 가려낼 수 있는가")
+    covb = np.array([it["cov"].max() for it in items])
+    good = np.array([bool((it["ang"] <= OK).any()) for it in items])
+    if good.all() or not good.any():
+        print("  한쪽 모집단이 비어 판정 불가")
+    else:
+        auc = float((covb[good][:, None] > covb[~good][None, :]).mean()
+                    + 0.5 * (covb[good][:, None] == covb[~good][None, :]).mean())
+        print(f"  cov_best  정답있음 중앙 {np.median(covb[good]):.3f} (n={good.sum()}) vs "
+              f"정답없음 중앙 {np.median(covb[~good]):.3f} (n={(~good).sum()})  AUC {auc:.3f}")
+        for t in (0.3, 0.4, 0.5, 0.6):
+            tp = int((covb[~good] < t).sum()); fp = int((covb[good] < t).sum())
+            print(f"    임계 {t:.1f}: 오인식 {tp}/{(~good).sum()} 잡고 "
+                  f"정상 {fp}/{good.sum()} 잘못 버림")
 
 
 # ----------------------------------------------------------------- 채점
@@ -397,29 +584,76 @@ def reference(objs, target, rel, tol=30.0):
     return rot_mean(best), len(best)
 
 
-def report(args):
-    names = args.settings.split(",")
-    runs = {n: load(Path(args.out) / f"{n}.jsonl") for n in names}
-    rel, share = calibrate(list(runs.values()))
-    print(f"[교정] 객체쌍 {len(rel)}쌍")
-    for k in sorted(share, key=lambda k: -share[k][1])[:8]:
-        print(f"    {k[0]:24s} {k[1]:24s} 최빈군집 {share[k][0]*100:5.1f}%  n={share[k][1]}")
+def _traj_err(args, names, runs):
+    """궤적 기준으로 채점한다 — 쌍별 합의보다 훨씬 많이 채점된다.
+
+    쌍별 합의는 파트너 2개 이상이 동시에 보여야 하고 대칭 물체는 파트너로 못 써서
+    0807 에서 38% 만, 260804 는 아예 성립하지 않는다. 물체가 정지해 있다는 사실만
+    쓰는 이 기준은 98.5% 를 채점한다.
+
+    기준을 세우는 자세(ref_src)에는 **모든 설정의 값**을 넣는다 — 한 설정으로만
+    세우면 그 설정에 유리한 기준이 된다.
+    """
+    X = np.load(args.extrinsic) if args.extrinsic else None
+    ts, Rs, Ps = load_traj(args.traj, X)
+    keys = sorted({(i, o) for n in names for i, objs in runs[n].items() for o in objs})
+    cases = []
+    for i, o in keys:
+        row = next((runs[n][i][o] for n in names if o in runs[n].get(i, {})), None)
+        if row is None or "bbox" not in row:
+            continue
+        cases.append({"i": i, "object": o, "stamp": row["stamp_ns"], "t_mm": row["t_mm"],
+                      "bbox": row["bbox"], "R": row["R"],
+                      "ref_src": [runs[n][i][o]["R"] for n in names
+                                  if o in runs[n].get(i, {})]})
+    if not cases:
+        raise SystemExit("궤적 기준을 세울 수 없다 — jsonl 에 bbox 가 없다(구버전 실행?)")
+    modes, share = map_mode_reference(cases, ts, Rs, Ps)
+    print(f"[궤적기준] 인스턴스 {len(modes)}개 · 기준이 선 검출 "
+          f"{sum(1 for c in cases if c['ref'] is not None)}/{len(cases)}")
+    for k in sorted(share, key=lambda k: -share[k][1]):
+        print(f"    {k[0]:24s} inst{k[1]} 최빈점유 {share[k][0]*100:5.1f}%  n={share[k][1]}")
+    ref_by = {(c["i"], c["object"]): (c["ref"], c.get("inst")) for c in cases}
 
     err = {n: {} for n in names}
     for n in names:
         for i, objs in runs[n].items():
-            for o in objs:
-                # 기준은 **OFF 설정의 파트너 자세**로 세운다 — 설정마다 기준이 흔들리면
-                # 비교가 안 된다. 대상 물체 자신은 그 설정의 값을 쓴다.
-                base = runs[names[0]].get(i, {})
-                part = {k: v for k, v in base.items() if k != o}
-                if len(part) < 2:
-                    continue
-                ref, npart = reference({**part, o: objs[o]}, o, rel)
+            for o, row in objs.items():
+                ref, inst = ref_by.get((i, o), (None, None))
                 if ref is None:
                     continue
-                err[n][(i, o)] = (ang_deg(ref, np.array(objs[o]["R"]), o), npart,
-                                  objs[o].get("verify"))
+                err[n][(i, o)] = (ang_deg(ref, np.array(row["R"]), o), inst,
+                                  row.get("verify"))
+    return err
+
+
+def report(args):
+    names = args.settings.split(",")
+    runs = {n: load(Path(args.out) / f"{n}.jsonl") for n in names}
+
+    if args.traj:
+        err = _traj_err(args, names, runs)
+    else:
+        rel, share = calibrate(list(runs.values()))
+        print(f"[교정] 객체쌍 {len(rel)}쌍")
+        for k in sorted(share, key=lambda k: -share[k][1])[:8]:
+            print(f"    {k[0]:24s} {k[1]:24s} 최빈군집 {share[k][0]*100:5.1f}%  n={share[k][1]}")
+
+        err = {n: {} for n in names}
+        for n in names:
+            for i, objs in runs[n].items():
+                for o in objs:
+                    # 기준은 **OFF 설정의 파트너 자세**로 세운다 — 설정마다 기준이 흔들리면
+                    # 비교가 안 된다. 대상 물체 자신은 그 설정의 값을 쓴다.
+                    base = runs[names[0]].get(i, {})
+                    part = {k: v for k, v in base.items() if k != o}
+                    if len(part) < 2:
+                        continue
+                    ref, npart = reference({**part, o: objs[o]}, o, rel)
+                    if ref is None:
+                        continue
+                    err[n][(i, o)] = (ang_deg(ref, np.array(objs[o]["R"]), o), npart,
+                                      objs[o].get("verify"))
     print()
     print(f"{'설정':6s} {'평가건수':>7s} {'중앙°':>7s} {'<15°':>7s} {'>45°(gross)':>12s}")
     for n in names:
@@ -478,7 +712,16 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--settings", default="off,w0,on")
     ap.add_argument("--report", action="store_true", help="이미 만든 jsonl 로 채점만")
+    ap.add_argument("--traj", default="",
+                    help="SAM 카메라 궤적(TUM). 주면 ch2 가 돌고 채점도 이 기준을 쓴다")
+    ap.add_argument("--extrinsic", default="",
+                    help="궤적이 SLAM 카메라 것일 때 X_camSLAM_camSAM.npy")
+    ap.add_argument("--sweep", default="",
+                    help="문턱 스윕: <설정이름>.cases.jsonl 을 읽어 후처리로만 훑는다")
     a = ap.parse_args()
+    if a.sweep:
+        sweep(a)
+        return
     if not a.report:
         if not a.bag:
             raise SystemExit("--bag 이 필요하다")

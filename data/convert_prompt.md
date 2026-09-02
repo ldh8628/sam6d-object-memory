@@ -9,7 +9,7 @@ Claude Code 에 붙여넣는다.
 data_slam(SDK 포맷 RealSense bag)을 sam6d_realtime / ORB-SLAM3 / RTAB-Map 입력으로
 변환하는 작업. tar 압축은 이미 풀려 있음.
 
-[변환기] data_slam/260714_frame_data/convert_recording.py — 스택 내 유일한 변환기
+[변환기] data_slam/260714/convert_recording.py — 스택 내 유일한 변환기
   python convert_recording.py <recording_dir> <out_bag> --time-source color_global
   출력 4토픽: /camera/camera/{color/image_raw, aligned_depth_to_color/image_raw,
               color/camera_info, aligned_depth_to_color/camera_info}
@@ -80,3 +80,19 @@ db3·association·metadata 가 전부 없다. 스킵할 것.
 - `--stride N` / `--max M` 은 스모크 테스트용이다. 전체 변환에는 빼야 한다.
 - 출력 폴더가 이미 있으면 `out bag exists, aborting` 으로 중단한다.
 - 실행 환경: `conda activate sam6d_ros_humble` (또는 `orbslam3`) — `rosbag2_py` + `rclpy` 필요.
+
+---
+
+## 2026-08-25 재구성 이후
+
+`convert_recording.py` 는 이 폴더에 실물이 없고 `converting_launch/convert_recording.py`
+(레포 유일 정본)를 가리키는 **심볼릭 링크**다. 사본이 갈라지는 것을 막기 위해서다.
+
+이 묶음을 다른 기계로 이식할 때는 링크를 풀어서 복사해야 한다:
+
+    cp -rL sam6d_realtime /옮길/곳        # -L = 심볼릭을 실제 파일로
+    # 또는
+    tar -chzf sam6d_realtime.tgz sam6d_realtime   # -h = 심볼릭을 따라간다
+
+변환 진입점 자체도 `converting_launch/convert_all.py` 하나로 바뀌었다. 자세한 것은
+`converting_launch/README.md` 를 볼 것.
