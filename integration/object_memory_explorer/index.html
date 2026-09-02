@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ObjectMemory Map Explorer</title>
+  <link rel="stylesheet" href="app.css">
+</head>
+<body>
+  <header>
+    <div><p class="eyebrow">SAM-6D × SLAM</p><h1>ObjectMemory Map Explorer</h1></div>
+    <div id="meta" class="chips"></div>
+  </header>
+  <section class="transport" aria-label="프레임 재생">
+    <button id="play" aria-label="재생">▶</button>
+    <button id="prev" aria-label="이전 프레임">−1</button>
+    <input id="slider" type="range" min="0" value="0" aria-label="프레임">
+    <button id="next" aria-label="다음 프레임">+1</button>
+    <label>frame <input id="seq" type="number" min="0" value="0"></label>
+    <span id="clock">0.000 s</span>
+  </section>
+  <main>
+    <section class="panel video-panel">
+      <div class="panel-title"><h2>SAM-6D raw pose</h2><span id="frame-state"></span></div>
+      <div class="video-wrap">
+        <video id="video" preload="auto" muted playsinline></video>
+        <canvas id="raw-overlay"></canvas>
+      </div>
+      <div class="legend"><span class="x">X</span><span class="y">Y</span><span class="z">Z</span><span>bbox · 객체명 · ObjectMemory ID</span></div>
+    </section>
+    <section class="panel video-panel">
+      <div class="panel-title"><h2>ObjectMemory fused pose</h2><span>active match만 축 표시</span></div>
+      <div class="video-wrap"><canvas id="fused"></canvas></div>
+      <div class="legend"><span class="x">X</span><span class="y">Y</span><span class="z">Z</span><span>그 외 검출은 bbox만 표시</span></div>
+    </section>
+    <section class="panel map-panel">
+      <div class="panel-title"><h2>ORB3 dense map · top view</h2><span>바닥·천장 제외 · anchor는 이중 원</span></div>
+      <canvas id="map"></canvas>
+      <div id="events" class="events">전이 없음</div>
+    </section>
+    <section class="panel graph-panel">
+      <div class="panel-title">
+        <h2>객체 pose 수렴</h2>
+        <select id="object" aria-label="객체 선택"></select>
+      </div>
+      <div id="object-summary" class="object-summary"></div>
+      <h3>measurement → fused residual</h3>
+      <canvas id="residual"></canvas>
+      <h3>fused position x / y / z</h3>
+      <canvas id="convergence"></canvas>
+    </section>
+  </main>
+  <div id="error" role="alert"></div>
+  <script src="app.js"></script>
+</body>
+</html>

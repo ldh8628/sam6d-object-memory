@@ -1,0 +1,71 @@
+# 분리 실행 설정 — 수신 프로세스 + 추론 프로세스 (권장)
+#
+#   conda activate sam6d && export ROS_DOMAIN_ID=72
+#   ros2 launch realtime/launch/sam6d_split.launch.py config:=realtime/run_split_example.yaml
+#
+# 단일 프로세스판(realtime/run_bag_example.yaml)은 고속 영상 구독과 추론이 같은
+# 인터프리터에 있어 GIL 때문에 초 단위 정체가 생긴다(NOTES 19~21절).
+topics:
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+  caminfo: /camera/camera/color/camera_info
+
+slam:
+  pose_topic: /orbslam3/pose
+  tracking_topic: /orbslam3/tracking_state
+  map_id_topic: /orbslam3/map_id
+  timestamp_tolerance_ms: 100
+  map_id: primary_sam_camera
+
+anchor:
+  enabled: true
+  anchor_output_mode: ism_associated  # 비교 실험: fov_always
+  timestamp_tolerance_ms: 100
+  window: 20
+  register_count: 16
+  register_rotation_deg: 20
+  register_translation_mm: 50
+  release_window: 5
+  release_count: 4
+  release_rotation_deg: 180    # SAM-6D 회전 flip은 무시(정적 객체)
+  release_translation_mm: 150  # 4/5회 지속 위치 이동만 anchor 재등록
+  ism_overlap_min: 0.5
+  ism_depth_tolerance_mm: 100
+  fov_fraction_min: 0.2
+
+ism:
+  config: configs/yolo_ism_objects.yaml
+  objects: []
+
+runtime:
+  device: cuda:0
+  use_sim_time: true
+  sync_slop: 0.02
+  sync_queue: 30
+  qos_reliability: reliable   # 영상 토픽에 best_effort 를 쓰면 대량 유실된다(NOTES 24절)
+  qos_depth: 30
+  det_score_thresh: 0.2
+  verify:
+    enabled: true
+    mask_iou_min: 0.420998
+    texture_min_score: 0.449562
+    cluster_rotation_deg: 20
+    cluster_translation_mm: 25
+    cluster_min_occupancy: 0.5
+  # 300개 geometry 후보를 8192점 Mask→deep Texture→pose 수렴 순으로 필터한다.
+  # 경계값은 포함하며 refine 결과도 같은 Mask/Texture 기본값으로 재검증한다.
+  # 기하-only 기준선 비교가 필요할 때만 `verify: null`을 명시한다.
+  status_period_s: 1.0
+  idle_exit_s: 20          # 입력이 이만큼 끊기면 추론 프로세스가 스스로 끝난다
+
+bag:
+  play: true
+  path: data/longcircle2             # 로컬 독립 사본(재부팅·Windows 마운트와 무관)
+  rate: 1.0
+  clock: true
+  ready_timeout: 600
+
+output:
+  dir: output/longcircle2_split
+  overlay_topic: /sam6d/overlay  # 구독자가 있을 때만 모든 입력 프레임에 MAP pose 축 투영
+  diagnostics: true

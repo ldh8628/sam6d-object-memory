@@ -1,0 +1,78 @@
+# 터미널 2 개 방식 — 실제 카메라판 (RealSense D455f)
+#
+#   터미널 A (먼저): 카메라 드라이버 (ROS 2 Jazzy)
+#       ./run/realsense.sh
+#   터미널 B (그 뒤): SAM-6D
+#       ./run/sam6d.sh
+#
+# 두 스크립트가 각 conda 환경과 ROS_DOMAIN_ID=72 를 자체 설정한다.
+
+topics:
+  rgbd: /camera/camera/rgbd
+  # Legacy split topics stay documented for bag configs; live uses rgbd above.
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+  caminfo: /camera/camera/color/camera_info
+
+slam:
+  pose_topic: /orbslam3/pose
+  tracking_topic: /orbslam3/tracking_state
+  map_id_topic: /orbslam3/map_id
+  timestamp_tolerance_ms: 100
+  map_id: primary_sam_camera
+
+anchor:
+  enabled: true
+  anchor_output_mode: ism_associated
+  timestamp_tolerance_ms: 100
+  window: 20
+  register_count: 16
+  register_rotation_deg: 20
+  register_translation_mm: 50
+  release_window: 5
+  release_count: 4
+  release_rotation_deg: 180    # SAM-6D 회전 flip은 무시(정적 객체)
+  release_translation_mm: 150  # 4/5회 지속 위치 이동만 anchor 재등록
+  ism_overlap_min: 0.5
+  ism_depth_tolerance_mm: 100
+  fov_fraction_min: 0.2
+
+ism:
+  config: configs/yolo_ism_objects.yaml
+  objects: []                 # 비우면 config 의 활성 객체 전부(현재 9 개)
+
+runtime:
+  device: cuda:0
+  use_sim_time: false         # 실제 카메라이므로 false (시스템 시각을 쓴다)
+  sync_slop: 0.02
+  sync_queue: 30
+  qos_reliability: reliable   # ⚠ best_effort 면 대량 유실된다 (NOTES 24절)
+  qos_depth: 30
+  det_score_thresh: 0.2
+  verify:
+    enabled: true
+    mask_iou_min: 0.420998
+    texture_min_score: 0.449562
+    cluster_rotation_deg: 20
+    cluster_translation_mm: 25
+    cluster_min_occupancy: 0.5
+  # 300개 geometry 후보를 8192점 Mask→deep Texture→pose 수렴 순으로 필터한다.
+  # refine 결과도 같은 임계값으로 재검증하며 실패 시 coarse pose로 되돌리지 않는다.
+  status_period_s: 1.0
+  idle_exit_s: 0              # 0 = 스스로 끝나지 않는다 (Ctrl-C 로 종료)
+
+output:
+  dir: output/live_cam
+  overlay_topic: /sam6d/overlay  # 구독자가 있을 때만 모든 입력 프레임에 MAP pose 축 투영
+  diagnostics: true           # frames/detections jsonl + 마스크 (영상 렌더에 필요)
+  view: false
+  live_recording:
+    enabled: false
+    depth_policy: processed   # processed | full
+    rgb_fps: 30
+    nvenc_cq: 32
+
+# bag 절이 없으므로 재생은 하지 않는다 (입력은 카메라)
+#
+# ⚠ 카메라가 best_effort 로 발행하면 위 qos_reliability 를 best_effort 로 바꿔야 한다.
+#   안 맞으면 영상이 0 장이고 10 초 뒤 수신 노드가 경고를 찍는다.

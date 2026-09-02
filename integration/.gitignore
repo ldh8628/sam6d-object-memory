@@ -1,0 +1,3 @@
+# input recordings (symlinks to multi-GB bags) and run artefacts stay local
+data/
+output/
