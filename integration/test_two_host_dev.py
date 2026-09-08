@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Exercise startup decisions with fake commands; never change a real connection."""
 import json
+import fcntl
 import os
 from pathlib import Path
 import shutil
@@ -63,6 +64,22 @@ elif name=='cat': os.execv('/bin/cat',['cat',*args])
         (state / 'controller_session.txt').write_text('invalid-id')
         result, calls = invoke()
         assert result.returncode != 0 and not any(c[0] == 'codex' for c in calls)
+        # Exercise the actual guard with real OS locks, including stale files.
+        lines = source.read_text().splitlines()
+        start = next(i for i, line in enumerate(lines) if line.strip().startswith('writer_lock='))
+        end = next(i for i, line in enumerate(lines) if line.strip().startswith('exec codex resume'))
+        guard = 'set -euo pipefail\nwriter_lock=$1\n' + '\n'.join(lines[start + 1:end]) + '\necho RESUME_ALLOWED\n'
+        lock_path = root / 'writer.lock'
+        def probe_guard():
+            return subprocess.run(['bash', '-c', guard, 'test', str(lock_path)], capture_output=True, text=True, check=True).stdout
+        assert 'RESUME_ALLOWED' in probe_guard()
+        with lock_path.open('w') as lock:
+            assert 'RESUME_ALLOWED' in probe_guard()
+            fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            output = probe_guard()
+            assert '사용 중' in output and 'RESUME_ALLOWED' not in output
+            fcntl.flock(lock, fcntl.LOCK_UN)
+            assert 'RESUME_ALLOWED' in probe_guard()
         original_root = remote_codex.ROOT
         try:
             remote_codex.ROOT = root
@@ -75,7 +92,7 @@ elif name=='cat': os.execv('/bin/cat',['cat',*args])
             assert remote_codex.latest_report({'ssh': dict(target='missing', remote_root='/remote/project')}) is None
         finally:
             remote_codex.ROOT = original_root
-    print('PASS: active connection preservation, activation, SSH failure, saved-session resume, report selection.')
+    print('PASS: connection preservation, SSH failure, session resume, active/stale writer locks, report selection.')
 
 
 if __name__ == '__main__':

@@ -14,7 +14,7 @@ bash ~/sam6d_object_memory/integration/two_host_dev.sh
 
 SLAM에서는 `remote-slam-wired` 연결을 활성화하고 끝난다. SAM에서는 `sam-ptp-ipv6-slave` 연결을 활성화한 뒤 SSH와 원격 Codex 로그인을 확인하고 현재 개발 대화를 재개한다. 이미 활성화된 연결은 재연결하지 않는다. Wi-Fi, 저장된 IP 설정, 부팅 자동 연결 여부와 PTP 프로세스는 변경하지 않는다.
 
-SAM의 대화 ID는 Git에서 제외된 `output/remote_codex/controller_session.txt`에 저장한다. 파일이 없으면 재개 안내가 포함된 새 대화를 연다. 현재 대화를 다른 창에서 동시에 열지 않도록, 개발 재개 아이콘은 기존 Codex를 종료한 뒤 사용한다. 세션 파일과 `output/remote_codex/` 결과를 유지하면 다음 부팅에도 맥락을 이어갈 수 있다.
+SAM의 대화 ID는 Git에서 제외된 `output/remote_codex/controller_session.txt`에 저장한다. 파일이 없으면 재개 안내가 포함된 새 대화를 연다. 같은 대화가 다른 Codex 창에서 사용 중이면 연결 확인 뒤 안내만 표시하고 기존 창에서 작업하도록 한다. 잠금 파일을 삭제하거나 기존 세션을 강제 종료하지 않는다. Codex 0.153.4의 writer 파일에 실제 OS 잠금이 있는지 확인하므로, 재부팅 뒤 파일만 남아 있어도 잠금이 풀렸으면 정상 재개한다. 세션 파일과 `output/remote_codex/` 결과를 유지하면 다음 부팅에도 맥락을 이어갈 수 있다.
 
 Codex에 전달되는 재개 안내에는 실행 문서 읽기, Git/SSH 상태 확인, 원격 `--resume-latest` 사용 지시가 포함되어 있어 별도 프롬프트를 외울 필요가 없다. 연결 오류가 나면 Codex를 시작하지 않고 원인을 표시한다.
 

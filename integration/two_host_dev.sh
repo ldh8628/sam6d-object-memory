@@ -14,7 +14,7 @@ fail() { echo "오류: $*" >&2; exit 1; }
 finish() {
     rc=$?
     trap - EXIT
-    if [[ -t 0 && ( $rc -ne 0 || ${role:-} == SLAM ) ]]; then
+    if [[ -t 0 && ( $rc -ne 0 || ${role:-} == SLAM || ${session_busy:-0} == 1 ) ]]; then
         read -r -p 'Enter를 누르면 창을 닫습니다. ' _ || true
     fi
     exit "$rc"
@@ -62,6 +62,24 @@ cd -- "$root"
 if [[ -s "$session_file" ]]; then
     session=$(cat "$session_file")
     [[ "$session" =~ ^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$ ]] || fail '저장된 controller session ID 형식이 올바르지 않습니다.'
+    # Codex 0.153.4 holds this advisory lock while a thread has an active writer.
+    # A leftover filename after reboot is harmless: probe the lock, not existence.
+    writer_lock="${CODEX_HOME:-$HOME/.codex}/thread-writer-locks/$session.lock"
+    if [[ -e "$writer_lock" ]]; then
+        exec {writer_fd}< "$writer_lock"
+        if flock -n -E 75 "$writer_fd"; then
+            flock -u "$writer_fd"
+            exec {writer_fd}<&-
+        else
+            lock_status=$?
+            exec {writer_fd}<&-
+            [[ $lock_status == 75 ]] || fail 'Codex 대화 잠금 상태를 확인하지 못했습니다.'
+            session_busy=1
+            echo '[SAM] 개발 연결은 준비됐지만 이 대화가 다른 Codex 창에서 사용 중입니다.'
+            echo '기존 Codex 창에서 계속 작업하세요. 새 창에서 이어가려면 기존 대화를 먼저 종료한 뒤 다시 실행하세요.'
+            exit 0
+        fi
+    fi
     exec codex resume -C "$root" -m gpt-6-astra -c 'model_reasoning_effort="high"' "$session" "$prompt"
 else
     exec codex -C "$root" -m gpt-6-astra -c 'model_reasoning_effort="high"' "$prompt"
