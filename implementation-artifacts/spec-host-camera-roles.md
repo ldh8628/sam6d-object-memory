@@ -2,7 +2,7 @@
 title: 연결된 노트북 기준으로 카메라 역할 자동 선택
 type: bugfix
 created: 2026-09-08
-status: in-review
+status: done
 baseline_commit: d32b82b2a4e891c799b89f885fbb74a94eba7541
 ---
 
@@ -48,7 +48,7 @@ Never: 특정 serial을 역할 상수로 고정, 카메라 연결 교환 요구,
 - [x] 기존 맵 계약 검사를 자동 선택 이후 적용.
 - [x] 자동 선택/교환/모호함/실패/기존 맵 재사용 회귀 검사.
 - [x] 로컬 설정과 배포 예제/운영 문서를 자동 선택으로 변경.
-- [ ] commit/push/양쪽 배포와 실제 연결 자동 인식 검증.
+- [x] commit/push/양쪽 배포와 실제 연결 자동 인식 검증.
 
 Given 각 호스트 한 대, when 새 세션 실행, then serial 값과 관계없이 호스트 기준 역할을 선택한다.
 Given 카메라 교체, when 기존 맵 재사용, then 기존 보정과 다르면 재보정을 요구한다.
@@ -70,3 +70,17 @@ PTP/공간으로 막힌 10분 녹화와 맵·URDF 회수는 자동 인식 검증
 ## Spec Change Log
 
 이전 split-map 계획의 고정 serial/연결 교환 요구는 이번 사용자 지시로 대체됐다.
+
+
+## 검증 결과
+
+자동 선택 7개, 공통 transport/deploy 13개, 진입점 4개, map/worker 8개,
+realtime 회귀 4개와 기존 create_map_urdf self-test 통과. 독립 리뷰 3개에서 추가 결함 없음.
+소스 commit/push와 기존 배포 명령의 ORB self-test/ROS 정의 비교가 통과했다.
+
+현재 실제 장비를 worker로 시작하여 local=SAM serial 253822302376 / mode 3,
+remote=SLAM serial 253822301680 / mode 1을 DeviceInfo와 ROS parameter로 검증했다.
+원격 master READY 후 로컬 slave READY, 입력 검사 양쪽 PASS, slave→master 종료,
+cleanup_errors=[]를 확인했다. 짧은 식별·입력 확인이며 전체 600초 녹화/맵 품질 검증은 아니다.
+증거: Git 제외 output/host_camera_roles_verification/hardware_readiness.json.
+이전 PTP 연속 오차와 SAM 녹화 공간 제한은 이번 카메라 역할 수정과 별도로 남아 있다.
