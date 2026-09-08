@@ -1,0 +1,23 @@
+# Copy to two_host.local.yaml; credentials stay in OpenSSH config/agent.
+ssh:
+  target: etri@SLAM_PC_IP
+  port: 22
+  remote_root: /home/etri/sam6d_object_memory
+network:
+  local_ip: SAM_PC_IP
+  remote_ip: SLAM_PC_IP
+  ros_domain_id: 72
+  local_ptp_interface: enp130s0
+  remote_ptp_interface: REMOTE_INTERFACE
+  ptp_max_offset_us: 1000
+cameras:
+  slam_serial: "253822302376"
+  sam_serial: "253822301680"
+  slam_sync_mode: 1
+  sam_sync_mode: 3
+# Optional host environment paths; no SAM environment is needed remotely.
+environment:
+  local_conda_sh: /home/etri/miniconda3/etc/profile.d/conda.sh
+  remote_conda_sh: /home/etri/miniconda3/etc/profile.d/conda.sh
+  orb_env: realsense
+  sam_env: sam6d

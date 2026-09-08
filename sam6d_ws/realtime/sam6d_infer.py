@@ -30,6 +30,8 @@ from shm_channel import FrameReader, JsonWriter          # noqa: E402
 import verify_config as VC                             # noqa: E402
 from sam6d_core import Sam6DCore, REPO                   # noqa: E402
 from pem_explorer_record import ExplorerRecorder, provenance_entry  # noqa: E402
+from two_host_guard import guard_healthy
+from two_host_quality import measure_quality
 
 
 def _explorer_bag_path(cfg):
@@ -124,6 +126,7 @@ def main():
                      pem_diagnostic=rt.get("pem_diagnostic"))
     anchor_cfg = cfg.get("anchor", {})
     slam_cfg = cfg.get("slam", {})
+    guard_file = str(slam_cfg.get("two_host_guard_file", ""))
     if anchor_cfg.get("enabled", False):
         anchor_cfg = dict(anchor_cfg)
         anchor_cfg.setdefault("symmetry_axes", core.verify.get("symmetry_axes", {}))
@@ -193,10 +196,24 @@ def main():
             if slam_context is not None and not slam_context.get("map_id"):
                 slam_context["map_id"] = str(slam_cfg.get("map_id", "default"))
             bgr = cv2.cvtColor(rgb, cv2.COLOR_RGB2BGR)
+            memory_snapshot = None
+            if guard_file and guard_healthy(guard_file, (slam_context or {}).get("map_id")):
+                try:
+                    memory_snapshot = json.loads((Path(odir) / ".two_host_landmarks.json").read_text())
+                except (OSError, ValueError):
+                    pass
             t_a = time.time()
             rows, ms, n_boxes, lab = core.process(
-                bgr, depth, K, want_mask=(diag or recorder is not None),
-                slam_context=slam_context, lossless_mask=live_recording)
+                bgr, depth, K, want_mask=(diag or recorder is not None or bool(guard_file)),
+                slam_context=slam_context, lossless_mask=live_recording or bool(guard_file))
+            quality = None
+            if guard_file:
+                masks = {item["object"]: (lab & int(item["mask_bit"])) != 0
+                         for item in core.last_frame_diag.get("pem_candidates", [])
+                         if lab is not None and item.get("mask_bit")}
+                quality = measure_quality(memory_snapshot, slam_context or {},
+                    {name: model._pts / 1000.0 for name, model in core._pts.items()}, masks, depth, K)
+                core.last_frame_diag["object_memory_quality"] = quality
             t_b = time.time()
             n_proc += 1; n_det += len(rows)
             if recorder is not None:
@@ -211,6 +228,8 @@ def main():
                       "t_done_ns": t_done_ns, "n": len(rows),
                       "map_id": str((slam_context or {}).get(
                           "map_id", slam_cfg.get("map_id", "default"))),
+                      "slam_paired": (slam_context or {}).get("tracking_state") == "TRACKING_OK",
+                      **({"object_memory_quality": quality} if guard_file else {}),
                       "map_anchors": ({} if core.anchor_manager is None else {
                           name: pose.round(8).tolist()
                           for name, pose in core.anchor_manager.anchors.items()}),

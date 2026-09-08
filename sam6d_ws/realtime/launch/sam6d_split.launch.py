@@ -92,6 +92,9 @@ def _setup(context, *args, **kwargs):
         if bool(cfg.get("object_memory", {}).get("enabled", False)):
             viewer += ["--overlay-topic", str(cfg.get("output", {}).get(
                 "overlay_topic", "/sam6d/overlay"))]
+            guard_file = str((cfg.get("slam") or {}).get("two_host_guard_file", ""))
+            if guard_file:
+                viewer += ["--two-host-guard-file", guard_file]
             topdown_map = str(cfg.get("output", {}).get("topdown_map", "")).strip()
             if topdown_map:
                 slam = cfg.get("slam", {}) or {}

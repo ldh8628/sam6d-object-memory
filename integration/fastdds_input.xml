@@ -1,0 +1,71 @@
+<dds>
+  <profiles xmlns="http://www.eprosima.com/XMLSchemas/fastRTPS_Profiles">
+
+    <!-- Native RGBD is ~1.5 MiB. The default 0.5 MiB SHM segment can recycle
+         fragments before readers consume them, forcing delayed reliable retries.
+         RMW LOCALHOST supplies the UDP discovery transport. -->
+    <transport_descriptors>
+      <transport_descriptor>
+        <transport_id>camera_shm</transport_id>
+        <type>SHM</type>
+        <segment_size>67108864</segment_size>
+      </transport_descriptor>
+    </transport_descriptors>
+    <participant profile_name="camera_input" is_default_profile="true">
+      <rtps>
+        <userTransports>
+          <transport_id>camera_shm</transport_id>
+        </userTransports>
+        <useBuiltinTransports>false</useBuiltinTransports>
+      </rtps>
+    </participant>
+    <publisher profile_name="/camera/slam_camera/rgbd">
+      <topic>
+        <historyQos>
+          <kind>KEEP_LAST</kind>
+          <depth>120</depth>
+        </historyQos>
+      </topic>
+    </publisher>
+    <publisher profile_name="/camera/slam_camera/color/metadata">
+      <topic>
+        <historyQos>
+          <kind>KEEP_LAST</kind>
+          <depth>120</depth>
+        </historyQos>
+      </topic>
+    </publisher>
+    <publisher profile_name="/camera/slam_camera/depth/metadata">
+      <topic>
+        <historyQos>
+          <kind>KEEP_LAST</kind>
+          <depth>120</depth>
+        </historyQos>
+      </topic>
+    </publisher>
+    <publisher profile_name="/camera/sam_camera/rgbd">
+      <topic>
+        <historyQos>
+          <kind>KEEP_LAST</kind>
+          <depth>120</depth>
+        </historyQos>
+      </topic>
+    </publisher>
+    <publisher profile_name="/camera/sam_camera/color/metadata">
+      <topic>
+        <historyQos>
+          <kind>KEEP_LAST</kind>
+          <depth>120</depth>
+        </historyQos>
+      </topic>
+    </publisher>
+    <publisher profile_name="/camera/sam_camera/depth/metadata">
+      <topic>
+        <historyQos>
+          <kind>KEEP_LAST</kind>
+          <depth>120</depth>
+        </historyQos>
+      </topic>
+    </publisher>
+  </profiles>
+</dds>

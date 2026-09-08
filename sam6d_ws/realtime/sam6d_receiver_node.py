@@ -14,7 +14,7 @@ import struct
 import sys
 import threading
 import time
-from collections import deque
+from collections import Counter, deque
 from pathlib import Path
 
 import cv2
@@ -52,6 +52,7 @@ from slam_pose_memory import (canonical_object_points, canonical_object_rotation
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "integration"))
 from input_integrity import SequentialInput, stamp_ns
+from two_host_guard import guard_healthy
 
 
 BOX_EDGES = ((0, 1), (0, 2), (0, 4), (1, 3), (1, 5), (2, 3),
@@ -149,6 +150,22 @@ class Receiver(Node):
                                      callback_group=par)
         slam_cfg = cfg.get("slam", {})
         self.map_id = str(slam_cfg.get("map_id", "default"))
+        self._guard_file = str(slam_cfg.get("two_host_guard_file", ""))
+        self._metrics_path = str(slam_cfg.get("two_host_metrics_path", ""))
+        self._two_host_map = None
+        self._map_changed = False
+        self._guard_was_healthy = False
+        self._guard_generation = 0
+        self._accepted_frames = {}
+        self._match_counts = Counter()
+        # ponytail: retain the latest 10k delays; stream a histogram for longer distributions.
+        self._pose_delays_ms = deque(maxlen=10_000)
+        self._inference_times_ms = deque(maxlen=10_000)
+        self._quality_counts = Counter()
+        self._quality_overlaps = deque(maxlen=10_000)
+        self._quality_depths = deque(maxlen=10_000)
+        self._quality_last = None
+        self._landmarks_path = Path(odir) / ".two_host_landmarks.json"
         self._T_slam_sam = np.asarray(
             slam_cfg.get("T_slam_camera_sam_camera", np.eye(4)), dtype=np.float64)
         if not valid_se3(self._T_slam_sam):
@@ -281,7 +298,9 @@ class Receiver(Node):
     def _on_slam_state(self, msg):
         with self._slam_lock:
             self._slam_tracking_ok = tracking_state_ok(msg.data)
-            if not self._slam_tracking_ok:
+            if self._guard_file:
+                self._match_counts["orb_tracking" if self._slam_tracking_ok else "orb_not_tracking"] += 1
+            if not self._guard_file and not self._slam_tracking_ok:
                 self._slam_poses.clear()
                 self._slam_seed = None
                 self._slam_candidate = None
@@ -290,6 +309,13 @@ class Receiver(Node):
         value = str(msg.data).strip()
         if value:
             with self._slam_lock:
+                if self._guard_file:
+                    if value == "unknown":
+                        self._map_changed = self._two_host_map is not None
+                    elif self._two_host_map is None:
+                        self._two_host_map = value
+                    elif value != self._two_host_map:
+                        self._map_changed = True
                 if value != self.map_id:
                     # Poses from different Atlas coordinates must never cross the
                     # map boundary. The next TRACKING_OK/pose pair re-enables anchors.
@@ -300,6 +326,18 @@ class Receiver(Node):
                     with self._anchor_lock:
                         self._map_anchors.clear()
                 self.map_id = value
+
+    def _two_host_healthy(self):
+        """Caller holds _slam_lock. A fault invalidates already-running inference."""
+        healthy = (not self._map_changed and self._two_host_map is not None
+                   and guard_healthy(self._guard_file, self._two_host_map))
+        if not healthy and self._guard_was_healthy:
+            self._guard_generation += 1
+            self._accepted_frames.clear()
+            self._slam_poses.clear()
+            self._slam_seed = self._slam_candidate = None
+        self._guard_was_healthy = healthy
+        return healthy
 
     def _on_slam_pose(self, msg):
         p = msg.pose.position
@@ -316,6 +354,11 @@ class Receiver(Node):
         stamp = msg.header.stamp.sec * 1_000_000_000 + msg.header.stamp.nanosec
         accepted = None
         with self._slam_lock:
+            self._map_frame_id = msg.header.frame_id
+            if self._guard_file:
+                self._pose_delays_ms.append((time.time_ns() - stamp) / 1e6)
+                if not self._two_host_healthy():
+                    return
             if self._slam_seed is None:
                 self._slam_seed = (stamp, matrix)
             elif self._slam_candidate is None:
@@ -330,11 +373,13 @@ class Receiver(Node):
                 self._slam_candidate = (stamp, matrix, msg.header)
                 self._slam_repaired += int(repaired)
                 accepted = middle_header, filtered
-        if accepted is None:
+        if accepted is None or self._guard_file:
             return
+        self._publish_camera_pose(accepted[0], accepted[1])
+
+    def _publish_camera_pose(self, header, matrix):
         transformed = PoseStamped()
-        transformed.header = accepted[0]
-        matrix = accepted[1]
+        transformed.header = header
         transformed.pose.position.x, transformed.pose.position.y, transformed.pose.position.z = (
             float(v) for v in matrix[:3, 3])
         quat = Rotation.from_matrix(matrix[:3, :3]).as_quat()
@@ -361,6 +406,16 @@ class Receiver(Node):
                 anchors[str(hypothesis.hypothesis.class_id)] = matrix
         with self._anchor_lock:
             self._map_anchors = anchors
+        if self._guard_file:
+            with self._slam_lock:
+                if not self._two_host_healthy():
+                    return
+                snapshot = {"map_id": self.map_id, "updated_unix_s": time.time(),
+                            "anchors": {name: pose.tolist() for name, pose in anchors.items()}}
+            with self._write_lock:
+                temporary = self._landmarks_path.with_suffix(".tmp")
+                temporary.write_text(json.dumps(snapshot), encoding="utf-8")
+                os.replace(temporary, self._landmarks_path)
 
     def _flush_pending(self):
         """Publish a frame only after its same-stamp SLAM pose arrives or times out.
@@ -376,7 +431,9 @@ class Receiver(Node):
                 return
             frame = self._pending_frames[0]
             chosen_pose = None
-            if self._slam_tracking_ok and self._slam_poses:
+            pose_allowed = (self._two_host_healthy() if self._guard_file
+                            else self._slam_tracking_ok)
+            if pose_allowed and self._slam_poses:
                 target = frame["stamp_ns"]
                 exact = next((row for row in self._slam_poses if row[0] == target), None)
                 left = max((row for row in self._slam_poses if row[0] < target),
@@ -392,7 +449,8 @@ class Receiver(Node):
                         chosen_pose = (
                             target, matrix, "interpolated", bool(left[2] or right[2]))
             timed_out = time.monotonic() - frame["queued_at"] >= self._slam_wait_s
-            if chosen_pose is None and self._slam_tracking_ok and timed_out and self._slam_poses:
+            if (not self._guard_file and chosen_pose is None and self._slam_tracking_ok
+                    and timed_out and self._slam_poses):
                 pose_stamp, matrix, repaired = min(
                     self._slam_poses, key=lambda row: abs(row[0] - frame["stamp_ns"]))
                 if abs(pose_stamp - frame["stamp_ns"]) <= self._pose_match_ns:
@@ -410,7 +468,7 @@ class Receiver(Node):
                     "tracking_state": "TRACKING_OK",
                     "map_id": self.map_id,
                 }
-            elif (not self._slam_tracking_ok or
+            elif (not pose_allowed or
                   timed_out):
                 pending = self._pending_frames.popleft()
                 # Preserve the current map identity, but explicitly prevent Anchor use.
@@ -419,6 +477,23 @@ class Receiver(Node):
             self._write_frame(pending, context)
 
     def _write_frame(self, frame, slam_context):
+        if self._guard_file:
+            with self._slam_lock:
+                if not self._two_host_healthy():
+                    slam_context = {"tracking_state": "TRACKING_LOST", "map_id": self.map_id}
+                mode = slam_context.get("pose_match_mode", "missed")
+                self._match_counts[mode] += 1
+                if self._slam_tracking_ok:
+                    self._match_counts["tracking_" + mode] += 1
+                if mode != "missed":
+                    self._accepted_frames[frame["stamp_ns"]] = (self.map_id, self._guard_generation)
+                    # Retain only the input window needed by delayed inference.
+                    while len(self._accepted_frames) > 1000:
+                        self._accepted_frames.pop(next(iter(self._accepted_frames)))
+                    header = PoseStamped().header
+                    header.frame_id = getattr(self, "_map_frame_id", "map")
+                    header.stamp.sec, header.stamp.nanosec = divmod(frame["stamp_ns"], 1_000_000_000)
+                    self._publish_camera_pose(header, slam_context["T_map_camera"])
         with self._write_lock:
             self.fw.write(frame["rgb"], frame["depth"], frame["K"],
                           frame["stamp_ns"], frame["recv_wall"], slam_context,
@@ -452,7 +527,9 @@ class Receiver(Node):
             return
         overlay = frame["rgb"].copy()
         twc = np.asarray(slam_context.get("T_map_camera"), float)
-        if slam_context.get("tracking_state") == "TRACKING_OK" and valid_se3(twc):
+        with self._slam_lock:
+            allowed = not self._guard_file or self._two_host_healthy()
+        if allowed and slam_context.get("tracking_state") == "TRACKING_OK" and valid_se3(twc):
             with self._anchor_lock:
                 anchors = [(name, pose.copy()) for name, pose in self._map_anchors.items()]
             camera_to_map = np.linalg.inv(twc)
@@ -531,6 +608,36 @@ class Receiver(Node):
                 self._publish_result(json.loads(line))
 
     def _publish_result(self, r):
+        if self._guard_file:
+            total_ms = (r.get("ms") or {}).get("total")
+            if isinstance(total_ms, (int, float)) and np.isfinite(total_ms):
+                self._inference_times_ms.append(total_ms)
+            with self._slam_lock:
+                healthy = self._two_host_healthy()
+                accepted = self._accepted_frames.pop(r["stamp_ns"], None)
+                allowed = (healthy and r.get("slam_paired") is True
+                           and r.get("map_id") == self.map_id
+                           and accepted == (self.map_id, self._guard_generation))
+            if not allowed:
+                self._match_counts["results_suppressed"] += 1
+                struct.pack_into("<q", self._ack, 0, int(r["frame_seq"]))
+                self._last = r
+                return
+            quality = r.get("object_memory_quality") or {}
+            self._quality_last = quality
+            samples = quality.get("samples", [])
+            if samples:
+                self._quality_counts["visible_processed_frames"] += 1
+                self._quality_counts["passing_frames"] += int(quality.get("passed") is True)
+            else:
+                self._quality_counts["unmeasured_frames"] += 1
+            self._quality_counts["object_samples"] += len(samples)
+            for sample in samples:
+                for key, values in (("mask_overlap", self._quality_overlaps),
+                                    ("depth_residual_mm", self._quality_depths)):
+                    value = sample.get(key)
+                    if isinstance(value, (int, float)) and np.isfinite(value):
+                        values.append(value)
         if not self._object_memory_enabled and str(r.get("map_id", "")) == self.map_id:
             anchors = {}
             for name, value in (r.get("map_anchors") or {}).items():
@@ -595,9 +702,46 @@ class Receiver(Node):
             "last_input_age_s": age,
             "processed": last.get("n_proc", 0), "detections": last.get("n_det", 0),
             "last_ms": last.get("ms", {})}, ensure_ascii=False)))
+        if self._guard_file:
+            with self._slam_lock:
+                healthy = self._two_host_healthy()
+                delays = list(self._pose_delays_ms)
+            if self._metrics_path:
+                visible = self._quality_counts["visible_processed_frames"]
+                fraction = self._quality_counts["passing_frames"] / visible if visible else None
+                summary = {"healthy": healthy, "map_id": self.map_id,
+                    "updated_unix_s": time.time(), "pose_matching": dict(self._match_counts),
+                    "pose_capture_to_arrival_ms": {str(q): float(np.percentile(delays, q))
+                                                   for q in (50, 95)} if delays else None,
+                    "pose_lan_delay_ms": None,
+                    "pose_lan_delay_note": "PoseStamped has capture time, not remote send time",
+                    "sam_received": self._input.received, "sam_written": self.n_written,
+                    "sam_processed": last.get("n_proc", 0),
+                    "sam_skipped": max(0, int(last.get("source_seq", -1)) + 1 - int(last.get("n_proc", 0))),
+                    "sam_inference_ms": {str(q): float(np.percentile(list(self._inference_times_ms), q))
+                                         for q in (50, 95)} if self._inference_times_ms else None,
+                    "sam_last_inference_ms": last.get("ms", {}),
+                    "object_memory_quality": {**dict(self._quality_counts),
+                        "passing_visible_frame_fraction": fraction,
+                        "gate_passed": fraction >= .95 if fraction is not None else None,
+                        "thresholds": {"mask_overlap_min": .5, "depth_residual_max_mm": 100,
+                                       "visible_fraction_min": .2, "passing_frame_fraction_min": .95},
+                        "mask_overlap": {str(q): float(np.percentile(list(self._quality_overlaps), q))
+                                         for q in (50, 95)} if self._quality_overlaps else None,
+                        "depth_residual_mm": {str(q): float(np.percentile(list(self._quality_depths), q))
+                                              for q in (50, 95)} if self._quality_depths else None,
+                        "samples_file": str(self._landmarks_path.parent / "frames.jsonl"),
+                        "last_frame": self._quality_last}}
+                path = Path(self._metrics_path)
+                with self._write_lock:
+                    temporary = path.with_suffix(".tmp")
+                    temporary.write_text(json.dumps(summary), encoding="utf-8")
+                    os.replace(temporary, path)
 
     def close(self):
         self._input.close()
+        if self._guard_file and self._metrics_path:
+            self._status()
         self.get_logger().info(f"[recv] 수신 {self.n_in} · 공유메모리 기록 {self.n_written}")
         self.fw.close()
         self._f_stat.close()

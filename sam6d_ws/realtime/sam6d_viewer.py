@@ -36,6 +36,7 @@ import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from shm_channel import FrameReader, JsonReader          # noqa: E402
+from two_host_guard import guard_healthy
 
 REPO = Path(__file__).resolve().parents[1]
 PALETTE = [(80, 220, 90), (60, 165, 255), (240, 170, 60), (200, 100, 240),
@@ -156,14 +157,15 @@ def load_models():
 
 
 def view_overlay(topic, scale, fps, map_pcd, slam_pose_topic, sam_pose_topic,
-                 tracking_topic, landmarks_topic, save="", headless=False):
+                 tracking_topic, landmarks_topic, save="", headless=False, guard_file=""):
     """ObjectMemory가 투영한 ROS Image를 가장 최근 프레임만 보여준다."""
     import rclpy
     from cv_bridge import CvBridge
     from geometry_msgs.msg import PoseStamped
     from message_filters import Subscriber, TimeSynchronizer
     from rclpy.node import Node
-    from rclpy.qos import qos_profile_sensor_data
+    from rclpy.qos import (DurabilityPolicy, QoSProfile, ReliabilityPolicy,
+                           qos_profile_sensor_data)
     from sensor_msgs.msg import Image
     from std_msgs.msg import String
     from vision_msgs.msg import Detection3DArray
@@ -191,17 +193,23 @@ def view_overlay(topic, scale, fps, map_pcd, slam_pose_topic, sam_pose_topic,
         def __init__(self):
             super().__init__("sam6d_overlay_viewer")
             self.bridge, self.frame = CvBridge(), None
+            self.frame_shape = (480, 640, 3)
             self.slam = self.sam = None
             self.objects, self.tracking = [], False
+            self.map_id, self.map_changed = None, False
+            if guard_file:
+                self.create_subscription(String, "/orbslam3/map_id", self._on_map,
+                    QoSProfile(depth=1, reliability=ReliabilityPolicy.RELIABLE,
+                               durability=DurabilityPolicy.TRANSIENT_LOCAL))
             self.create_subscription(
                 Image, topic, self._on_image, qos_profile_sensor_data)
             if os.environ.get("SAM6D_VIEWER_POSE_SYNC", "1") == "0":
                 self.create_subscription(
                     PoseStamped, slam_pose_topic,
-                    lambda msg: setattr(self, "slam", marker(msg.pose)), 10)
+                    lambda msg: self._on_pose("slam", msg), 10)
                 self.create_subscription(
                     PoseStamped, sam_pose_topic,
-                    lambda msg: setattr(self, "sam", marker(msg.pose)), 10)
+                    lambda msg: self._on_pose("sam", msg), 10)
                 self.get_logger().warn("pose timestamp sync disabled")
             else:
                 self.slam_pose_sub = Subscriber(
@@ -216,16 +224,43 @@ def view_overlay(topic, scale, fps, map_pcd, slam_pose_topic, sam_pose_topic,
                                      self._on_landmarks, 10)
 
         def _on_image(self, msg):
-            self.frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+            if self._allow_updates():
+                self.frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
+                self.frame_shape = self.frame.shape
+
+        def _on_map(self, msg):
+            value = str(msg.data).strip()
+            if value and value != "unknown" and self.map_id is None:
+                self.map_id = value
+            elif self.map_id is not None and value != self.map_id:
+                self.map_changed = True
+
+        def _allow_updates(self):
+            if not guard_file:
+                return True
+            allowed = (self.map_id is not None and not self.map_changed
+                       and guard_healthy(guard_file, self.map_id))
+            if not allowed:
+                self.frame = self.slam = self.sam = None
+                self.objects, self.tracking = [], False
+            return allowed
+
+        def _on_pose(self, name, msg):
+            if self._allow_updates():
+                setattr(self, name, marker(msg.pose))
 
         def _on_pose_pair(self, slam_msg, sam_msg):
+            if not self._allow_updates():
+                return
             self.slam = marker(slam_msg.pose)
             self.sam = marker(sam_msg.pose)
 
         def _on_tracking(self, msg):
-            self.tracking = str(msg.data).strip().lower() == "tracking"
+            self.tracking = self._allow_updates() and str(msg.data).strip().lower() == "tracking"
 
         def _on_landmarks(self, msg):
+            if not self._allow_updates():
+                return
             objects = []
             for detection in msg.detections:
                 if detection.results:
@@ -241,9 +276,13 @@ def view_overlay(topic, scale, fps, map_pcd, slam_pose_topic, sam_pose_topic,
     try:
         while rclpy.ok():
             rclpy.spin_once(node, timeout_sec=1.0 / max(fps, 1.0))
-            if node.frame is None:
+            healthy = node._allow_updates()
+            if healthy and node.frame is None:
                 continue
-            shown = node.frame
+            shown = node.frame if healthy else np.zeros(node.frame_shape, np.uint8)
+            if not healthy:
+                cv2.putText(shown, "TRACKING LOST: two-host guard", (20, 50),
+                            cv2.FONT_HERSHEY_SIMPLEX, .7, (70, 70, 255), 2)
             if renderer is not None:
                 topdown = renderer.draw(node.slam, node.sam, node.objects, node.tracking)
                 if topdown.shape[0] != shown.shape[0]:
@@ -295,6 +334,7 @@ def main():
     ap.add_argument("--sam-pose-topic", default="/sam6d/camera_pose")
     ap.add_argument("--tracking-topic", default="/orbslam3/tracking_state")
     ap.add_argument("--landmarks-topic", default="/object_memory/landmarks")
+    ap.add_argument("--two-host-guard-file", default="")
     ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()
 
@@ -324,7 +364,7 @@ def main():
     if a.overlay_topic:
         view_overlay(a.overlay_topic, a.scale, a.fps, a.map_pcd,
                      a.slam_pose_topic, a.sam_pose_topic, a.tracking_topic,
-                     a.landmarks_topic, a.save, a.headless)
+                     a.landmarks_topic, a.save, a.headless, a.two_host_guard_file)
         return
 
     MP, BOX, cidx = load_models()
