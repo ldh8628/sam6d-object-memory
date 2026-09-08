@@ -100,7 +100,7 @@ def worker_argv(config, role, output, *, record=True, record_seconds=600., camer
 
 def run(args):
     from two_host import (ROOT, RemoteSession, atomic_json, checked_sync, load_config,
-                          execute, local_command, preflight, remote_command, validate_clock_pair)
+                          execute, local_command, preflight, remote_command, resolve_cameras, validate_clock_pair)
     config = load_config(args.two_host_config)
     duration = args.input_check_seconds or 600.
     if not math.isfinite(duration) or duration < 600:
@@ -117,6 +117,7 @@ def run(args):
     remote = local = processing = None
     try:
         report['preflight'] = preflight(config)
+        resolve_cameras(config)
         # Identity uses five waits; baseline and recording monitors use one each.
         # Also allow the 40-second baseline window, drain and environment startup.
         ready_timeout = 180. + 7 * args.camera_timeout

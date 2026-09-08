@@ -88,15 +88,25 @@ class RealtimeChecks(unittest.TestCase):
             self.assertEqual(report['acceptance']['status'], 'PASS')
 
     def test_wrong_camera_contract_never_starts_hardware(self):
-        with tempfile.TemporaryDirectory() as tmp:
-            root=Path(tmp)
-            (root/'distributed_map.json').write_text(json.dumps(dict(status='PASS',
-                synchronization=dict(status='PASS'),cameras={})))
-            with patch.object(live,'load_config',return_value=config()), \
-                 patch.object(live,'RemoteSession') as session:
-                with self.assertRaisesRegex(ValueError,'camera roles'):
-                    live.run(SimpleNamespace(map_dir=root,two_host_config=root/'config'))
-                session.assert_not_called()
+        for changed in (False, True):
+            with self.subTest(changed=changed), tempfile.TemporaryDirectory() as tmp:
+                root=Path(tmp); dataset=root/'session'; dataset.mkdir()
+                manifest=dict(status='PASS',synchronization=dict(status='PASS'),cameras=config()['cameras'],
+                    remote_dataset='/remote/project/output/session',preflight={'local':{'commit':'sha'}})
+                (dataset/'distributed_map.json').write_text(json.dumps(manifest))
+                automatic=config(); automatic['cameras'].update(slam_serial='auto',sam_serial='auto')
+                def resolve(cfg):
+                    cfg['cameras'].update(slam_serial='999' if changed else '123',sam_serial='456')
+                with patch.object(live,'load_config',return_value=automatic), \
+                     patch.object(live,'preflight',return_value={'local':{'commit':'sha'}}), \
+                     patch.object(live,'resolve_cameras',side_effect=resolve), \
+                     patch.object(live,'write_configs',side_effect=RuntimeError('configuration reached')) as write, \
+                     patch.object(live,'RemoteSession') as session:
+                    with self.assertRaisesRegex(ValueError if changed else RuntimeError,
+                                                'camera roles' if changed else 'configuration reached'):
+                        live.run(SimpleNamespace(map_dir=dataset,two_host_config=root/'config',output=root/'run'))
+                    self.assertEqual(write.call_count,0 if changed else 1)
+                    session.assert_not_called()
 
 if __name__=='__main__':
     unittest.main()

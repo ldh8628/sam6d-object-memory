@@ -14,6 +14,10 @@ python3 integration/deploy_remote.py --config integration/two_host.local.yaml --
 
 새 경로는 clone, 기존 저장소는 origin/dirty 검증 후 detached checkout한다. Vocabulary는 SHA-256 확인 후 Linux atomic no-replace rename으로 staging을 승격한다. 기존 자산과 checksum이 다르면 덮어쓰지 않는다. ORB source fingerprint가 바뀌거나 설치/성공 manifest가 없으면 두 ORB 패키지를 빌드한다. 환경/message definition hash와 self-test가 통과한 뒤 양쪽에 동일 `deployment.json`을 기록한다. 실패한 빌드는 원격 성공 manifest를 남기지 않는다. 자산은 Git에서 제외된다.
 
+카메라 역할은 연결된 호스트로 정한다. 로컬 SAM 노트북에서 발견한 RealSense는 SAM, 원격 SLAM 노트북에서 발견한 RealSense는 SLAM이다. `cameras.slam_serial`과 `sam_serial`은 생략하거나 `auto`로 둔다. 각 호스트에 한 대씩 연결하면 카메라 교체나 USB 재연결 후에도 설정을 고칠 필요가 없다. 여러 대가 연결된 호스트에서만 해당 serial을 명시해 선택한다. 0대·모호한 선택·양쪽 같은 serial은 촬영 전에 거부한다.
+
+실행 시작 시 선택한 실제 serial을 worker에 넘겨 DeviceInfo로 다시 확인하고 `two_host_report.json`, `distributed_map.json`, 최종 `camera_roles.json`에 보존한다. sync mode는 호스트 역할에 따라 원격 SLAM master 1 / 로컬 SAM slave 3이다. 기존 맵은 당시 실제 카메라 구성으로 보정된 결과이므로, 다른 카메라 구성에서 재사용하려면 새 맵·보정을 생성한다.
+
 설정 파서는 표준 라이브러리만 사용한다. 예제와 같은 두 단계 scalar YAML 또는 JSON을 허용하며 YAML anchor, list, inline comment 등은 거부한다. SSH 비밀번호와 private key를 넣지 않는다.
 
 ## PTP
@@ -94,6 +98,7 @@ PoseStamped에는 촬영 시각만 있고 원격 송신 시각이 없으므로 *
 
 ```bash
 python3 integration/test_two_host.py
+python3 integration/test_two_host_cameras.py
 python3 integration/test_create_map_urdf_split.py
 python integration/test_two_host_map.py
 python integration/test_two_host_realtime.py
@@ -117,6 +122,6 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/test_slam_pose_memory.py
 
 로컬 IP는 `10.119.19.162`, 원격 SSH alias는 `slam-codex`(port 10022), 원격 저장소는 `/home/jucpark/sam6d_object_memory`다. SSH 연결과 원격 `/home/jucpark/anaconda3/etc/profile.d/conda.sh`의 Python 3.12.14/Jazzy `realsense` 환경을 확인했다. 양쪽 녹화 imports는 정상이며 원격 RealSense ROS 4.57.7, sensor_msgs 5.3.7, ros2interface 0.32.9를 로컬 검증 버전에 맞췄다. ORB 코어·wrapper 빌드와 양쪽 런타임 self-test, 배포 manifest 일치, 녹화 메시지·서비스 6종 해시 일치 및 양쪽 ROS bag 변환·재생을 확인했다. 환경 변경 전 목록은 원격 `output/split_map_environment_before`에 저장했다.
 
-유선 software PTP는 SAM `enx00e04caa7ca7` SLAVE, SLAM `enx00e04cbaf0a3` MASTER이며 같은 grandmaster다. 다만 60초/12표본 중 최대 합산 오차가 **1175.653 μs**로 **1000 μs** 기준을 초과했다. SAM 녹화 공간도 **45.1 GiB 필요 / 26.3 GiB 여유**로 부족하다. 카메라도 계획과 반대로 SAM에 `253822302376`, SLAM에 `253822301680`이 연결돼 있다. 설정은 SLAM master `253822302376` / SAM slave `253822301680`을 유지한다. 실제 10분 녹화·맵·URDF 결과 회수는 PTP 안정화, 약 19 GiB 추가 공간 확보, 카메라 연결 교환 후 검증해야 한다. 진입점/회귀 검사 통과를 실장비 완료로 간주하지 않는다.
+유선 software PTP는 SAM `enx00e04caa7ca7` SLAVE, SLAM `enx00e04cbaf0a3` MASTER이며 같은 grandmaster다. 다만 60초/12표본 중 최대 합산 오차가 **1175.653 μs**로 **1000 μs** 기준을 초과했다. SAM 녹화 공간도 **45.1 GiB 필요 / 26.3 GiB 여유**로 부족하다. 현재 SAM에 연결된 `253822302376`은 SAM으로, 원격 SLAM에 연결된 `253822301680`은 SLAM으로 자동 인식한다. 카메라 연결 교환은 필요 없다. 실제 10분 녹화·맵·URDF 결과 회수는 PTP 안정화와 약 19 GiB 추가 공간 확보 후 검증해야 한다. 진입점/회귀 검사 통과를 실장비 완료로 간주하지 않는다.
 
 Git 이전 `notebook` 브랜치는 보존했고 수정 snapshot은 `notebook-snapshot-20260908`에 있다. `output/migration_backup_20260908/notebook.bundle`과 patch가 로컬 복구본이다. migration은 역사 재작성 없이 snapshot 다음 commit에서 기존 tree를 `sam6d_ws/` 아래로 옮겼다.

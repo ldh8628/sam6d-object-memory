@@ -124,7 +124,7 @@ class TwoHostMapChecks(unittest.TestCase):
     def test_controller_slave_stops_first_and_only_sam_capture_is_uploaded(self):
         import two_host
         import two_host_map
-        config = dict(cameras=dict(slam_serial='123',sam_serial='456',slam_sync_mode=1,sam_sync_mode=3),
+        config = dict(cameras=dict(slam_serial='auto',sam_serial='auto',slam_sync_mode=1,sam_sync_mode=3),
                       ssh=dict(remote_root='/remote/project'), network=dict(ros_domain_id=72,
                       local_ptp_interface='eth0',remote_ptp_interface='eth1',ptp_max_offset_us=1000))
         events, transfers, camera_commands, ready_timeouts = [], [], [], []
@@ -153,9 +153,12 @@ class TwoHostMapChecks(unittest.TestCase):
                 (destination / 'camera_extrinsic/quality_report.json').write_text('{"status":"PASS"}')
                 (destination / 'camera_roles.json').write_text('{}')
             return {}
+        def resolve(config):
+            config['cameras'].update(slam_serial='789', sam_serial='012')
         with tempfile.TemporaryDirectory() as tmp, \
                 patch.multiple(two_host, ROOT=Path(tmp), RemoteSession=Session, checked_sync=transfer), \
                 patch('two_host.load_config', return_value=config), patch('two_host.preflight', return_value={}), \
+                patch('two_host.resolve_cameras', side_effect=resolve), \
                 patch('two_host.execute', return_value='{"offset_us":0,"system_offset_us":0,"measurement_uncertainty_us":0,"grandmaster_id":"clock1"}'), \
                 patch('two_host.local_command', return_value=[]), patch('two_host.remote_command', return_value=[]), \
                 patch('two_host_map.time.monotonic', side_effect=[0, 700, 701]), \
@@ -166,6 +169,8 @@ class TwoHostMapChecks(unittest.TestCase):
                 input_check_seconds=600,force=False,camera_timeout=240.,baseline=.095,input_check_only=False))
             self.assertEqual([command[command.index('--camera-timeout') + 1]
                               for command in camera_commands], ['240.0', '240.0'])
+            self.assertEqual([command[command.index('--serial') + 1]
+                              for command in camera_commands], ['789', '012'])
             self.assertEqual(len(ready_timeouts), 2)
             self.assertTrue(all(timeout >= 7 * 240 + 40 for timeout in ready_timeouts))
             self.assertEqual(events, ['start slam','ready slam','start sam','ready sam','stop sam','stop slam',
@@ -175,6 +180,8 @@ class TwoHostMapChecks(unittest.TestCase):
             self.assertTrue(str(uploaded[0][0]).endswith('/distributed/sam'))
             report = json.loads((Path(tmp)/'output/test/two_host_report.json').read_text())
             self.assertEqual(report['status'], 'PASS')
+            self.assertEqual(report['cameras']['slam_serial'], '789')
+            self.assertEqual(report['cameras']['sam_serial'], '012')
 
     def test_local_command_worker_lease_stops_gpu_process_group(self):
         with tempfile.TemporaryDirectory() as tmp:

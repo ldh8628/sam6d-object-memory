@@ -11,8 +11,9 @@ network:
   remote_ptp_interface: REMOTE_INTERFACE
   ptp_max_offset_us: 1000
 cameras:
-  slam_serial: "253822302376"
-  sam_serial: "253822301680"
+  # One RealSense per host: local = SAM, remote = SLAM, regardless of serial.
+  slam_serial: auto
+  sam_serial: auto
   slam_sync_mode: 1
   sam_sync_mode: 3
 # Optional host environment paths; no SAM environment is needed remotely.

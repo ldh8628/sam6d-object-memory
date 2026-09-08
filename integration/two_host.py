@@ -74,7 +74,7 @@ def load_config(path):
     required = {'ssh': {'target', 'remote_root'},
                 'network': {'local_ip', 'remote_ip', 'ros_domain_id', 'local_ptp_interface',
                             'remote_ptp_interface', 'ptp_max_offset_us'},
-                'cameras': {'slam_serial', 'sam_serial', 'slam_sync_mode', 'sam_sync_mode'}}
+                'cameras': {'slam_sync_mode', 'sam_sync_mode'}}
     for group, keys in required.items():
         if not isinstance(config.get(group), dict):
             raise ValueError(f'{group} must be a mapping')
@@ -83,7 +83,8 @@ def load_config(path):
     if set(config) - {*required, 'environment'}:
         raise ValueError('unknown config section (credentials must use OpenSSH)')
     for group, keys in required.items():
-        if set(config[group]) - keys - ({'port'} if group == 'ssh' else set()):
+        optional = {'ssh': {'port'}, 'cameras': {'slam_serial', 'sam_serial'}}
+        if set(config[group]) - keys - optional.get(group, set()):
             raise ValueError(f'unknown {group} setting')
     port = config['ssh'].setdefault('port', 22)
     if type(port) is not int or not 1 <= port <= 65535:
@@ -110,10 +111,11 @@ def load_config(path):
         raise ValueError('ptp_max_offset_us must be positive and at most 1000')
     cams = config['cameras']
     for key in ('slam_serial', 'sam_serial'):
-        if not isinstance(cams[key], str) or not re.fullmatch(r'\d+', cams[key]):
-            raise ValueError(f'{key} must be a quoted numeric serial')
+        cams.setdefault(key, 'auto')
+        if not isinstance(cams[key], str) or not re.fullmatch(r'auto|\d+', cams[key]):
+            raise ValueError(f'{key} must be auto or a quoted numeric serial')
     if (type(cams['slam_sync_mode']) is not int or type(cams['sam_sync_mode']) is not int
-            or cams['slam_serial'] == cams['sam_serial']
+            or cams['slam_serial'] == cams['sam_serial'] != 'auto'
             or cams['slam_sync_mode'] != 1 or cams['sam_sync_mode'] != 3):
         raise ValueError('distinct cameras and SLAM master 1 / SAM full slave 3 required')
     defaults = dict(local_conda_sh=str(Path.home() / 'miniconda3/etc/profile.d/conda.sh'),
@@ -144,6 +146,40 @@ def cli_domain(args):
 
 def execute(argv, **kwargs):
     return subprocess.run(argv, check=True, text=True, capture_output=True, **kwargs).stdout.strip()
+
+
+def camera_serials():
+    """Enumerate this host's RealSense devices without starting image streams."""
+    from camera_publish import parse_realsense_serials
+    serials = sorted(set(parse_realsense_serials(execute(['rs-enumerate-devices'], timeout=10)).values()))
+    if any(not re.fullmatch(r'\d+', value) for value in serials):
+        raise ValueError('invalid serial in RealSense enumeration')
+    return serials
+
+
+def resolve_cameras(config):
+    """Resolve roles by host once; workers verify these exact devices at startup."""
+    selected = {}
+    for role, command in (('sam', local_command), ('slam', remote_command)):
+        serials = json.loads(execute(command(config, ['python', 'integration/two_host.py', 'cameras']), timeout=30))
+        if (not isinstance(serials, list) or
+                any(not isinstance(value, str) or not re.fullmatch(r'\d+', value) for value in serials)):
+            raise ValueError(f'{role} host returned invalid camera enumeration')
+        serials = sorted(set(serials))
+        requested = config['cameras'].get(role + '_serial', 'auto')
+        if requested == 'auto':
+            if len(serials) != 1:
+                raise ValueError(f'{role} host requires exactly one RealSense camera for auto selection; '
+                                 f'found {serials}; select {role}_serial explicitly if multiple are connected')
+            requested = serials[0]
+        elif requested not in serials:
+            raise ValueError(f'{role} camera {requested} is not connected to its host; found {serials}')
+        selected[role + '_serial'] = requested
+    if selected['slam_serial'] == selected['sam_serial']:
+        raise ValueError('SAM and SLAM hosts resolved to the same camera serial')
+    config['cameras'].update(selected)
+    print(f"[cameras] SAM (local)={selected['sam_serial']}; SLAM (remote)={selected['slam_serial']}", flush=True)
+    return config['cameras']
 
 
 def ssh_command(config, argv):
@@ -449,11 +485,14 @@ def preflight(config):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('action', choices=['probe', 'ptp'])
+    parser.add_argument('action', choices=['probe', 'ptp', 'cameras'])
     parser.add_argument('--interface')
     parser.add_argument('--role', choices=['local', 'remote'], default='local')
     args = parser.parse_args()
-    print(json.dumps(ptp_probe(args.interface, args.role) if args.action == 'ptp' else probe(args.interface, args.role)))
+    if args.action == 'cameras':
+        print(json.dumps(camera_serials()))
+    else:
+        print(json.dumps(ptp_probe(args.interface, args.role) if args.action == 'ptp' else probe(args.interface, args.role)))
 
 if __name__ == '__main__':
     main()

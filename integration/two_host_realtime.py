@@ -9,7 +9,7 @@ import sys
 import time
 
 from two_host import (ROOT, RemoteSession, atomic_json, checked_sync, execute, load_config,
-                      local_command, preflight, remote_command, remote_python, ssh_command, validate_clock_pair)
+                      local_command, preflight, remote_command, remote_python, resolve_cameras, ssh_command, validate_clock_pair)
 from two_host_map import worker_argv
 
 
@@ -140,8 +140,6 @@ def run(args):
     manifest = json.loads((map_root / 'distributed_map.json').read_text())
     if manifest['status'] != 'PASS' or manifest['synchronization']['status'] != 'PASS':
         raise ValueError('a passed distributed map and 10-minute mode-3 validation are required')
-    if manifest['cameras'] != config['cameras']:
-        raise ValueError('camera roles/modes differ from the calibrated map')
     expected_remote_map = Path(config['ssh']['remote_root']) / 'output' / map_root.name
     if Path(manifest['remote_dataset']) != expected_remote_map:
         raise ValueError('map belongs to a different remote root/session')
@@ -160,6 +158,9 @@ def run(args):
     gate()
     try:
         report['preflight'] = preflight(config)
+        resolve_cameras(config)
+        if manifest['cameras'] != config['cameras']:
+            raise ValueError('connected camera roles/modes differ from the calibrated map; recreate calibration')
         if report['preflight']['local']['commit'] != manifest['preflight']['local']['commit']:
             raise ValueError('map/realtime commit differs; use its release or recreate calibration')
         bundle, sam_path, atlas, extrinsic = write_configs(args, config, output, remote_output, manifest)
