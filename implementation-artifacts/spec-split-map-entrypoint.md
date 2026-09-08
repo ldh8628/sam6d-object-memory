@@ -55,7 +55,7 @@ Never: 품질 우회, mode 2 또는 단일 장비 fallback, 원격 SAM 모델 �
 - [x] `integration/two_host_map.py`: timeout을 두 camera worker로 전달.
 - [x] `integration/test_create_map_urdf_split.py`, `integration/test_two_host_map.py`: 진입점/환경 명령/종료/신호 및 timeout 검사.
 - [x] `integration/two_host.local.yaml`, `integration/TWO_HOST.md`: 실제 원격 conda 경로와 실행 방법.
-- [ ] 양쪽 녹화 의존성 확인, 원격 누락 ORB 의존성 보충, commit/push/배포 및 SHA 일치.
+- [x] 양쪽 녹화 의존성 확인, 원격 누락 ORB 의존성 보충, commit/push/배포 및 SHA 일치.
 - [ ] 실제 600초 녹화부터 맵·URDF 회수까지 수행하고 품질 측정. PTP 등 외부 조건이 막으면 미완료를 명시.
 
 Given 일반 터미널, when 새 명령 실행, then 설정된 로컬 conda로 기존 분산 경로를 실행한다.
@@ -81,12 +81,18 @@ Given 실제 촬영 통과, when 원격 calibration, then residual p90 ≤0.10m/
 
 원격 conda는 `/home/jucpark/anaconda3/etc/profile.d/conda.sh`로 확인했다.
 양쪽 Python 3.12.14/Jazzy와 녹화 imports는 정상이다. 원격 ROS 메시지 버전을
-로컬 검증 버전에 맞추는 초기 환경 설치와 ORB 배포는 진행 중이다.
+로컬 검증 버전에 맞췄고 초기 ORB 코어·wrapper 빌드와 배포 self-test가 통과했다.
+배포 manifest 양쪽 일치, 녹화 메시지·서비스 6종 정의 해시 일치, 양쪽 ORB runtime 검사 통과.
+양쪽 실제 ROS bag 변환·재생도 통과했다. 원격의 단일 장비용 replay 테스트는
+테스트 실행 시 CONDA_SH를 실제 anaconda3 경로로 지정했다(프로덕션 분산 경로는 기존 환경 상속).
 환경 변경 전 원격 `output/split_map_environment_before`에 explicit 목록과 YAML export를 저장했다.
 
 실장비 전체 acceptance는 미완료다. 60초 PTP 12표본 중 1개가 1175.653us로
 1000us를 초과했다. 로컬 녹화 예산 48,375,640,064 bytes 대비 여유
 28,264,431,616 bytes로 약 18.7GiB가 더 필요하다. 원본을 삭제하거나 품질 검사를 우회하지 않는다.
+카메라 열거 결과도 계획과 반대다: SAM에 `253822302376`, SLAM에 `253822301680`이
+연결돼 있다. 설정된 SLAM master/SAM slave 역할과 serial은 변경하지 않았으며,
+카메라 연결을 바꾼 뒤 실제 sync mode/10분 촬영/calibration 품질을 검증해야 한다.
 장비 검사 근거는 Git 제외 `output/split_map_verification/`에 보존한다.
 
 ## Suggested Review Order

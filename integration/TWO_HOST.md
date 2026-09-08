@@ -115,8 +115,8 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/test_slam_pose_memory.py
 
 ## 2026-09-08 현장 상태
 
-로컬 IP는 `10.119.19.162`, 원격 SSH alias는 `slam-codex`(port 10022), 원격 저장소는 `/home/jucpark/sam6d_object_memory`다. SSH 연결과 원격 `/home/jucpark/anaconda3/etc/profile.d/conda.sh`의 Python 3.12.14/Jazzy `realsense` 환경을 확인했다. 양쪽 녹화 imports는 정상이며 원격 ROS 메시지 버전을 로컬 검증 버전에 맞추는 초기 환경 준비와 ORB 배포를 수행한다.
+로컬 IP는 `10.119.19.162`, 원격 SSH alias는 `slam-codex`(port 10022), 원격 저장소는 `/home/jucpark/sam6d_object_memory`다. SSH 연결과 원격 `/home/jucpark/anaconda3/etc/profile.d/conda.sh`의 Python 3.12.14/Jazzy `realsense` 환경을 확인했다. 양쪽 녹화 imports는 정상이며 원격 RealSense ROS 4.57.7, sensor_msgs 5.3.7, ros2interface 0.32.9를 로컬 검증 버전에 맞췄다. ORB 코어·wrapper 빌드와 양쪽 런타임 self-test, 배포 manifest 일치, 녹화 메시지·서비스 6종 해시 일치 및 양쪽 ROS bag 변환·재생을 확인했다. 환경 변경 전 목록은 원격 `output/split_map_environment_before`에 저장했다.
 
-유선 software PTP는 SAM `enx00e04caa7ca7` SLAVE, SLAM `enx00e04cbaf0a3` MASTER이며 같은 grandmaster다. 다만 60초/12표본 중 최대 합산 오차가 **1175.653 μs**로 **1000 μs** 기준을 초과했다. SAM 녹화 공간도 **45.1 GiB 필요 / 26.3 GiB 여유**로 부족하다. 실제 10분 녹화·맵·URDF 결과 회수는 이 조건들을 해결한 뒤 검증해야 한다. 진입점/회귀 검사 통과를 실장비 완료로 간주하지 않는다.
+유선 software PTP는 SAM `enx00e04caa7ca7` SLAVE, SLAM `enx00e04cbaf0a3` MASTER이며 같은 grandmaster다. 다만 60초/12표본 중 최대 합산 오차가 **1175.653 μs**로 **1000 μs** 기준을 초과했다. SAM 녹화 공간도 **45.1 GiB 필요 / 26.3 GiB 여유**로 부족하다. 카메라도 계획과 반대로 SAM에 `253822302376`, SLAM에 `253822301680`이 연결돼 있다. 설정은 SLAM master `253822302376` / SAM slave `253822301680`을 유지한다. 실제 10분 녹화·맵·URDF 결과 회수는 PTP 안정화, 약 19 GiB 추가 공간 확보, 카메라 연결 교환 후 검증해야 한다. 진입점/회귀 검사 통과를 실장비 완료로 간주하지 않는다.
 
 Git 이전 `notebook` 브랜치는 보존했고 수정 snapshot은 `notebook-snapshot-20260908`에 있다. `output/migration_backup_20260908/notebook.bundle`과 patch가 로컬 복구본이다. migration은 역사 재작성 없이 snapshot 다음 commit에서 기존 tree를 `sam6d_ws/` 아래로 옮겼다.
