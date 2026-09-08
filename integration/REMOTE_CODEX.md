@@ -4,7 +4,15 @@
 
 ## 재부팅 후 시작
 
-같은 USB NIC와 케이블을 연결하고 **SLAM → SAM 순서**로 실행한다. 앱 목록/바탕화면의 SLAM **유선 연결**, SAM **개발 재개** 아이콘을 사용할 수 있다. 두 아이콘은 같은 `integration/two_host_dev.sh`를 실행하며 연결된 NIC로 역할을 판단한다.
+최초 한 번, **양쪽 노트북의 일반 터미널에서 각각** 다음을 실행한다. 현재 PTP는 재시작하지 않고 다음 부팅부터 적용한다. 관리자 인증이 필요한 실제 설치 단계다.
+
+```bash
+sudo python3 ~/sam6d_object_memory/integration/install_two_host_boot.py --install
+```
+
+설치 후에는 같은 USB NIC와 케이블을 연결하고 양쪽 전원을 켠 뒤, SAM의 **개발 재개** 아이콘 또는 `two-host-dev`를 실행하면 된다. SLAM에서는 터미널/Codex를 따로 열 필요가 없다. 유선 프로필 자동 연결과 `two-host-ptp.service`가 부팅 시 시작되며, NIC/케이블/IPv6 준비가 늦으면 10초 간격으로 재시도한다. 서비스 실행은 동기 정확도 통과를 뜻하지 않는다.
+
+설치 전에도 기존처럼 **SLAM → SAM 순서**로 아이콘을 실행해 개발 연결을 준비할 수 있다. 앱 목록/바탕화면의 SLAM **유선 연결**, SAM **개발 재개** 아이콘은 같은 `integration/two_host_dev.sh`를 실행하며 연결된 NIC로 역할을 판단한다.
 
 아이콘 대신 양쪽 터미널에서 다음 한 줄을 실행해도 된다.
 
@@ -12,7 +20,7 @@
 bash ~/sam6d_object_memory/integration/two_host_dev.sh
 ```
 
-SLAM에서는 `remote-slam-wired` 연결을 활성화하고 끝난다. SAM에서는 `sam-ptp-ipv6-slave` 연결을 활성화한 뒤 SSH와 원격 Codex 로그인을 확인하고 현재 개발 대화를 재개한다. 이미 활성화된 연결은 재연결하지 않는다. Wi-Fi, 저장된 IP 설정, 부팅 자동 연결 여부와 PTP 프로세스는 변경하지 않는다.
+SLAM에서는 `remote-slam-wired` 연결과 PTP 상태를 확인하고 끝난다. SAM에서는 `sam-ptp-ipv6-slave` 연결과 PTP 상태, SSH와 원격 Codex 로그인을 확인한 뒤 현재 개발 대화를 재개한다. 이미 활성화된 연결은 재연결하지 않는다. 이 시작기는 PTP를 중복 실행하지 않으며 Wi-Fi와 저장된 IP 설정은 유지한다. PTP가 준비되지 않아도 코드 개발은 가능하므로 경고 후 개발 연결을 계속한다.
 
 SAM의 대화 ID는 Git에서 제외된 `output/remote_codex/controller_session.txt`에 저장한다. 파일이 없으면 재개 안내가 포함된 새 대화를 연다. 같은 대화가 다른 Codex 창에서 사용 중이면 연결 확인 뒤 안내만 표시하고 기존 창에서 작업하도록 한다. 잠금 파일을 삭제하거나 기존 세션을 강제 종료하지 않는다. Codex 0.153.4의 writer 파일에 실제 OS 잠금이 있는지 확인하므로, 재부팅 뒤 파일만 남아 있어도 잠금이 풀렸으면 정상 재개한다. 세션 파일과 `output/remote_codex/` 결과를 유지하면 다음 부팅에도 맥락을 이어갈 수 있다.
 
@@ -25,7 +33,24 @@ bash integration/two_host_dev.sh --connect-only
 bash integration/two_host_dev.sh --check-only
 ```
 
-이 시작기는 개발 연결을 복구한다. PTP/카메라 실행과 1 ms 오차 검증은 실험 전에 별도로 수행한다. 완전한 전원 재부팅 시험은 아직 수행하지 않았으며, 양쪽 현재 환경의 연결 재사용과 SAM의 SSH/Codex 확인을 실제 검증했다.
+카메라는 자동 시작하지 않는다. 1 ms 연속 오차 검증과 카메라 동기 검증은 실험 전에 별도로 수행한다. 완전한 전원 재부팅 시험은 아직 수행하지 않았다.
+
+### PTP 부팅 서비스 관리
+
+설치기는 검증된 USB 패치 linuxptp 3.1.1 바이너리와 검사 스크립트를 root 소유 `/usr/local/libexec/`에 복사한다. root 서비스가 사용자 workspace의 변경 가능한 실행 파일을 직접 실행하지 않는다. SAM은 `-S -6 -s`, SLAM은 `-S -6 --priority1 10 --masterOnly 1`을 유지한다. 간격은 `/etc/two-host-ptp.conf`에 있으며 최초 1초 설정을 유지하고 재설치 시 사용자 조정값을 보존한다. [linuxptp 옵션 설명](https://www.linuxptp.org/documentation/ptp4l/).
+
+SAM의 timesyncd는 부팅 자동 시작을 해제하고 PTP 서비스와 충돌하도록 설정한다. SLAM의 timesyncd는 master 기준 시계를 유지하는 기존 역할을 보존한다. phc2sys/chrony/ntp/기존 PTP 서비스는 새 서비스와 동시 실행하지 않으며, 별도 터미널에서 시작한 기존 daemon이 있으면 중복 실행을 거부한다. 설치 자체는 현재 서비스나 연결을 중단하지 않는다.
+
+```bash
+# 일반 사용자: 현재 PTP 상태와 journal 확인
+python3 ~/sam6d_object_memory/integration/install_two_host_boot.py --status
+systemctl status two-host-ptp.service
+journalctl -u two-host-ptp.service -b -n 50 --no-pager
+```
+
+최초 설치 직후에는 서비스가 `enabled/inactive`여도 정상이다. 기존 수동 PTP가 계속 실행되고 새 서비스는 다음 부팅에 시작한다. 그 이후 로그는 journal에 남으며 전용 터미널을 유지할 필요가 없다. 케이블 단절이나 master 부재 시 SAM의 정확한 동기는 보장되지 않으며 자동 NTP 전환도 하지 않는다.
+
+부팅 자동화를 해제하려면 양쪽에서 `sudo systemctl disable --now two-host-ptp.service`를 실행한다. SAM에서 다른 PTP가 종료됐는지 확인한 뒤 `sudo systemctl enable --now systemd-timesyncd.service`로 NTP를 복구한다. 기존 수동 PTP와 임시 master는 설치/해제 대상이 아니다. 최초 NetworkManager 자동 연결 값과 NTP enable 상태는 `/var/lib/two-host-ptp/installation.json`에 보존한다. 유선 자동 연결도 해제하려면 각 호스트의 프로필에 `sudo nmcli connection modify PROFILE connection.autoconnect no connection.autoconnect-retries -1`을 적용한다(두 장비의 설치 전 값 기준).
 
 ## 원격 작업 호출
 

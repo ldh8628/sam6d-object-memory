@@ -34,7 +34,7 @@ elif name=='ssh': sys.exit(int(os.environ.get('TEST_SSH_EXIT','0')))
 elif name=='cat' and args==['/sys/class/net/enx00e04caa7ca7/carrier']: print('1')
 elif name=='cat': os.execv('/bin/cat',['cat',*args])
 '''
-        for name in ('nmcli', 'ip', 'ssh', 'codex', 'cat'):
+        for name in ('nmcli', 'ip', 'ssh', 'codex', 'cat', 'python3'):
             p = commands / name; p.write_text(stub); p.chmod(0o755)
         env = dict(os.environ, PATH=str(commands) + ':' + os.environ['PATH'], TEST_TRACE=str(root / 'trace'))
         env.pop('CODEX_THREAD_ID', None)

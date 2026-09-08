@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One entry point on both laptops; no sudo or persistent network changes.
+# One entry point on both laptops; boot service installation is a separate one-time step.
 set -euo pipefail
 if ! command -v codex >/dev/null 2>&1; then
     export PATH="$HOME/.local/bin:$PATH"
@@ -45,6 +45,10 @@ fi
 addresses=$(ip -6 -o address show dev "$nic" scope link)
 [[ "$addresses" == *'inet6 fe80:'* && "$addresses" != *tentative* && "$addresses" != *dadfailed* ]] || fail '사용 가능한 IPv6 link-local 주소가 없습니다.'
 echo "$addresses"
+if [[ "$mode" != --connect-only ]]; then
+    python3 "$root/integration/install_two_host_boot.py" --status \
+        || echo "[$role] PTP 상태를 확인하지 못했습니다. 개발 연결 확인은 계속합니다."
+fi
 if [[ "$mode" == --connect-only || "$role" == SLAM ]]; then
     echo "[$role] 연결 완료. SAM의 'SAM 개발 재개'를 실행하면 됩니다."
     exit 0
@@ -56,7 +60,7 @@ ssh -o BatchMode=yes -o ConnectTimeout=5 slam-codex \
     || fail "SLAM에서 'SLAM 유선 연결'을 먼저 실행하세요. 계속 실패하면 ssh slam-codex 설정/인증을 확인하세요."
 [[ "$mode" != --check-only ]] || { echo '[SAM] 개발 연결 확인 완료. Codex는 시작하지 않았습니다.'; exit 0; }
 [[ -z ${CODEX_THREAD_ID:-} ]] || fail '실행 중인 Codex 안에서는 --check-only를 사용하세요. 개발 재개는 일반 터미널/아이콘에서 실행하세요.'
-prompt='두 노트북 개발을 재개한다. integration/REMOTE_CODEX.md를 읽고 현재 Git/SSH 상태를 확인하라. 원격 작업은 integration/remote_codex.py와 --resume-latest로 이어가라. 호스트 진단은 직접 SSH 관측과 sandbox 관측을 구분하라. 소스 수정과 commit은 SAM에서만 한다. PTP/카메라는 별도 실행 요청이 있을 때 시작하고 이전 실측 PASS를 재부팅 후에도 유효하다고 가정하지 말라. 먼저 현재 상태와 다음 작업을 짧게 보고하라.'
+prompt='두 노트북 개발을 재개한다. integration/REMOTE_CODEX.md를 읽고 현재 Git/SSH 상태를 확인하라. 원격 작업은 integration/remote_codex.py와 --resume-latest로 이어가라. 호스트 진단은 직접 SSH 관측과 sandbox 관측을 구분하라. 소스 수정과 commit은 SAM에서만 한다. 설치된 PTP 부팅 서비스의 실제 상태를 확인하고 중복 실행하지 말라. 카메라는 별도 실행 요청이 있을 때 시작하고 이전 실측 PASS를 재부팅 후에도 유효하다고 가정하지 말라. 먼저 현재 상태와 다음 작업을 짧게 보고하라.'
 session_file="$root/output/remote_codex/controller_session.txt"
 cd -- "$root"
 if [[ -s "$session_file" ]]; then
