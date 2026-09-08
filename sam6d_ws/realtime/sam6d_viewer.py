@@ -19,6 +19,7 @@
     python realtime/sam6d_viewer.py --save live.mp4 # 보면서 녹화
     python realtime/sam6d_viewer.py --headless --save live.mp4   # 화면 없이 녹화만
     python realtime/sam6d_viewer.py --overlay-topic /sam6d/overlay # map overlay
+    SAM6D_VIEWER_POSE_SYNC=0 python realtime/sam6d_viewer.py ...  # 이전 비동기 방식
 """
 from __future__ import annotations
 
@@ -49,6 +50,98 @@ def geodesic_deg(A, B):
     return float(np.degrees(np.arccos(c)))
 
 
+class MapTopdown:
+    """Static PCD raster plus a few live pose markers; no 3-D renderer needed."""
+
+    def __init__(self, points, label, size=480):
+        points = np.asarray(points, np.float32)
+        points = points[np.isfinite(points).all(axis=1)]
+        if not len(points):
+            raise ValueError("map PCD contains no finite points")
+        if len(points) > 200_000:
+            points = points[::int(np.ceil(len(points) / 200_000))]
+        xz = points[:, (0, 2)]
+        lo, hi = np.percentile(xz, (1, 99), axis=0)
+        span = np.maximum(hi - lo, 0.5)
+        lo, hi = lo - span * 0.05, hi + span * 0.05
+        self.size, self.label, self.lo, self.hi = size, label, lo, hi
+        self.scale = (size - 36) / max(hi - lo)
+        used = (hi - lo) * self.scale
+        self.offset = (np.array([size, size]) - used) / 2
+        uv = self._pixels(xz)
+        uv = uv[(uv[:, 0] >= 0) & (uv[:, 0] < size) &
+                (uv[:, 1] >= 0) & (uv[:, 1] < size)]
+        counts = np.bincount(uv[:, 1] * size + uv[:, 0], minlength=size * size)
+        density = np.log1p(counts.reshape(size, size)).astype(np.float32)
+        if density.max() > 0:
+            density *= 180.0 / density.max()
+        density = cv2.dilate(density.astype(np.uint8), np.ones((2, 2), np.uint8))
+        self.background = np.full((size, size, 3), 18, np.uint8)
+        self.background[..., 0] += density // 2
+        self.background[..., 1] += density
+        self.background[..., 2] += density
+
+    @classmethod
+    def from_pcd(cls, path, size=480):
+        path = Path(path)
+        skip = None
+        with path.open(encoding="utf-8", errors="replace") as stream:
+            for line_no, line in enumerate(stream):
+                if line.strip().lower().startswith("data "):
+                    if line.strip().lower() != "data ascii":
+                        raise ValueError("only ASCII PCD is supported")
+                    skip = line_no + 1
+                    break
+        if skip is None:
+            raise ValueError("invalid PCD header")
+        points = np.loadtxt(path, skiprows=skip, usecols=(0, 1, 2),
+                            dtype=np.float32, ndmin=2)
+        kind = "DENSE MAP" if "dense" in path.name else "SPARSE MAP (dense unavailable)"
+        print(f"[view] {kind}: {len(points)} points from {path}")
+        return cls(points, kind, size)
+
+    def _pixels(self, xz):
+        uv = self.offset + (np.asarray(xz) - self.lo) * self.scale
+        uv[..., 1] = self.size - uv[..., 1]
+        return np.rint(uv).astype(int)
+
+    def _marker(self, image, marker, color, label):
+        if marker is None:
+            return
+        position, forward = marker
+        at = self._pixels(np.asarray(position)[[0, 2]])
+        if not (0 <= at[0] < self.size and 0 <= at[1] < self.size):
+            return
+        direction = np.asarray(forward)[[0, 2]]
+        norm = np.linalg.norm(direction)
+        end = at if norm < 1e-6 else at + np.rint(
+            direction / norm * 18 * np.array([1, -1])).astype(int)
+        cv2.circle(image, tuple(at), 6, color, -1, cv2.LINE_AA)
+        cv2.arrowedLine(image, tuple(at), tuple(end), color, 2, cv2.LINE_AA,
+                        tipLength=0.35)
+        cv2.putText(image, label, tuple(at + [8, -7]), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.42, color, 1, cv2.LINE_AA)
+
+    def draw(self, slam=None, sam=None, objects=(), tracking=False):
+        image = self.background.copy()
+        slam_color = (70, 220, 80) if tracking else (90, 90, 170)
+        self._marker(image, slam, slam_color, "SLAM" if tracking else "SLAM LOST")
+        self._marker(image, sam, (255, 210, 70) if tracking else (100, 100, 150), "SAM")
+        for name, marker in objects:
+            self._marker(image, marker, (220, 100, 230), name)
+        cv2.rectangle(image, (0, 0), (self.size - 1, 27), (20, 20, 20), -1)
+        cv2.putText(image, f"TOP-DOWN X/Z | {self.label}", (8, 19),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.46, (235, 235, 235), 1,
+                    cv2.LINE_AA)
+        cv2.putText(image, "SLAM", (8, self.size - 12), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.38, (70, 220, 80), 1, cv2.LINE_AA)
+        cv2.putText(image, "SAM", (62, self.size - 12), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.38, (255, 210, 70), 1, cv2.LINE_AA)
+        cv2.putText(image, "OBJECT", (108, self.size - 12), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.38, (220, 100, 230), 1, cv2.LINE_AA)
+        return image
+
+
 def load_models():
     MP, BOX, idx = {}, {}, {}
     d = REPO / "assets" / "model_points"
@@ -62,44 +155,132 @@ def load_models():
     return MP, BOX, idx
 
 
-def view_overlay(topic, scale, fps):
+def view_overlay(topic, scale, fps, map_pcd, slam_pose_topic, sam_pose_topic,
+                 tracking_topic, landmarks_topic, save="", headless=False):
     """ObjectMemory가 투영한 ROS Image를 가장 최근 프레임만 보여준다."""
     import rclpy
     from cv_bridge import CvBridge
+    from geometry_msgs.msg import PoseStamped
+    from message_filters import Subscriber, TimeSynchronizer
     from rclpy.node import Node
     from rclpy.qos import qos_profile_sensor_data
     from sensor_msgs.msg import Image
+    from std_msgs.msg import String
+    from vision_msgs.msg import Detection3DArray
+
+    renderer = None
+    if map_pcd:
+        try:
+            renderer = MapTopdown.from_pcd(map_pcd)
+        except (OSError, ValueError) as exc:
+            print(f"[view] top-down map disabled: {exc}", file=sys.stderr)
+
+    def marker(pose):
+        p, q = pose.position, pose.orientation
+        quat = np.asarray([q.x, q.y, q.z, q.w], float)
+        norm = np.linalg.norm(quat)
+        if not np.isfinite(quat).all() or norm < 1e-9:
+            return None
+        x, y, z, w = quat / norm
+        forward = np.array([2 * (x * z + w * y),
+                            2 * (y * z - w * x),
+                            1 - 2 * (x * x + y * y)])
+        return np.array([p.x, p.y, p.z]), forward
 
     class OverlayViewer(Node):
         def __init__(self):
             super().__init__("sam6d_overlay_viewer")
             self.bridge, self.frame = CvBridge(), None
+            self.slam = self.sam = None
+            self.objects, self.tracking = [], False
             self.create_subscription(
                 Image, topic, self._on_image, qos_profile_sensor_data)
+            if os.environ.get("SAM6D_VIEWER_POSE_SYNC", "1") == "0":
+                self.create_subscription(
+                    PoseStamped, slam_pose_topic,
+                    lambda msg: setattr(self, "slam", marker(msg.pose)), 10)
+                self.create_subscription(
+                    PoseStamped, sam_pose_topic,
+                    lambda msg: setattr(self, "sam", marker(msg.pose)), 10)
+                self.get_logger().warn("pose timestamp sync disabled")
+            else:
+                self.slam_pose_sub = Subscriber(
+                    self, PoseStamped, slam_pose_topic, 10)
+                self.sam_pose_sub = Subscriber(
+                    self, PoseStamped, sam_pose_topic, 10)
+                self.pose_sync = TimeSynchronizer(
+                    [self.slam_pose_sub, self.sam_pose_sub], queue_size=10)
+                self.pose_sync.registerCallback(self._on_pose_pair)
+            self.create_subscription(String, tracking_topic, self._on_tracking, 10)
+            self.create_subscription(Detection3DArray, landmarks_topic,
+                                     self._on_landmarks, 10)
 
         def _on_image(self, msg):
             self.frame = self.bridge.imgmsg_to_cv2(msg, "bgr8")
 
+        def _on_pose_pair(self, slam_msg, sam_msg):
+            self.slam = marker(slam_msg.pose)
+            self.sam = marker(sam_msg.pose)
+
+        def _on_tracking(self, msg):
+            self.tracking = str(msg.data).strip().lower() == "tracking"
+
+        def _on_landmarks(self, msg):
+            objects = []
+            for detection in msg.detections:
+                if detection.results:
+                    result = detection.results[0]
+                    objects.append((str(result.hypothesis.class_id),
+                                    marker(result.pose.pose)))
+            self.objects = objects
+
     rclpy.init(args=[])
     node = OverlayViewer()
+    enc, n_written, t0 = None, 0, None
     print(f"[view] {topic} 대기 중 ... (창에서 q 또는 Ctrl-C 로 종료)")
     try:
         while rclpy.ok():
             rclpy.spin_once(node, timeout_sec=1.0 / max(fps, 1.0))
             if node.frame is None:
                 continue
-            shown = node.frame if scale == 1.0 else cv2.resize(
-                node.frame, None, fx=scale, fy=scale)
-            cv2.imshow("ObjectMemory live map overlay", shown)
-            if (cv2.waitKey(1) & 0xFF) in (ord("q"), 27):
-                break
+            shown = node.frame
+            if renderer is not None:
+                topdown = renderer.draw(node.slam, node.sam, node.objects, node.tracking)
+                if topdown.shape[0] != shown.shape[0]:
+                    width = round(topdown.shape[1] * shown.shape[0] / topdown.shape[0])
+                    topdown = cv2.resize(topdown, (width, shown.shape[0]))
+                shown = np.hstack((shown, topdown))
+            if scale != 1.0:
+                shown = cv2.resize(shown, None, fx=scale, fy=scale)
+            if save:
+                if enc is None:
+                    h, w = shown.shape[:2]
+                    enc = subprocess.Popen(
+                        ["ffmpeg", "-hide_banner", "-loglevel", "error", "-y",
+                         "-f", "rawvideo", "-pix_fmt", "bgr24", "-s", f"{w}x{h}",
+                         "-r", f"{fps}", "-i", "-", "-c:v", "libx264", "-preset", "veryfast",
+                         "-crf", "23", "-pix_fmt", "yuv420p", "-movflags", "+faststart", save],
+                        stdin=subprocess.PIPE)
+                    t0 = time.time()
+                want = int((time.time() - t0) * fps)
+                while n_written < want:
+                    enc.stdin.write(shown.tobytes())
+                    n_written += 1
+            if not headless:
+                cv2.imshow("ObjectMemory camera overlay | map top-down", shown)
+                if (cv2.waitKey(1) & 0xFF) in (ord("q"), 27):
+                    break
     except KeyboardInterrupt:
         pass
     finally:
+        if enc is not None:
+            enc.stdin.close(); enc.wait()
+            print(f"[view] 녹화 저장: {save}")
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()
-        cv2.destroyAllWindows()
+        if not headless:
+            cv2.destroyAllWindows()
 
 
 def main():
@@ -109,10 +290,41 @@ def main():
     ap.add_argument("--headless", action="store_true", help="창 없이 녹화만")
     ap.add_argument("--scale", type=float, default=1.0, help="창 배율")
     ap.add_argument("--overlay-topic", default="", help="ObjectMemory ROS Image 토픽")
+    ap.add_argument("--map-pcd", default="", help="top-down 배경용 dense/sparse PCD")
+    ap.add_argument("--slam-pose-topic", default="/orbslam3/pose")
+    ap.add_argument("--sam-pose-topic", default="/sam6d/camera_pose")
+    ap.add_argument("--tracking-topic", default="/orbslam3/tracking_state")
+    ap.add_argument("--landmarks-topic", default="/object_memory/landmarks")
+    ap.add_argument("--self-test", action="store_true")
     a = ap.parse_args()
 
+    if a.self_test:
+        from geometry_msgs.msg import PoseStamped
+        from message_filters import SimpleFilter, TimeSynchronizer
+
+        points = np.array([[-1, 0, -1], [-1, 0, 1], [1, 0, -1], [1, 0, 1]])
+        renderer = MapTopdown(points, "TEST", 160)
+        marker_test = (np.zeros(3), np.array([0, 0, 1]))
+        image = renderer.draw(marker_test, marker_test, [("object", marker_test)], True)
+        assert image.shape == (160, 160, 3) and image.max() > image.min()
+        left, right, pairs = SimpleFilter(), SimpleFilter(), []
+        sync = TimeSynchronizer([left, right], queue_size=2)
+        sync.registerCallback(lambda a, b: pairs.append((a, b)))
+        for source, nanosec in ((left, 1), (right, 2), (right, 1)):
+            msg = PoseStamped()
+            msg.header.stamp.sec = 1
+            msg.header.stamp.nanosec = nanosec
+            source.signalMessage(msg)
+        assert (len(pairs) == 1 and
+                pairs[0][0].header.stamp.nanosec ==
+                pairs[0][1].header.stamp.nanosec == 1)
+        print("self-test: PASS")
+        return
+
     if a.overlay_topic:
-        view_overlay(a.overlay_topic, a.scale, a.fps)
+        view_overlay(a.overlay_topic, a.scale, a.fps, a.map_pcd,
+                     a.slam_pose_topic, a.sam_pose_topic, a.tracking_topic,
+                     a.landmarks_topic, a.save, a.headless)
         return
 
     MP, BOX, cidx = load_models()

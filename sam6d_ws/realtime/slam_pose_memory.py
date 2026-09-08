@@ -82,6 +82,83 @@ def pose_distance(a, b, symmetry_axis=None, symmetry_step_deg=10):
     return math.degrees(math.acos(cosine)), float(np.linalg.norm(a[:3, 3] - b[:3, 3]))
 
 
+def interpolate_se3(stamp_ns, left_stamp_ns, left, right_stamp_ns, right,
+                    max_span_s=None):
+    """Interpolate a map-camera pose at ``stamp_ns`` using NumPy only."""
+    left, right = np.asarray(left, float), np.asarray(right, float)
+    stamp_ns, left_stamp_ns, right_stamp_ns = map(
+        int, (stamp_ns, left_stamp_ns, right_stamp_ns))
+    if (not valid_se3(left) or not valid_se3(right)
+            or not left_stamp_ns <= stamp_ns <= right_stamp_ns
+            or left_stamp_ns >= right_stamp_ns):
+        return None
+    span_ns = right_stamp_ns - left_stamp_ns
+    if max_span_s is not None and span_ns > float(max_span_s) * 1e9:
+        return None
+    weight = (stamp_ns - left_stamp_ns) / span_ns
+    if weight == 0.0:
+        return left.copy()
+    if weight == 1.0:
+        return right.copy()
+
+    relative = left[:3, :3].T @ right[:3, :3]
+    angle = math.acos(np.clip((np.trace(relative) - 1.0) * 0.5, -1.0, 1.0))
+    if angle < 1e-12:
+        rotation = left[:3, :3].copy()
+    else:
+        if math.pi - angle < 1e-6:
+            values, vectors = np.linalg.eig(relative)
+            axis = np.real(vectors[:, np.argmin(np.abs(values - 1.0))])
+            axis /= np.linalg.norm(axis)
+        else:
+            axis = np.asarray([relative[2, 1] - relative[1, 2],
+                               relative[0, 2] - relative[2, 0],
+                               relative[1, 0] - relative[0, 1]]) / (2.0 * math.sin(angle))
+        x, y, z = axis
+        skew = np.asarray([[0.0, -z, y], [z, 0.0, -x], [-y, x, 0.0]])
+        partial = angle * weight
+        rotation = left[:3, :3] @ (
+            np.eye(3) + math.sin(partial) * skew
+            + (1.0 - math.cos(partial)) * (skew @ skew))
+
+    result = np.eye(4)
+    result[:3, :3] = rotation
+    result[:3, 3] = ((1.0 - weight) * left[:3, 3]
+                     + weight * right[:3, 3])
+    return result
+
+
+def repair_isolated_pose(left_stamp_ns, left, stamp_ns, pose,
+                         right_stamp_ns, right, translation_m=0.25,
+                         rotation_deg=15.0, max_span_s=0.5,
+                         max_endpoint_speed_m_s=2.0,
+                         max_endpoint_speed_deg_s=180.0):
+    """Replace only a one-sample spike confirmed by two continuous neighbours."""
+    pose = np.asarray(pose, float)
+    expected = interpolate_se3(
+        stamp_ns, left_stamp_ns, left, right_stamp_ns, right, max_span_s)
+    if expected is None or not valid_se3(pose):
+        return pose.copy(), False
+    span_s = (int(right_stamp_ns) - int(left_stamp_ns)) / 1e9
+    endpoint_rotation, endpoint_translation = pose_distance(left, right)
+    if (endpoint_translation / span_s > float(max_endpoint_speed_m_s)
+            or endpoint_rotation / span_s > float(max_endpoint_speed_deg_s)):
+        return pose.copy(), False
+    left_s = (int(stamp_ns) - int(left_stamp_ns)) / 1e9
+    right_s = (int(right_stamp_ns) - int(stamp_ns)) / 1e9
+    left_rotation, left_translation = pose_distance(left, pose)
+    right_rotation, right_translation = pose_distance(pose, right)
+    if (left_translation / left_s <= float(max_endpoint_speed_m_s)
+            and right_translation / right_s <= float(max_endpoint_speed_m_s)
+            and left_rotation / left_s <= float(max_endpoint_speed_deg_s)
+            and right_rotation / right_s <= float(max_endpoint_speed_deg_s)):
+        return pose.copy(), False
+    residual_rotation, residual_translation = pose_distance(pose, expected)
+    repaired = (residual_translation > float(translation_m)
+                or residual_rotation > float(rotation_deg))
+    return (expected if repaired else pose.copy()), repaired
+
+
 def dominant_pose_cluster(poses, rotation_deg, translation_m, symmetry_axis=None,
                           symmetry_step_deg=10):
     """Return largest centre-neighbourhood; ties prefer the earlier observation."""

@@ -1,0 +1,36 @@
+{
+  "status": "FAIL",
+  "reason": "diagnostic run under gdb with repeated bad-scene map resets",
+  "crash_reproduced": false,
+  "failures": [
+    {
+      "event": "queue_ms",
+      "camera": "slam_camera",
+      "stage": "orb",
+      "actual": {
+        "count": 3595,
+        "mean": 6.886151213908206,
+        "p95": 26.997269,
+        "max": 40.419958
+      }
+    }
+  ],
+  "cameras": {
+    "slam_camera": {
+      "monitor": {
+        "received": 3595,
+        "consumed": 3595
+      },
+      "orb": {
+        "received": 3595,
+        "consumed": 3595
+      }
+    },
+    "sam_camera": {
+      "monitor": {
+        "received": 3596,
+        "consumed": 3596
+      }
+    }
+  }
+}

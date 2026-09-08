@@ -1,0 +1,50 @@
+{
+  "status": "PASS",
+  "scope": "recorded payload replay only; sensor/live loss and pose accuracy are separate",
+  "source": "/tmp/rgbd_input_validation/verification/two_realtime_shm64_record_auto/compatibility_sqlite",
+  "rate": 1.0,
+  "error": null,
+  "queue_failures": 0,
+  "topics": {
+    "/camera/sam_camera/aligned_depth_to_color/camera_info": {
+      "expected": 3926,
+      "received": 3926,
+      "content_and_order_equal": true
+    },
+    "/camera/sam_camera/color/camera_info": {
+      "expected": 3926,
+      "received": 3926,
+      "content_and_order_equal": true
+    },
+    "/camera/sam_camera/aligned_depth_to_color/image_raw": {
+      "expected": 3926,
+      "received": 3926,
+      "content_and_order_equal": true
+    },
+    "/camera/slam_camera/aligned_depth_to_color/camera_info": {
+      "expected": 3976,
+      "received": 3976,
+      "content_and_order_equal": true
+    },
+    "/camera/slam_camera/color/camera_info": {
+      "expected": 3976,
+      "received": 3976,
+      "content_and_order_equal": true
+    },
+    "/camera/slam_camera/aligned_depth_to_color/image_raw": {
+      "expected": 3976,
+      "received": 3976,
+      "content_and_order_equal": true
+    },
+    "/camera/sam_camera/color/image_raw": {
+      "expected": 3926,
+      "received": 3926,
+      "content_and_order_equal": true
+    },
+    "/camera/slam_camera/color/image_raw": {
+      "expected": 3976,
+      "received": 3976,
+      "content_and_order_equal": true
+    }
+  }
+}

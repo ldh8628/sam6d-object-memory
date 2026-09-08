@@ -1,0 +1,20 @@
+{
+  "status": "PASS",
+  "scope": "recorded payload replay only; sensor/live loss and pose accuracy are separate",
+  "source": "/tmp/rgbd_input_validation/verification/two_realtime_shm64_record_view/capture",
+  "rate": 1.0,
+  "error": null,
+  "queue_failures": 0,
+  "topics": {
+    "/camera/slam_camera/rgbd": {
+      "expected": 3921,
+      "received": 3921,
+      "content_and_order_equal": true
+    },
+    "/camera/sam_camera/rgbd": {
+      "expected": 3945,
+      "received": 3945,
+      "content_and_order_equal": true
+    }
+  }
+}

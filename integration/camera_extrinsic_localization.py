@@ -19,10 +19,13 @@ import numpy as np
 
 from rig_offset import (fit, pair_poses, proj_SO3, read_tum, residuals,
                         rot_angle_deg, slerp_interp)
+from camera_publish import runtime_domain
 
 
 ROOT = Path(__file__).resolve().parents[1]
 ORB_WS = ROOT / "orbslam_ws"
+ORB_ENV = "realsense"
+ORB_INSTALL = Path(os.environ.get("ORB_INSTALL", str(ORB_WS / "install_jazzy")))
 CONDA_SH = Path.home() / "miniconda3/etc/profile.d/conda.sh"
 RIG_REFERENCE = ROOT / "integration/camera_extrinsic_reference.json"
 
@@ -47,7 +50,7 @@ Camera.RGB: 0
 Stereo.ThDepth: 40.0
 Stereo.b: {baseline:.5f}
 RGBD.DepthMapFactor: 1000.0
-ORBextractor.nFeatures: 1250
+ORBextractor.nFeatures: 2000
 ORBextractor.scaleFactor: 1.2
 ORBextractor.nLevels: 8
 ORBextractor.iniThFAST: 20
@@ -138,17 +141,17 @@ runtime:
   save_map_points_on_shutdown: {str(not localization).lower()}
 dense_map:
   enabled: {str(dense_map).lower()}
-  frame_stride: 5
-  pixel_stride: 4
-  voxel_size: 0.03
+  frame_stride: 15
+  pixel_stride: 8
+  voxel_size: 0.05
   min_depth_m: 0.15
   max_depth_m: 6.0
-  max_points: 2000000
+  max_points: 250000
   include_color: false
   save_pcd: {str(dense_map).lower()}
   pcd_output_path: {output / 'orbslam3_dense_map.pcd'}
   reproject_optimized: true
-  reproject_max_points: 80000000
+  reproject_max_points: 2000000
 output:
   dir: {output}
   map_points_path: orbslam3_map_points.pcd
@@ -160,8 +163,11 @@ visualization:
 def run_launch(config: Path, output: Path, timeout: float, stage: str | None = None,
                expected_s: float | None = None) -> None:
     command = (
-        f"source {shlex.quote(str(CONDA_SH))} && conda activate orbslam3 && "
-        f"source {shlex.quote(str(ORB_WS / 'install/setup.bash'))} && "
+        f"source {shlex.quote(str(CONDA_SH))} && conda activate {ORB_ENV} && "
+        f"source {shlex.quote(str(ORB_INSTALL / 'setup.bash'))} && "
+        "export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST && "
+        "export RMW_IMPLEMENTATION=rmw_fastrtps_cpp && "
+        f"export FASTRTPS_DEFAULT_PROFILES_FILE={shlex.quote(str(ROOT / 'integration/fastdds_input.xml'))} && "
         f"ros2 launch orbslam3_ros2 orb_slam.launch.py "
         f"config:={shlex.quote(str(config))}"
     )
@@ -281,12 +287,13 @@ def run_pair(converted: Path, args: argparse.Namespace, result_dir: Path) -> dic
     write_settings(info, "SLAM", map_settings, "System.SaveAtlasToFile", atlas,
                    args.baseline)
     write_config(info, "SLAM", map_config, converted / "SLAM", map_settings,
-                 map_out, args.rate, args.start_delay, False)
+                 map_out, args.rate, args.start_delay, False, dense_map=True)
     map_traj = map_out / "CameraTrajectory.txt"
     if args.force or not (atlas_file.is_file() and
                           trajectory_ok(map_traj, info["SLAM"]["duration_s"])):
         stale_outputs = (atlas_file, map_traj, map_out / "KeyFrameTrajectory.txt",
-                         map_out / "orbslam3_map_points.pcd")
+                         map_out / "orbslam3_map_points.pcd",
+                         map_out / "orbslam3_dense_map.pcd")
         if not args.force and any(path.exists() or path.is_symlink()
                                   for path in stale_outputs):
             raise RuntimeError(f"기존 불완전 Atlas를 보존했다: {map_out} (--force 로 재생성)")
@@ -752,10 +759,10 @@ def self_test() -> None:
 
 
 def ensure_build() -> None:
-    required = [ORB_WS / "install/setup.bash",
+    required = [ORB_INSTALL / "setup.bash",
                 ORB_WS / "src/ORB_SLAM3/Vocabulary/ORBvoc.txt"]
     if not all(path.is_file() for path in required):
-        raise RuntimeError("orbslam_ws가 빌드되지 않았습니다. ORB_SLAM3/build.sh 후 colcon build가 필요합니다")
+        raise RuntimeError("ORB-SLAM3 Jazzy 빌드가 없습니다: orbslam_ws/install_jazzy")
 
 
 def main() -> int:
@@ -789,6 +796,8 @@ def main() -> int:
     parser.add_argument("--rig-extrinsic", type=path_arg, default=RIG_REFERENCE,
                         help="fixed rig calibration used when trajectory calibration fails")
     parser.add_argument("--timeout-margin", type=float, default=600.0)
+    parser.add_argument("--ros-domain-id", type=int,
+                        help="기본값: 실행마다 자동 선택")
     parser.add_argument("--force", action="store_true")
     args = parser.parse_args(ros2_argv(sys.argv[1:]))
     self_test()
@@ -807,6 +816,12 @@ def main() -> int:
         parser.error("--independent-y must be finite")
     if args.independent_y is not None and not args.independent_maps:
         parser.error("--independent-y requires --independent-maps")
+    try:
+        args.ros_domain_id = runtime_domain(args.ros_domain_id)
+    except ValueError as exc:
+        parser.error(str(exc))
+    os.environ["ROS_DOMAIN_ID"] = str(args.ros_domain_id)
+    print(f"[ROS] Jazzy domain {args.ros_domain_id} (localhost)", flush=True)
     inputs = args.inputs.expanduser().resolve()
     missing = ([] if (inputs / "info.json").is_file() else ["info.json"])
     missing += [name for name in ("SLAM", "SAM") if not (inputs / name).is_dir()]

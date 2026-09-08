@@ -1,0 +1,50 @@
+[
+  {
+    "original": "/tmp/rgbd_input_validation/verification/single_record_120/capture/capture_0.mcap",
+    "archive": "/tmp/rgbd_input_validation/verification/single_record_120/capture/capture_0.mcap.zst",
+    "bytes": 5915185105,
+    "compressed_bytes": 1833239691,
+    "sha256": "5df70bd3a7ed676ef28d52a3317a1f5ca3685730ec5bf09a67fd91c93484c5ee",
+    "durable_archive": "/home/etri/sam6d_object_memory/input_validation_20260908/verification/single_record_120/capture/capture_0.mcap.zst"
+  },
+  {
+    "original": "/tmp/rgbd_input_validation/verification/single_record_xml120/capture/capture_0.mcap",
+    "archive": "/tmp/rgbd_input_validation/verification/single_record_xml120/capture/capture_0.mcap.zst",
+    "bytes": 6058175126,
+    "compressed_bytes": 1847990377,
+    "sha256": "72fa2fcc6d1aefa90ecda450faea9f8e6bc9d062df96d69442da3d9a7597882d",
+    "durable_archive": "/home/etri/sam6d_object_memory/input_validation_20260908/verification/single_record_xml120/capture/capture_0.mcap.zst"
+  },
+  {
+    "original": "/tmp/rgbd_input_validation/verification/single_record_xml120/compatibility_sqlite/compatibility_sqlite_0.db3",
+    "archive": "/tmp/rgbd_input_validation/verification/single_record_xml120/compatibility_sqlite/compatibility_sqlite_0.db3.zst",
+    "bytes": 6059876352,
+    "compressed_bytes": 1858310846,
+    "sha256": "431c4c22bb087503a129dbe5927f4b50a4b400ef909a2de4bebf9e09d95ac220",
+    "durable_archive": "/home/etri/sam6d_object_memory/input_validation_20260908/verification/single_record_xml120/compatibility_sqlite/compatibility_sqlite_0.db3.zst"
+  },
+  {
+    "original": "/tmp/rgbd_input_validation/verification/two_realtime_shm64_record_auto/capture/capture_0.mcap",
+    "archive": "/tmp/rgbd_input_validation/verification/two_realtime_shm64_record_auto/capture/capture_0.mcap.zst",
+    "sha256": "afec4bee029306ef902a3b11d5db87f8eeeaac7fd6db823d9029a1ede0d1cfe5",
+    "bytes": 12159026750,
+    "compressed_bytes": 3943204844,
+    "durable_archive": "/home/etri/sam6d_object_memory/input_validation_20260908/verification/two_realtime_shm64_record_auto/capture/capture_0.mcap.zst"
+  },
+  {
+    "original": "/tmp/rgbd_input_validation/verification/two_realtime_shm64_record_auto/compatibility_sqlite/compatibility_sqlite_0.db3",
+    "archive": "/tmp/rgbd_input_validation/verification/two_realtime_shm64_record_auto/compatibility_sqlite/compatibility_sqlite_0.db3.zst",
+    "sha256": "20298a173fadefcd84b1ba4947cb3b75c0471cd5dd289e2a889484d35ca7afa6",
+    "bytes": 12159725568,
+    "compressed_bytes": 3956162397,
+    "durable_archive": "/home/etri/sam6d_object_memory/input_validation_20260908/verification/two_realtime_shm64_record_auto/compatibility_sqlite/compatibility_sqlite_0.db3.zst"
+  },
+  {
+    "original": "/tmp/rgbd_input_validation/verification/two_realtime_shm64_record_view/capture/capture_0.mcap",
+    "archive": "/tmp/rgbd_input_validation/verification/two_realtime_shm64_record_view/capture/capture_0.mcap.zst",
+    "sha256": "c90088658ea1c0fe8cc1ac45c782b13ecfe88aeac026ee0569bc8d0938b7a40e",
+    "bytes": 12103637781,
+    "compressed_bytes": 3963353931,
+    "durable_archive": "/home/etri/sam6d_object_memory/input_validation_20260908/verification/two_realtime_shm64_record_view/capture/capture_0.mcap.zst"
+  }
+]

@@ -12,6 +12,8 @@ cmake_minimum_required(VERSION 3.8)
 
   find_package(rclcpp REQUIRED)
   find_package(sensor_msgs REQUIRED)
+  find_package(realsense2_camera_msgs REQUIRED)
+  find_package(std_srvs REQUIRED)
   find_package(geometry_msgs REQUIRED)
   find_package(nav_msgs REQUIRED)
   find_package(std_msgs REQUIRED)
@@ -95,6 +97,8 @@ cmake_minimum_required(VERSION 3.8)
   ament_target_dependencies(rgbd_node
     rclcpp
     sensor_msgs
+    realsense2_camera_msgs
+    std_srvs
     geometry_msgs
     nav_msgs
     std_msgs

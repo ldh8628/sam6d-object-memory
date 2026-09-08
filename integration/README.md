@@ -257,3 +257,32 @@ python3 integration/run_object_memory_realtime.py \
 기본 URDF는 `MAP_DIR/camera_extrinsic/camera_extrinsic.urdf`이며 `--urdf`로 바꿀 수
 있습니다. 카메라 사이 sync cable을 연결한 경우에만 `--hardware-sync`를 추가합니다.
 결과는 `output/<map>/object_memory/realtime_<시각>/`에 저장되며 Ctrl-C 때 정상 마무리됩니다.
+
+### 입력 완전성 검사와 무인 실행
+
+지도 폴더에 `camera_roles.json`이 있으면 realtime 실행은 저장된 역할을 자동 사용합니다.
+`--input-baseline`을 생략하면 부하 시작 전에 카메라만으로 30초 기준 측정을 수행합니다
+(준비 10초 별도). 기준 측정이 실패하면 진행하지 않습니다.
+
+```bash
+# 저장된 역할로 시작하고 10초 준비 + 120초 입력 검사 후 자동 종료
+python3 integration/run_object_memory_realtime.py \
+  --map-dir output/260904_test_03 --input-check-seconds 120 --view
+
+# 맵을 만들 수 없는 장면에서도 두 카메라 입력만 검사
+# --name은 매번 새 이름을 사용
+python3 integration/create_map_urdf.py --name new_input_check \
+  --slam-serial 253822302376 --sam-serial 253822301680 \
+  --input-check-only --input-check-seconds 120
+```
+
+공통 원본은 각 카메라의 native `rgbd` 토픽입니다. Fast DDS SHM 64 MiB,
+reliable history 120, 순차 입력 큐 60을 사용하며 큐 초과를 숨기지 않습니다.
+`input_health.jsonl`과 `input_integrity.json`에 원본 frame number/stamp,
+수신·소비·순서·간격 및 PASS/FAIL/INCOMPLETE를 기록합니다.
+입력 PASS는 맵이나 pose 정확도 합격을 뜻하지 않습니다.
+
+Realtime에 `--record`를 추가하면 원본 RGBD/metadata를 무압축 MCAP `capture/`에
+기록합니다. 지도 촬영은 원본 `converted/capture_raw/`를 보존하고 기존 지도 생성기가
+읽는 SQLite `converted/capture/`로 내용과 timestamp를 검증하며 변환합니다.
+기존 SQLite 재생도 지원합니다. 녹화/변환 전 예상 용량과 종료 후 여유 10 GiB를 검사합니다.

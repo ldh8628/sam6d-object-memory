@@ -1,0 +1,60 @@
+{
+  "primary_input_status": "PASS",
+  "production_source_files": 28,
+  "production_realtime": {
+    "seconds": 300,
+    "status": "PASS",
+    "report": "realtime_300/input_integrity.json",
+    "frames_per_camera": 8989
+  },
+  "production_map_capture": {
+    "seconds": 30,
+    "status": "PASS",
+    "report": "../output/input_capture_validation_20260908_plain/input_integrity.json",
+    "frames_per_camera": 899
+  },
+  "matrix": [
+    {
+      "run": 1,
+      "record": false,
+      "view": false,
+      "seconds": 120.0,
+      "status": "PASS",
+      "report": "two_realtime_shm64_models/input_integrity.json"
+    },
+    {
+      "run": 2,
+      "record": true,
+      "view": false,
+      "seconds": 120.0,
+      "status": "PASS",
+      "report": "two_realtime_shm64_record_auto/input_integrity.json"
+    },
+    {
+      "run": 3,
+      "record": false,
+      "view": true,
+      "seconds": 120.0,
+      "status": "PASS",
+      "report": "two_realtime_shm64_view_auto/input_integrity.json"
+    },
+    {
+      "run": 4,
+      "record": true,
+      "view": true,
+      "seconds": 120.0,
+      "status": "PASS",
+      "report": "two_realtime_shm64_record_view/input_integrity.json"
+    }
+  ],
+  "pose_accuracy": "NOT_EVALUATED",
+  "optional_map_viewer": {
+    "status": "UNRESOLVED",
+    "initial_capture": "SIGSEGV during repeated bad-scene resets; INCOMPLETE",
+    "offline_replays": "candidate and production each 1223/1223, no crash",
+    "live_gdb": "all frames received/consumed; FAIL solely ORB queue p95 26.997269 ms",
+    "core_changes_for_this_issue": false
+  },
+  "cameras_stopped": true,
+  "disk_free_bytes": 16864591872
+}

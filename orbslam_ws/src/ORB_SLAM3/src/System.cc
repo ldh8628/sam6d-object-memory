@@ -1349,6 +1349,11 @@ void System::SaveDebugData(const int &initIdx)
 }
 
 
+long long System::GetCurrentMapId()
+{
+    return mpAtlas->GetCurrentMapId();
+}
+
 int System::GetTrackingState()
 {
     unique_lock<mutex> lock(mMutexState);

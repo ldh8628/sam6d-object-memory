@@ -74,7 +74,10 @@ def _setup(context, *args, **kwargs):
     infer = ExecuteProcess(
         cmd=[sys.executable, str(REPO / "realtime" / "sam6d_infer.py"),
              "--config", str(cfg_path)],
-        cwd=str(out_dir), output="screen", sigterm_timeout="30")
+        cwd=str(out_dir), output="screen", sigterm_timeout="30",
+        additional_env={name: "1" for name in (
+            "OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS",
+            "NUMEXPR_NUM_THREADS", "OPENCV_FOR_THREADS_NUM")})
     # External bag playback (bag.play:false) still relies on inference idle_exit_s.
     # Always propagate a clean inference exit to the whole launch so the receiver is
     # not left running after the compact recorder has finalized its manifest.
@@ -89,6 +92,19 @@ def _setup(context, *args, **kwargs):
         if bool(cfg.get("object_memory", {}).get("enabled", False)):
             viewer += ["--overlay-topic", str(cfg.get("output", {}).get(
                 "overlay_topic", "/sam6d/overlay"))]
+            topdown_map = str(cfg.get("output", {}).get("topdown_map", "")).strip()
+            if topdown_map:
+                slam = cfg.get("slam", {}) or {}
+                memory = cfg.get("object_memory", {}) or {}
+                viewer += [
+                    "--map-pcd", str(_abs(topdown_map)),
+                    "--slam-pose-topic", str(slam.get("pose_topic", "/orbslam3/pose")),
+                    "--sam-pose-topic", str(slam.get("sam_pose_topic", "/sam6d/camera_pose")),
+                    "--tracking-topic", str(slam.get(
+                        "tracking_topic", "/orbslam3/tracking_state")),
+                    "--landmarks-topic", str(memory.get(
+                        "landmarks_topic", "/object_memory/landmarks")),
+                ]
         acts.append(ExecuteProcess(
             cmd=viewer,
             cwd=str(out_dir), output="screen", sigterm_timeout="10"))

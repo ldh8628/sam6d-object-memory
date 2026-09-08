@@ -1,0 +1,134 @@
+[
+  {
+    "path": "/tmp/rgbd_input_validation/output/unattended_input_shm64_120",
+    "original": "PASS",
+    "reassessed": "PASS",
+    "failures": [],
+    "incomplete_reasons": [],
+    "cameras": {
+      "slam_camera": {
+        "received": 3596,
+        "stages": {
+          "monitor": {
+            "received": 3596,
+            "consumed": 3596
+          }
+        }
+      },
+      "sam_camera": {
+        "received": 3595,
+        "stages": {
+          "monitor": {
+            "received": 3595,
+            "consumed": 3595
+          }
+        }
+      }
+    }
+  },
+  {
+    "path": "/tmp/rgbd_input_validation/verification/two_realtime_shm64_models",
+    "original": "PASS",
+    "reassessed": "PASS",
+    "failures": [],
+    "incomplete_reasons": [],
+    "cameras": {
+      "slam_camera": {
+        "received": 3596,
+        "stages": {
+          "monitor": {
+            "received": 3596,
+            "consumed": 3596
+          },
+          "orb": {
+            "received": 3596,
+            "consumed": 3596
+          }
+        }
+      },
+      "sam_camera": {
+        "received": 3596,
+        "stages": {
+          "monitor": {
+            "received": 3596,
+            "consumed": 3596
+          },
+          "sam": {
+            "received": 3596,
+            "consumed": 3596
+          }
+        }
+      }
+    }
+  },
+  {
+    "path": "/tmp/rgbd_input_validation/verification/two_realtime_shm64_view_auto",
+    "original": "PASS",
+    "reassessed": "PASS",
+    "failures": [],
+    "incomplete_reasons": [],
+    "cameras": {
+      "slam_camera": {
+        "received": 3596,
+        "stages": {
+          "monitor": {
+            "received": 3596,
+            "consumed": 3596
+          },
+          "orb": {
+            "received": 3596,
+            "consumed": 3596
+          }
+        }
+      },
+      "sam_camera": {
+        "received": 3595,
+        "stages": {
+          "monitor": {
+            "received": 3595,
+            "consumed": 3595
+          },
+          "sam": {
+            "received": 3595,
+            "consumed": 3595
+          }
+        }
+      }
+    }
+  },
+  {
+    "path": "/tmp/rgbd_input_validation/verification/two_realtime_shm64_record_auto",
+    "original": "PASS",
+    "reassessed": "PASS",
+    "failures": [],
+    "incomplete_reasons": [],
+    "cameras": {
+      "slam_camera": {
+        "received": 3596,
+        "stages": {
+          "monitor": {
+            "received": 3596,
+            "consumed": 3596
+          },
+          "orb": {
+            "received": 3596,
+            "consumed": 3596
+          }
+        }
+      },
+      "sam_camera": {
+        "received": 3596,
+        "stages": {
+          "monitor": {
+            "received": 3596,
+            "consumed": 3596
+          },
+          "sam": {
+            "received": 3596,
+            "consumed": 3596
+          }
+        }
+      }
+    }
+  }
+]

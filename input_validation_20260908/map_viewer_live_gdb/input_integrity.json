@@ -1,0 +1,287 @@
+{
+  "schema_version": 1,
+  "status": "FAIL",
+  "config": {
+    "cameras": {
+      "slam_camera": "253822302376",
+      "sam_camera": "253822301680"
+    },
+    "seconds": 120.0,
+    "record": false,
+    "capture": "/home/etri/sam6d_object_memory/input_validation_20260908/map_viewer_live_gdb/capture",
+    "consumers": {
+      "slam_camera": [
+        "orb"
+      ]
+    },
+    "baseline": "/tmp/rgbd_input_validation/output/unattended_input_shm64_120/input_integrity.json",
+    "is_baseline": false,
+    "rmw": "rmw_fastrtps_cpp",
+    "qos_depth": 120,
+    "queue_size": 60,
+    "warmup_seconds": 10,
+    "profile": {
+      "rgb": "640x480x30",
+      "depth": "848x480x30",
+      "aligned_depth": "640x480"
+    },
+    "settings": {
+      "view": true,
+      "hardware_sync": false
+    },
+    "window_closed": true,
+    "drained": true,
+    "publisher_profile_sha256": "75be5878a9b2ed4e89b2665416f6676a7fb7a9237c29a8bbc5a6f6f93e57b231",
+    "error": null,
+    "qos_verified": true,
+    "monitor_drained": true,
+    "observed_publishers": {
+      "/camera/slam_camera/rgbd": [],
+      "/camera/slam_camera/color/metadata": [],
+      "/camera/slam_camera/depth/metadata": [],
+      "/camera/sam_camera/rgbd": [],
+      "/camera/sam_camera/color/metadata": [],
+      "/camera/sam_camera/depth/metadata": []
+    },
+    "observed_subscribers": {
+      "/camera/slam_camera/rgbd": [
+        {
+          "name": "input_integrity_monitor",
+          "reliability": "1",
+          "depth": 0
+        }
+      ],
+      "/camera/slam_camera/color/metadata": [
+        {
+          "name": "input_integrity_monitor",
+          "reliability": "1",
+          "depth": 0
+        }
+      ],
+      "/camera/slam_camera/depth/metadata": [
+        {
+          "name": "input_integrity_monitor",
+          "reliability": "1",
+          "depth": 0
+        }
+      ],
+      "/camera/sam_camera/rgbd": [
+        {
+          "name": "input_integrity_monitor",
+          "reliability": "1",
+          "depth": 0
+        }
+      ],
+      "/camera/sam_camera/color/metadata": [
+        {
+          "name": "input_integrity_monitor",
+          "reliability": "1",
+          "depth": 0
+        }
+      ],
+      "/camera/sam_camera/depth/metadata": [
+        {
+          "name": "input_integrity_monitor",
+          "reliability": "1",
+          "depth": 0
+        }
+      ]
+    },
+    "start_ns": 20114523163773,
+    "end_ns": 20234523163773,
+    "source_watermarks": true,
+    "monitor_failures": 0
+  },
+  "cameras": {
+    "slam_camera": {
+      "serial": "253822302376",
+      "source_window_ns": [
+        1788795848435991943,
+        1788795968411084473
+      ],
+      "streams": {
+        "rgb": {
+          "count": 3595,
+          "sensor_fps": 29.964555231494742,
+          "sensor_interval_ms": {
+            "count": 3594,
+            "mean": 33.37276299529163,
+            "p95": 33.396240234375,
+            "max": 33.412841796875
+          }
+        },
+        "depth": {
+          "count": 3595,
+          "sensor_fps": 29.964555231494742,
+          "sensor_interval_ms": {
+            "count": 3594,
+            "mean": 33.37276299529163,
+            "p95": 33.396240234375,
+            "max": 33.412353515625
+          }
+        }
+      },
+      "stages": {
+        "monitor": {
+          "received": 3595,
+          "consumed": 3595,
+          "callback_ms": {
+            "count": 3595,
+            "mean": 0.003279629207232267,
+            "p95": 0.006299,
+            "max": 0.288054
+          },
+          "queue_ms": {
+            "count": 3595,
+            "mean": 0.37394911655076496,
+            "p95": 1.006958,
+            "max": 6.110576
+          },
+          "host_interval_ms": {
+            "count": 3594,
+            "mean": 33.3723273672788,
+            "p95": 37.910237,
+            "max": 43.769541
+          },
+          "host_received_in_window": 3595,
+          "host_fps": 29.958333333333332,
+          "host_boundary_interval_ms": {
+            "count": 3596,
+            "mean": 33.370411568409345,
+            "p95": 37.910237,
+            "max": 43.769541
+          },
+          "queue_quartile_means_ms": [
+            0.3785644965517242,
+            0.37333938,
+            0.3488051,
+            0.38311868111111114
+          ]
+        },
+        "orb": {
+          "received": 3595,
+          "consumed": 3595,
+          "callback_ms": {
+            "count": 3595,
+            "mean": 0.0019020378303198887,
+            "p95": 0.001639,
+            "max": 2.995848
+          },
+          "queue_ms": {
+            "count": 3595,
+            "mean": 6.886151213908206,
+            "p95": 26.997269,
+            "max": 40.419958
+          },
+          "host_interval_ms": {
+            "count": 3594,
+            "mean": 33.37237676265999,
+            "p95": 37.688255,
+            "max": 43.665109
+          },
+          "host_received_in_window": 3595,
+          "host_fps": 29.958333333333332,
+          "host_boundary_interval_ms": {
+            "count": 3596,
+            "mean": 33.370411568409345,
+            "p95": 37.688255,
+            "max": 43.665109
+          },
+          "queue_quartile_means_ms": [
+            6.710190265517241,
+            6.699767954444444,
+            6.754369073333334,
+            7.337505756666667
+          ]
+        }
+      },
+      "received_rgbd": 3595,
+      "fps_drop_fraction": 0.0002780867630700623
+    },
+    "sam_camera": {
+      "serial": "253822301680",
+      "source_window_ns": [
+        1788795848429943359,
+        1788795968440019775
+      ],
+      "streams": {
+        "rgb": {
+          "count": 3596,
+          "sensor_fps": 29.96414864108718,
+          "sensor_interval_ms": {
+            "count": 3595,
+            "mean": 33.373215837969404,
+            "p95": 33.39111328125,
+            "max": 33.422119140625
+          }
+        },
+        "depth": {
+          "count": 3596,
+          "sensor_fps": 29.96414864108718,
+          "sensor_interval_ms": {
+            "count": 3595,
+            "mean": 33.373215837969404,
+            "p95": 33.39111328125,
+            "max": 33.422607421875
+          }
+        }
+      },
+      "stages": {
+        "monitor": {
+          "received": 3596,
+          "consumed": 3596,
+          "callback_ms": {
+            "count": 3596,
+            "mean": 0.006196783092324806,
+            "p95": 0.006799,
+            "max": 3.723978
+          },
+          "queue_ms": {
+            "count": 3596,
+            "mean": 0.4320616793659621,
+            "p95": 1.275139,
+            "max": 9.994682
+          },
+          "host_interval_ms": {
+            "count": 3594,
+            "mean": 33.371297719254315,
+            "p95": 38.181207,
+            "max": 44.647431
+          },
+          "host_received_in_window": 3595,
+          "host_fps": 29.958333333333332,
+          "host_boundary_interval_ms": {
+            "count": 3596,
+            "mean": 33.370411568409345,
+            "p95": 38.181207,
+            "max": 44.647431
+          },
+          "queue_quartile_means_ms": [
+            0.4186615471264368,
+            0.44614723444444443,
+            0.39963919555555555,
+            0.45802453000000004
+          ]
+        }
+      },
+      "received_rgbd": 3596,
+      "fps_drop_fraction": 0.0002780867630700623
+    }
+  },
+  "failures": [
+    {
+      "event": "queue_ms",
+      "camera": "slam_camera",
+      "stage": "orb",
+      "actual": {
+        "count": 3595,
+        "mean": 6.886151213908206,
+        "p95": 26.997269,
+        "max": 40.419958
+      }
+    }
+  ],
+  "incomplete_reasons": [],
+  "pose_accuracy": "NOT_EVALUATED",
+  "observability": "Metadata is downstream of driver synchronization; gaps alone do not prove USB or sensor loss."
+}

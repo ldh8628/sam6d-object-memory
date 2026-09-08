@@ -246,6 +246,12 @@ void Atlas::clearAtlas()
     mnLastInitKFidMap = 0;
 }
 
+long long Atlas::GetCurrentMapId()
+{
+    unique_lock<mutex> lock(mMutexAtlas);
+    return mpCurrentMap ? static_cast<long long>(mpCurrentMap->GetId()) : -1;
+}
+
 Map* Atlas::GetCurrentMap()
 {
     unique_lock<mutex> lock(mMutexAtlas);

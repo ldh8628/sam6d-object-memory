@@ -114,6 +114,7 @@ public:
     void clearAtlas();
 
     Map* GetCurrentMap();
+    long long GetCurrentMapId();
 
     void SetMapBad(Map* pMap);
     void RemoveBadMaps();

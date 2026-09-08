@@ -1,4 +1,8 @@
   #include <algorithm>
+  #include <atomic>
+  #include <condition_variable>
+  #include <thread>
+  #include <stdexcept>
   #include <chrono>
   #include <cmath>
   #include <cstdint>
@@ -19,6 +23,8 @@
 
   #include <rclcpp/rclcpp.hpp>
   #include <sensor_msgs/msg/image.hpp>
+  #include <realsense2_camera_msgs/msg/rgbd.hpp>
+  #include <std_srvs/srv/trigger.hpp>
   #include <sensor_msgs/msg/imu.hpp>
   #include <std_msgs/msg/string.hpp>
   #include <geometry_msgs/msg/pose_stamped.hpp>
@@ -74,6 +80,30 @@
         "/camera/depth/image"
       );
 
+      rgbd_topic_ = declare_parameter<std::string>("rgbd_topic", "");
+      input_require_publishers_ = declare_parameter<bool>("input_require_publishers", true);
+      input_camera_ = declare_parameter<std::string>("input_camera", "slam_camera");
+      input_serial_ = declare_parameter<std::string>("input_serial", "");
+      const int queue_size = declare_parameter<int>("input_queue_size", 60);
+      input_qos_depth_ = declare_parameter<int>("input_qos_depth", 120);
+      if (queue_size <= 0 || input_qos_depth_ <= 0) {
+        throw std::invalid_argument("input queue and QoS depths must be positive");
+      }
+      input_capacity_ = static_cast<size_t>(queue_size);
+      const auto health_path = declare_parameter<std::string>(
+        "input_health_path", "orb_input_health.jsonl");
+      input_health_.open(health_path, std::ios::out | std::ios::trunc);
+      if (!input_health_) {
+        throw std::runtime_error("Cannot open input health log: " + health_path);
+      }
+      input_health_ << std::setprecision(17);
+      input_health_ << "{\"kind\":\"config\",\"stage\":\"orb\",\"clock\":\"steady_clock\","
+        << "\"camera\":" << jsonString(input_camera_) << ",\"serial\":" << jsonString(input_serial_)
+        << ",\"rgbd_topic\":" << jsonString(rgbd_topic_) << ",\"queue_capacity\":" << input_capacity_
+        << ",\"qos_depth\":" << input_qos_depth_
+        << ",\"reliability\":\"reliable\",\"map_id_available\":true}\n";
+      input_health_.flush();
+
       use_imu_ = this->declare_parameter<bool>(
         "use_imu",
         false
@@ -103,6 +133,9 @@
         "world_frame",
         "map"
       );
+
+      map_id_namespace_ = declare_parameter<std::string>("map_id_namespace", world_frame_);
+      map_id_run_ = std::to_string(steadyNowNs());
 
       camera_frame_ = this->declare_parameter<std::string>(
         "camera_frame",
@@ -229,6 +262,9 @@
       dense_map_reproject_max_points_ = static_cast<size_t>(std::max<long>(0, static_cast<long>(
         this->declare_parameter<int>("dense_map_reproject_max_points", 80000000))));
 
+      map_id_pub_ = create_publisher<std_msgs::msg::String>(
+        "/orbslam3/map_id", rclcpp::QoS(1).reliable().transient_local());
+
       tracking_state_pub_ = this->create_publisher<std_msgs::msg::String>(
         "/orbslam3/tracking_state",
         10
@@ -289,6 +325,8 @@
         enable_viewer_
       );
 
+      updateMapIdentity(slam_->GetCurrentMapId());
+
       if (localization_mode_) {
         // Disable local mapping + loop closing; only relocalization + tracking
         // run against the (loaded) Atlas. The prior map is not modified.
@@ -316,33 +354,46 @@
         RCLCPP_INFO(this->get_logger(), "RGB-D mode (IMU disabled).");
       }
 
-      rgb_sub_.subscribe(this, rgb_topic_);
-      depth_sub_.subscribe(this, depth_topic_);
-
-      sync_ = std::make_shared<Synchronizer>(
-        SyncPolicy(sync_queue_size_),
-        rgb_sub_,
-        depth_sub_
-      );
-
-      sync_->registerCallback(
-        std::bind(&RgbdNode::rgbdCallback, this, std::placeholders::_1, std::placeholders::_2)
-      );
-
-      RCLCPP_INFO(this->get_logger(), "Subscribed RGB topic: %s", rgb_topic_.c_str());
-      RCLCPP_INFO(this->get_logger(), "Subscribed depth topic: %s", depth_topic_.c_str());
+      const auto input_qos = rclcpp::QoS(rclcpp::KeepLast(input_qos_depth_)).reliable();
+      if (!rgbd_topic_.empty()) {
+        // The default mutually exclusive group preserves subscription callback order.
+        native_sub_ = create_subscription<realsense2_camera_msgs::msg::RGBD>(
+          rgbd_topic_, input_qos,
+          [this](realsense2_camera_msgs::msg::RGBD::ConstSharedPtr msg) {
+            const auto received = steadyNowNs();
+            enqueueInput(sensor_msgs::msg::Image::ConstSharedPtr(msg, &msg->rgb),
+              sensor_msgs::msg::Image::ConstSharedPtr(msg, &msg->depth), received);
+          });
+        RCLCPP_INFO(get_logger(), "Subscribed native RGBD: %s", rgbd_topic_.c_str());
+      } else {
+        rgb_sub_.subscribe(this, rgb_topic_, input_qos.get_rmw_qos_profile());
+        depth_sub_.subscribe(this, depth_topic_, input_qos.get_rmw_qos_profile());
+        sync_ = std::make_shared<Synchronizer>(SyncPolicy(sync_queue_size_), rgb_sub_, depth_sub_);
+        sync_->registerCallback(std::bind(&RgbdNode::enqueueLegacyInput, this,
+          std::placeholders::_1, std::placeholders::_2));
+        RCLCPP_INFO(get_logger(), "Subscribed legacy RGB/depth: %s, %s",
+          rgb_topic_.c_str(), depth_topic_.c_str());
+      }
+      drain_service_ = create_service<std_srvs::srv::Trigger>("/orbslam3/drain_input",
+        [this](const std_srvs::srv::Trigger::Request::SharedPtr,
+            std_srvs::srv::Trigger::Response::SharedPtr response) {
+          stopInput();
+          response->success = !input_failed_.load();
+          response->message = "Input stopped and drained; received=" + std::to_string(input_sequence_) +
+            ", consumed=" + std::to_string(input_consumed_);
+        });
+      input_ready_timer_ = create_wall_timer(std::chrono::milliseconds(100), [this]() {checkInputQos();});
       RCLCPP_INFO(this->get_logger(), "Publishing pose: /orbslam3/pose");
       RCLCPP_INFO(this->get_logger(), "Publishing odom: /orbslam3/odom");
       RCLCPP_INFO(this->get_logger(), "Publishing TF: %s -> %s", world_frame_.c_str(), camera_frame_.c_str());
       RCLCPP_INFO(this->get_logger(), "ORB-SLAM3 RGB-D node started with viewer %s.",
         enable_viewer_ ? "enabled" : "disabled");
-      std_msgs::msg::String ready_msg;
-      ready_msg.data = "ready";
-      ready_pub_->publish(ready_msg);
+      input_worker_ = std::thread([this]() {consumeInput();});
     }
 
     ~RgbdNode() override
     {
+      stopInput();
       if (slam_) {
         RCLCPP_INFO(this->get_logger(), "Shutting down ORB-SLAM3.");
         slam_->Shutdown();
@@ -356,7 +407,11 @@
           RCLCPP_ERROR(this->get_logger(), "Keyframe trajectory save failed: %s", e.what());
         }
         try {
-          slam_->SaveTrajectoryTUM("CameraTrajectory.txt");
+          // Upstream SaveTrajectoryTUM indexes keyframe zero without an empty check.
+          std::ifstream keyframes("KeyFrameTrajectory.txt");
+          if (keyframes && keyframes.peek() != std::ifstream::traits_type::eof()) {
+            slam_->SaveTrajectoryTUM("CameraTrajectory.txt");
+          }
         } catch (const std::exception & e) {
           RCLCPP_ERROR(this->get_logger(), "Camera trajectory save failed: %s", e.what());
         }
@@ -383,6 +438,244 @@
     >;
 
     using Synchronizer = message_filters::Synchronizer<SyncPolicy>;
+
+    struct InputFrame {
+      sensor_msgs::msg::Image::ConstSharedPtr rgb;
+      sensor_msgs::msg::Image::ConstSharedPtr depth;
+      uint64_t sequence{0};
+      int64_t received_ns{0};
+      int64_t stamp_ns{0};
+      int64_t depth_stamp_ns{0};
+      double callback_ms{0};
+      std::string event;
+      std::string kind{"rgbd"};
+    };
+
+    static int64_t steadyNowNs()
+    {
+      return std::chrono::duration_cast<std::chrono::nanoseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+    }
+
+    static int64_t stampNs(const builtin_interfaces::msg::Time & stamp)
+    {
+      return static_cast<int64_t>(stamp.sec) * 1000000000LL + stamp.nanosec;
+    }
+
+    static std::string jsonString(const std::string & value)
+    {
+      std::ostringstream out;
+      out << '"';
+      for (const unsigned char c : value) {
+        if (c == '"' || c == '\\') {out << '\\' << c;}
+        else if (c < 0x20) {out << "\\u" << std::hex << std::setw(4) << std::setfill('0') << unsigned(c);}
+        else {out << c;}
+      }
+      out << '"';
+      return out.str();
+    }
+
+    void updateMapIdentity(long long atlas_id)
+    {
+      if (atlas_id == current_atlas_id_) {return;}
+      current_atlas_id_ = atlas_id;
+      current_map_id_ = atlas_id < 0 ? "" : map_id_namespace_ + "/" + input_camera_ +
+        "/" + map_id_run_ + "/atlas_" + std::to_string(atlas_id);
+      std_msgs::msg::String message;
+      message.data = current_map_id_.empty() ? "unknown" : current_map_id_;
+      map_id_pub_->publish(message);
+      input_health_ << "{\"kind\":\"map_id\",\"stage\":\"orb\",\"camera\":" << jsonString(input_camera_)
+        << ",\"serial\":" << jsonString(input_serial_) << ",\"received_ns\":" << steadyNowNs()
+        << ",\"namespace\":" << jsonString(map_id_namespace_) << ",\"run_id\":" << jsonString(map_id_run_)
+        << ",\"atlas_map_id\":" << atlas_id << ",\"map_id\":"
+        << (current_map_id_.empty() ? "null" : jsonString(current_map_id_)) << "}\n";
+      input_health_.flush();
+      if (!input_health_) {input_failed_ = true;}
+    }
+
+    void enqueueLegacyInput(const sensor_msgs::msg::Image::ConstSharedPtr & rgb,
+      const sensor_msgs::msg::Image::ConstSharedPtr & depth)
+    {
+      enqueueInput(rgb, depth, steadyNowNs());
+    }
+
+    void enqueueInput(const sensor_msgs::msg::Image::ConstSharedPtr & rgb,
+      const sensor_msgs::msg::Image::ConstSharedPtr & depth, int64_t received)
+    {
+      InputFrame frame;
+      frame.rgb = rgb;
+      frame.depth = depth;
+      frame.received_ns = received;
+      frame.stamp_ns = stampNs(rgb->header.stamp);
+      frame.depth_stamp_ns = stampNs(depth->header.stamp);
+      {
+        std::lock_guard<std::mutex> lock(input_mutex_);
+        if (input_stopping_) {
+          ++input_rejected_after_abort_;
+          return;
+        }
+        frame.sequence = ++input_sequence_;
+        if (input_pending_ >= input_capacity_) {
+          frame.event = "queue_overflow";
+          frame.rgb.reset();
+          frame.depth.reset();
+          input_failed_ = true;
+          input_aborted_ = true;
+          input_stopping_ = true;
+        } else {
+          ++input_pending_;
+        }
+        // One bounded failure receipt follows all accepted frames; intake stays closed.
+        input_queue_.push_back(std::move(frame));
+        input_queue_.back().callback_ms = (steadyNowNs() - received) / 1e6;
+      }
+      input_cv_.notify_one();
+    }
+
+    void consumeInput()
+    {
+      int64_t last_rgb = -1;
+      int64_t last_depth = -1;
+      while (true) {
+        InputFrame frame;
+        {
+          std::unique_lock<std::mutex> lock(input_mutex_);
+          input_cv_.wait(lock, [this]() {return input_stopping_ || !input_queue_.empty();});
+          if (input_queue_.empty()) {break;}
+          frame = std::move(input_queue_.front());
+          input_queue_.pop_front();
+          if (frame.rgb) {--input_pending_;}
+        }
+        const int64_t started = steadyNowNs();
+        bool consumed = false;
+        if (frame.rgb) {
+          if (frame.stamp_ns <= last_rgb || frame.depth_stamp_ns <= last_depth) {
+            frame.event = "duplicate_or_out_of_order";
+            input_failed_ = true;
+          }
+          last_rgb = frame.stamp_ns;
+          last_depth = frame.depth_stamp_ns;
+          try {
+            rgbdCallback(frame.rgb, frame.depth);
+            consumed = true;
+            ++input_consumed_;
+          } catch (const std::exception & e) {
+            frame.event = "consume_error";
+            input_failed_ = true;
+            RCLCPP_ERROR(get_logger(), "RGBD sequence %lu failed: %s", frame.sequence, e.what());
+          } catch (...) {
+            frame.event = "consume_error";
+            input_failed_ = true;
+          }
+        }
+        const int64_t finished = steadyNowNs();
+        input_health_ << "{\"kind\":" << jsonString(frame.kind) << ",\"stage\":\"orb\",\"camera\":" << jsonString(input_camera_)
+          << ",\"serial\":" << jsonString(input_serial_) << ",\"sequence\":" << frame.sequence
+          << ",\"stamp_ns\":" << frame.stamp_ns << ",\"depth_stamp_ns\":" << frame.depth_stamp_ns
+          << ",\"received_ns\":" << frame.received_ns << ",\"callback_ms\":" << frame.callback_ms
+          << ",\"queue_ms\":" << (started - frame.received_ns) / 1e6
+          << ",\"consume_ms\":" << (finished - started) / 1e6
+          << ",\"atlas_map_id\":" << current_atlas_id_ << ",\"map_id\":"
+          << (current_map_id_.empty() ? "null" : jsonString(current_map_id_))
+          << ",\"consumed\":" << (consumed ? "true" : "false")
+          << ",\"event\":" << jsonString(frame.event) << "}\n";
+        input_health_.flush();
+        if (!input_health_) {input_failed_ = true;}
+      }
+    }
+
+    void publishInputReady()
+    {
+      if (input_ready_published_) {return;}
+      std_msgs::msg::String message;
+      message.data = "ready";
+      ready_pub_->publish(message);
+      input_ready_published_ = true;
+    }
+
+    void checkInputQos()
+    {
+      {
+        std::lock_guard<std::mutex> lock(input_mutex_);
+        if (input_stopping_) {input_ready_timer_->cancel(); return;}
+      }
+      const auto topics = rgbd_topic_.empty() ? std::vector<std::string>{rgb_topic_, depth_topic_}
+        : std::vector<std::string>{rgbd_topic_};
+      for (const auto & topic : topics) {
+        const auto publishers = get_publishers_info_by_topic(topic);
+        if (publishers.empty()) {
+          // Replay starts its publisher only after the Atlas and subscriptions are ready.
+          if (!input_require_publishers_) {publishInputReady();}
+          return;
+        }
+        for (const auto & publisher : publishers) {
+          if (publisher.qos_profile().reliability() != rclcpp::ReliabilityPolicy::Reliable) {
+            input_failed_ = true;
+            {
+              std::lock_guard<std::mutex> lock(input_mutex_);
+              InputFrame event;
+              event.kind = "event";
+              event.event = "incompatible_qos:" + topic;
+              event.received_ns = steadyNowNs();
+              input_queue_.push_back(std::move(event));
+            }
+            input_cv_.notify_one();
+            RCLCPP_ERROR(get_logger(), "Reliable input incompatible with publisher on %s", topic.c_str());
+            input_ready_timer_->cancel();
+            return;
+          }
+        }
+      }
+      publishInputReady();
+      // Publishers can restart with different QoS after readiness was announced.
+    }
+
+    void stopInput()
+    {
+      if (input_ready_timer_) {input_ready_timer_->cancel();}
+      // Take samples already delivered by DDS before removing the subscriptions.
+      // The caller must close the measurement window before invoking this service.
+      if (native_sub_ && rclcpp::ok()) {
+        rclcpp::MessageInfo info;
+        auto msg = std::make_shared<realsense2_camera_msgs::msg::RGBD>();
+        while (native_sub_->take(*msg, info)) {
+          enqueueInput(sensor_msgs::msg::Image::ConstSharedPtr(msg, &msg->rgb),
+            sensor_msgs::msg::Image::ConstSharedPtr(msg, &msg->depth), steadyNowNs());
+          msg = std::make_shared<realsense2_camera_msgs::msg::RGBD>();
+        }
+      }
+      native_sub_.reset();
+      rgb_sub_.unsubscribe();
+      depth_sub_.unsubscribe();
+      {
+        std::lock_guard<std::mutex> lock(input_mutex_);
+        input_stopping_ = true;
+      }
+      input_cv_.notify_one();
+      if (input_worker_.joinable()) {
+        input_worker_.join();
+        bool outputs_acked = false;
+        if (rclcpp::ok()) {
+          try {
+            const auto timeout = std::chrono::seconds(3);
+            outputs_acked = pose_pub_->wait_for_all_acked(timeout) &&
+              tracking_state_pub_->wait_for_all_acked(timeout) && odom_pub_->wait_for_all_acked(timeout) &&
+              map_id_pub_->wait_for_all_acked(timeout);
+          } catch (const std::exception & e) {
+            RCLCPP_ERROR(get_logger(), "Output acknowledgment failed: %s", e.what());
+          }
+          if (!outputs_acked) {input_failed_ = true;}
+        }
+        input_health_ << "{\"kind\":\"drain\",\"stage\":\"orb\",\"received\":" << input_sequence_
+          << ",\"consumed\":" << input_consumed_ << ",\"failed\":" << (input_failed_ ? "true" : "false")
+          << ",\"aborted\":" << (input_aborted_ ? "true" : "false")
+          << ",\"rejected_after_abort\":" << input_rejected_after_abort_
+          << ",\"outputs_acked\":" << (outputs_acked ? "true" : "false")
+          << ",\"context_valid\":" << (rclcpp::ok() ? "true" : "false") << "}\n";
+        input_health_.flush();
+        if (!input_health_) {input_failed_ = true;}
+      }
+    }
 
     void imuCallback(const sensor_msgs::msg::Imu::ConstSharedPtr & imu_msg)
     {
@@ -417,22 +710,30 @@
       const sensor_msgs::msg::Image::ConstSharedPtr & rgb_msg,
       const sensor_msgs::msg::Image::ConstSharedPtr & depth_msg)
     {
+      const size_t rgb_pixel_bytes = (rgb_msg->encoding == "bgra8" || rgb_msg->encoding == "rgba8") ? 4 : 3;
+      const size_t depth_pixel_bytes = depth_msg->encoding == "32FC1" ? 4 : 2;
+      auto validBuffer = [](const sensor_msgs::msg::Image & msg, size_t pixel_bytes) {
+        return msg.width > 0 && msg.height > 0 && !msg.is_bigendian &&
+          msg.step >= static_cast<uint64_t>(msg.width) * pixel_bytes &&
+          msg.data.size() >= static_cast<uint64_t>(msg.step) * msg.height;
+      };
+      if (!validBuffer(*rgb_msg, rgb_pixel_bytes) || !validBuffer(*depth_msg, depth_pixel_bytes) ||
+          rgb_msg->width != depth_msg->width || rgb_msg->height != depth_msg->height) {
+        throw std::runtime_error("Invalid RGBD image dimensions, buffer, step or endianness");
+      }
       cv::Mat rgb;
       cv::Mat depth;
 
       if (!imageToBgr(rgb_msg, rgb)) {
-        RCLCPP_WARN(this->get_logger(), "Unsupported RGB encoding: %s", rgb_msg->encoding.c_str());
-        return;
+        throw std::runtime_error("Unsupported RGB encoding: " + rgb_msg->encoding);
       }
 
       if (!imageToDepth(depth_msg, depth)) {
-        RCLCPP_WARN(this->get_logger(), "Unsupported depth encoding: %s", depth_msg->encoding.c_str());
-        return;
+        throw std::runtime_error("Unsupported depth encoding: " + depth_msg->encoding);
       }
 
       if (rgb.empty() || depth.empty()) {
-        RCLCPP_WARN(this->get_logger(), "Received empty RGB or depth image.");
-        return;
+        throw std::runtime_error("Received empty RGB or depth image");
       }
 
       const double timestamp =
@@ -453,6 +754,7 @@
         track_times_ms_.push_back(
           std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _t0).count());
         tracking_state = slam_->GetTrackingState();
+        updateMapIdentity(slam_->GetCurrentMapId());
       }
 
       std_msgs::msg::String state_msg;
@@ -1260,6 +1562,35 @@
         points.size(),
         dense_map_ply_output_path_.c_str());
     }
+
+    std::string map_id_namespace_;
+    std::string map_id_run_;
+    std::string current_map_id_;
+    long long current_atlas_id_{std::numeric_limits<long long>::min()};
+    rclcpp::Publisher<std_msgs::msg::String>::SharedPtr map_id_pub_;
+
+    std::string rgbd_topic_;
+    bool input_require_publishers_{true};
+    bool input_ready_published_{false};
+    std::string input_camera_;
+    std::string input_serial_;
+    int input_qos_depth_{120};
+    size_t input_capacity_{60};
+    size_t input_pending_{0};
+    uint64_t input_sequence_{0};
+    uint64_t input_consumed_{0};
+    bool input_stopping_{false};
+    bool input_aborted_{false};
+    uint64_t input_rejected_after_abort_{0};
+    std::atomic<bool> input_failed_{false};
+    std::ofstream input_health_;
+    std::deque<InputFrame> input_queue_;
+    std::mutex input_mutex_;
+    std::condition_variable input_cv_;
+    std::thread input_worker_;
+    rclcpp::Subscription<realsense2_camera_msgs::msg::RGBD>::SharedPtr native_sub_;
+    rclcpp::Service<std_srvs::srv::Trigger>::SharedPtr drain_service_;
+    rclcpp::TimerBase::SharedPtr input_ready_timer_;
 
     std::string vocabulary_path_;
     std::string settings_path_;

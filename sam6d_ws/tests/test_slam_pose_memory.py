@@ -6,8 +6,9 @@ import pytest
 
 from realtime.slam_pose_memory import (ObjectAnchorManager, StaticSlamPoseMemory,
                                        canonical_object_points,
-                                       canonical_object_rotation, pose_matrix,
-                                       project_pose_axes, project_pose_box,
+                                       canonical_object_rotation, interpolate_se3,
+                                       pose_matrix, project_pose_axes,
+                                       project_pose_box, repair_isolated_pose,
                                        tracking_state_ok)
 
 
@@ -63,6 +64,62 @@ def test_accepts_orb_and_internal_tracking_state_names():
     assert tracking_state_ok("tracking")
     assert tracking_state_ok("TRACKING_OK")
     assert not tracking_state_ok("not_tracking")
+
+
+def test_pose_interpolation_repairs_only_isolated_spikes():
+    rotation_90 = np.asarray([[0.0, -1.0, 0.0],
+                              [1.0, 0.0, 0.0],
+                              [0.0, 0.0, 1.0]])
+    halfway = interpolate_se3(
+        50, 0, pose_matrix(np.eye(3), [0, 0, 0]),
+        100, pose_matrix(rotation_90, [1, 0, 0]))
+    assert np.allclose(halfway[:3, 3], [0.5, 0, 0])
+    assert np.allclose(halfway[:3, :3],
+                       [[2**-0.5, -2**-0.5, 0],
+                        [2**-0.5, 2**-0.5, 0], [0, 0, 1]])
+    assert interpolate_se3(
+        150_000_000, 0, np.eye(4), 300_000_000, np.eye(4),
+        max_span_s=0.2) is None
+
+    left = pose_matrix(np.eye(3), [0, 0, 0])
+    expected = pose_matrix(np.eye(3), [0.01, 0, 0])
+    right = pose_matrix(np.eye(3), [0.02, 0, 0])
+    spike = pose_matrix(np.eye(3), [1, 0, 0])
+    repaired, changed = repair_isolated_pose(
+        0, left, 50_000_000, spike, 100_000_000, right)
+    assert changed is True
+    assert np.allclose(repaired, expected)
+
+    preserved, changed = repair_isolated_pose(
+        0, left, 50_000_000, expected, 100_000_000, right)
+    assert changed is False
+    assert np.array_equal(preserved, expected)
+
+    moved = pose_matrix(np.eye(3), [0.5, 0, 0])
+    new_location = pose_matrix(np.eye(3), [1, 0, 0])
+    preserved, changed = repair_isolated_pose(
+        0, left, 100_000_000, moved, 200_000_000, new_location)
+    assert changed is False
+    assert np.array_equal(preserved, moved)
+
+    # A fast but physically plausible change of direction is motion, not a spike.
+    rotation_30 = np.asarray([[np.cos(np.pi / 6), -np.sin(np.pi / 6), 0.0],
+                              [np.sin(np.pi / 6), np.cos(np.pi / 6), 0.0],
+                              [0.0, 0.0, 1.0]])
+    rotation_10 = np.asarray([[np.cos(np.pi / 18), -np.sin(np.pi / 18), 0.0],
+                              [np.sin(np.pi / 18), np.cos(np.pi / 18), 0.0],
+                              [0.0, 0.0, 1.0]])
+    reversal = pose_matrix(rotation_30, [0, 0, 0])
+    preserved, changed = repair_isolated_pose(
+        0, left, 250_000_000, reversal, 500_000_000,
+        pose_matrix(rotation_10, [0, 0, 0]))
+    assert changed is False
+    assert np.array_equal(preserved, reversal)
+
+    preserved, changed = repair_isolated_pose(
+        0, left, 300_000_000, spike, 600_000_000, right)
+    assert changed is False
+    assert np.array_equal(preserved, spike)
 
 
 def test_rejects_invalid_transforms():

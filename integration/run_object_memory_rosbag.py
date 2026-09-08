@@ -24,12 +24,28 @@ CONDA_SH = Path.home() / "miniconda3/etc/profile.d/conda.sh"
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(SAM_WS / "realtime"))
 
-from camera_extrinsic_localization import write_config, write_settings  # noqa: E402
+from camera_extrinsic_localization import (  # noqa: E402
+    ORB_ENV,
+    ORB_INSTALL,
+    write_config,
+    write_settings,
+)
+from camera_publish import runtime_domain  # noqa: E402
 from slam_pose_memory import valid_se3  # noqa: E402
 
 
 def _layout(dataset_dir: Path, map_dir: Path):
     converted = dataset_dir / "converted" if (dataset_dir / "converted").is_dir() else dataset_dir
+    for source in (dataset_dir, dataset_dir / "capture", converted / "capture_raw"):
+        metadata_path = source / "metadata.yaml"
+        if metadata_path.is_file():
+            metadata = yaml.safe_load(metadata_path.read_text())["rosbag2_bagfile_information"]
+            if any(t["topic_metadata"]["type"] == "realsense2_camera_msgs/msg/RGBD"
+                   for t in metadata["topics_with_message_count"]):
+                converted = source.parent / (source.name + "_replay_layout")
+                subprocess.run(_conda_command("sam6d", ["python", str(HERE/"rgbd_capture.py"),
+                    str(source), "--prepare-replay", str(converted)]), check=True)
+                break
     camera_extrinsic = (map_dir / "camera_extrinsic"
                         if (map_dir / "camera_extrinsic").is_dir() else map_dir)
     info_path = converted / "info.json"
@@ -75,6 +91,9 @@ def _write_run_configs(converted: Path, extrinsic: dict, atlas: Path,
     orb["bag"]["play"] = False
     orb["topics"]["rgb"] = "/slam_camera/color/image_raw"
     orb["topics"]["depth"] = "/slam_camera/aligned_depth_to_color/image_raw"
+    if info["SLAM"].get("rgbd_topic"):
+        orb["topics"]["rgbd"] = "/slam_camera/rgbd"
+    orb["runtime"]["input_require_publishers"] = False
     orb["runtime"]["publish_map_points"] = False
     orb["dense_map"]["enabled"] = False
     orb_config.write_text(yaml.safe_dump(orb, sort_keys=False), encoding="utf-8")
@@ -86,6 +105,9 @@ def _write_run_configs(converted: Path, extrinsic: dict, atlas: Path,
         "depth": "/camera/camera/aligned_depth_to_color/image_raw",
         "caminfo": "/camera/camera/color/camera_info",
     }
+    if info["SAM"].get("rgbd_topic"):
+        base["topics"]["rgbd"] = "/camera/camera/rgbd"
+        base.setdefault("runtime", {})["publish_native_camera_info"] = True
     slam = base.setdefault("slam", {})
     slam.update({
         "pose_topic": "/orbslam3/pose",
@@ -101,7 +123,7 @@ def _write_run_configs(converted: Path, extrinsic: dict, atlas: Path,
         "enabled": True, "landmarks_topic": "/object_memory/landmarks"}
     runtime = base.setdefault("runtime", {})
     runtime.update({"use_sim_time": True, "idle_exit_s": 5,
-                    "qos_reliability": "reliable", "qos_depth": 30})
+                    "qos_reliability": "reliable", "qos_depth": 120})
     base["bag"] = {"play": False}
     out = base.setdefault("output", {})
     out.update({"dir": str(output), "diagnostics": True, "view": view,
@@ -122,7 +144,10 @@ def _conda_command(environment: str, command: list[str], cwd: Path | None = None
              f"conda activate {shlex.quote(environment)}"]
     if source is not None:
         parts.append(f"source {shlex.quote(str(source))}")
-    parts += [f"export ROS_DOMAIN_ID={int(domain_id)}"]
+    parts += [f"export ROS_DOMAIN_ID={int(domain_id)}",
+              "export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST",
+              "export RMW_IMPLEMENTATION=rmw_fastrtps_cpp",
+              f"export FASTRTPS_DEFAULT_PROFILES_FILE={shlex.quote(str(HERE / 'fastdds_input.xml'))}"]
     if cwd is not None:
         parts.append(f"cd {shlex.quote(str(cwd))}")
     parts.append(shlex.join(command))
@@ -167,43 +192,56 @@ def _stop(process, timeouts=(30.0, 5.0, 2.0)):
 
 
 def _play_pair(converted: Path, delays: dict, rate: float, domain_id: int):
-    remaps = [
-        "/camera/camera/color/image_raw:=/slam_camera/color/image_raw",
-        "/camera/camera/aligned_depth_to_color/image_raw:=/slam_camera/aligned_depth_to_color/image_raw",
-        "/camera/camera/color/camera_info:=/slam_camera/color/camera_info",
-        "/camera/camera/aligned_depth_to_color/camera_info:=/slam_camera/aligned_depth_to_color/camera_info",
-    ]
-    clock_owner = min(delays, key=delays.get)
+    info = json.loads((converted / "info.json").read_text())
+    # Shared role symlinks represent one bag and must be played exactly once.
+    groups = {}
+    for role in ("SLAM", "SAM"):
+        source = (converted / role).resolve()
+        entry = groups.setdefault(source, {"roles": [], "delay": delays[role]})
+        entry["roles"].append(role)
+        entry["delay"] = min(entry["delay"], delays[role])
+    clock_owner = min(groups, key=lambda source: groups[source]["delay"])
     commands = []
-    for name in ("SLAM", "SAM"):
-        command = ["ros2", "bag", "play", str(converted / name),
-                   "--rate", str(rate), "--delay", f"{delays[name]:.6f}",
-                   "--read-ahead-queue-size", "5000",
-                   "--disable-keyboard-controls"]
-        if name == "SLAM":
-            command += ["--remap", *remaps]
-        if name == clock_owner:
-            command.append("--clock")
+    for source, entry in groups.items():
+        remaps, selected = [], []
+        for role in entry["roles"]:
+            data = info[role]
+            target = "/slam_camera" if role == "SLAM" else "/camera/camera"
+            pairs = [(data["rgbd_topic"], target+"/rgbd")] if data.get("rgbd_topic") else [
+                (data["color_topic"], target+"/color/image_raw"),
+                (data["depth_topic"], target+"/aligned_depth_to_color/image_raw"),
+                (data.get("caminfo_topic", data["color_topic"].replace("image_raw", "camera_info")), target+"/color/camera_info"),
+                (data["depth_topic"].replace("image_raw", "camera_info"), target+"/aligned_depth_to_color/camera_info")]
+            for original, destination in pairs:
+                selected.append(original)
+                if original != destination: remaps.append(original+":="+destination)
+        command = ["ros2", "bag", "play", str(source), "--rate", str(rate),
+                   "--delay", f"{entry['delay']:.6f}", "--read-ahead-queue-size", "120",
+                   "--disable-keyboard-controls", "--topics", *selected]
+        if remaps: command += ["--remap", *remaps]
+        if source == clock_owner: command.append("--clock")
         commands.append(shlex.join(command))
-    script = (
-        "source /opt/ros/humble/setup.bash; "
-        f"export ROS_DOMAIN_ID={int(domain_id)}; "
-        f"{commands[0]} & p0=$!; {commands[1]} & p1=$!; "
-        "wait $p0; r0=$?; wait $p1; r1=$?; test $r0 -eq 0 -a $r1 -eq 0")
-    return subprocess.Popen(["bash", "-lc", script], start_new_session=True)
+    if len(commands) == 1:
+        script = "exec " + commands[0]
+    else:
+        script = (f"{commands[0]} & p0=$!; {commands[1]} & p1=$!; "
+                  "wait $p0; r0=$?; wait $p1; r1=$?; test $r0 -eq 0 -a $r1 -eq 0")
+    return subprocess.Popen(_conda_command(
+        ORB_ENV, ["bash", "-c", script], domain_id=domain_id), start_new_session=True)
 
 
 def _wait_orb_ready(domain_id: int, timeout: float, orb=None):
-    command = (
-        "source /opt/ros/humble/setup.bash; "
-        f"export ROS_DOMAIN_ID={int(domain_id)}; "
-        "ros2 topic echo --no-daemon --once --qos-reliability reliable "
-        "--qos-durability transient_local /orbslam3/ready std_msgs/msg/String >/dev/null")
+    command = _conda_command(ORB_ENV, [
+        "ros2", "topic", "echo", "--no-daemon", "--once",
+        "--qos-reliability", "reliable", "--qos-durability", "transient_local",
+        "/orbslam3/ready", "std_msgs/msg/String",
+    ], domain_id=domain_id)
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
         if orb is not None and orb.poll() is not None:
             raise RuntimeError(f"ORB3 exited before READY: {orb.returncode}")
-        probe = subprocess.Popen(["bash", "-lc", command], start_new_session=True)
+        probe = subprocess.Popen(command, stdout=subprocess.DEVNULL,
+                                 stderr=subprocess.DEVNULL, start_new_session=True)
         try:
             if probe.wait(timeout=min(5.0, max(0.1, deadline - time.monotonic()))) == 0:
                 return
@@ -249,9 +287,9 @@ def run(args):
     orb = memory = sam = player = None
     try:
         orb = subprocess.Popen(_conda_command(
-            "orbslam3", ["ros2", "launch", "orbslam3_ros2", "orb_slam.launch.py",
+            ORB_ENV, ["ros2", "launch", "orbslam3_ros2", "orb_slam.launch.py",
                          f"config:={orb_config}"], ORB_WS,
-            ORB_WS / "install/setup.bash", args.ros_domain_id), start_new_session=True)
+            ORB_INSTALL / "setup.bash", args.ros_domain_id), start_new_session=True)
         _wait_orb_ready(args.ros_domain_id, args.ready_timeout, orb)
         sam = subprocess.Popen(_conda_command(
             "sam6d", ["ros2", "launch", "realtime/launch/sam6d_split.launch.py",
@@ -326,6 +364,7 @@ def self_test():
     assert _paired_delays(info, 2.0) == {"SLAM": 1.0, "SAM": 1.02}
     command = _conda_command("x", ["printf", "%s", "a b"], domain_id=7)
     assert command[:2] == ["bash", "-lc"] and "ROS_DOMAIN_ID=7" in command[2]
+    assert "ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST" in command[2]
 
 
 def _self_test_stop():
@@ -348,7 +387,8 @@ def main():
     parser.add_argument("--output", type=Path)
     parser.add_argument("--rate", type=float, default=1.0)
     parser.add_argument("--ready-timeout", type=float, default=600.0)
-    parser.add_argument("--ros-domain-id", type=int, default=72)
+    parser.add_argument("--ros-domain-id", type=int,
+                        help="기본값: 실행마다 자동 선택")
     parser.add_argument("--slam-wait-ms", type=float, default=1000.0,
                         help="SAM frame이 같은 시각의 SLAM pose를 기다리는 최대 시간")
     parser.add_argument("--view", action="store_true",
@@ -371,6 +411,11 @@ def main():
         parser.error("--rate must be positive")
     if not np.isfinite(args.slam_wait_ms) or args.slam_wait_ms < 0:
         parser.error("--slam-wait-ms must be non-negative")
+    try:
+        args.ros_domain_id = runtime_domain(args.ros_domain_id)
+    except ValueError as exc:
+        parser.error(str(exc))
+    print(f"[ROS] Jazzy domain {args.ros_domain_id} (localhost)", flush=True)
     try:
         play_only(args) if args.play_only else run(args)
     except (OSError, ValueError, KeyError, RuntimeError, TimeoutError,

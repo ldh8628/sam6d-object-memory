@@ -6,11 +6,13 @@ import argparse
 import json
 import math
 import os
+import secrets
 import shlex
 import signal
 import subprocess
 import sys
 import time
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -20,6 +22,14 @@ SAM_CAMERA = "sam_camera"
 CONDA_SH = Path.home() / "miniconda3/etc/profile.d/conda.sh"
 
 
+def runtime_domain(value: int | None = None) -> int:
+    if value is None:
+        return 100 + secrets.randbelow(101)
+    if not 0 <= value <= 232:
+        raise ValueError("ROS domain ID must be between 0 and 232")
+    return value
+
+
 def _conda_command(environment: str, command: list[str], domain_id: int = 72) -> list[str]:
     script = "; ".join([
         "unset PYTHONPATH ROS_DISTRO ROS_VERSION ROS_PYTHON_VERSION",
@@ -27,6 +37,9 @@ def _conda_command(environment: str, command: list[str], domain_id: int = 72) ->
         f"source {shlex.quote(str(CONDA_SH))}",
         f"conda activate {shlex.quote(environment)}",
         f"export ROS_DOMAIN_ID={int(domain_id)}",
+        "export ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST",
+        "export RMW_IMPLEMENTATION=rmw_fastrtps_cpp",
+        f"export FASTRTPS_DEFAULT_PROFILES_FILE={shlex.quote(str(Path(__file__).resolve().parent / 'fastdds_input.xml'))}",
         shlex.join(command),
     ])
     return ["bash", "-lc", script]
@@ -78,6 +91,8 @@ def topics(camera: str) -> dict[str, str]:
     base = f"/{CAMERA_NAMESPACE}/{camera}"
     return {
         "rgbd": f"{base}/rgbd",
+        "rgb_metadata": f"{base}/color/metadata",
+        "depth_metadata": f"{base}/depth/metadata",
         "rgb": f"{base}/color/image_raw",
         "depth": f"{base}/aligned_depth_to_color/image_raw",
         "caminfo": f"{base}/color/camera_info",
@@ -256,6 +271,9 @@ def camera_command(camera_serial: str, camera: str, domain_id: int,
         "depth_module.depth_profile:=848x480x30",
         f"depth_module.inter_cam_sync_mode:={hardware_sync_mode}",
         "pointcloud.enable:=false",
+        "diagnostics_period:=1.0",
+        # The launch default (5s) can terminate RealSense while its sensors close.
+        "sigterm_timeout:=25",
     ], domain_id=domain_id)
 
 
@@ -263,7 +281,8 @@ def wait_camera_frame(topic: str, domain_id: int, timeout: float,
                       processes: list[tuple[str, subprocess.Popen]]) -> None:
     command = _conda_command("realsense", [
         "ros2", "topic", "echo", "--no-daemon", "--once",
-        "--qos-reliability", "best_effort", topic, "sensor_msgs/msg/Image",
+        "--qos-reliability", "best_effort", topic, ("realsense2_camera_msgs/msg/RGBD" if topic.endswith("/rgbd")
+                else "sensor_msgs/msg/Image"),
     ], domain_id=domain_id)
     deadline = time.monotonic() + timeout
     while time.monotonic() < deadline:
@@ -317,7 +336,8 @@ def run(roles: dict[str, str], args: argparse.Namespace) -> None:
     except KeyboardInterrupt:
         pass
     finally:
-        stopped = [_stop(process) for _name, process in reversed(processes)]
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            stopped = list(executor.map(_stop, (process for _name, process in processes)))
         if not all(stopped):
             raise RuntimeError("RealSense child process cleanup failed")
 
@@ -355,6 +375,15 @@ Intel(R) RealSense(TM) D455f (usb-2):
     assert "serial_no:=_123" in command[2]
     assert "camera_name:=slam_camera" in command[2]
     assert "ROS_DOMAIN_ID=72" in command[2]
+    assert "ROS_AUTOMATIC_DISCOVERY_RANGE=LOCALHOST" in command[2]
+    assert 100 <= runtime_domain() <= 200
+    assert runtime_domain(7) == 7
+    try:
+        runtime_domain(233)
+    except ValueError:
+        pass
+    else:
+        raise AssertionError("invalid ROS domain accepted")
 
 
 def main() -> int:

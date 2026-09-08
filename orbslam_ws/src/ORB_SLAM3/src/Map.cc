@@ -176,6 +176,7 @@ vector<MapPoint*> Map::GetReferenceMapPoints()
 
 long unsigned int Map::GetId()
 {
+    unique_lock<mutex> lock(mMutexMap);
     return mnId;
 }
 long unsigned int Map::GetInitKFid()
@@ -320,6 +321,7 @@ bool Map::GetIniertialBA2()
 
 void Map::ChangeId(long unsigned int nId)
 {
+    unique_lock<mutex> lock(mMutexMap);
     mnId = nId;
 }
 

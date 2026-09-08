@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "source": "verification/two_realtime_shm64_record_auto/capture",
+  "destination": "verification/two_realtime_shm64_record_auto/compatibility_sqlite",
+  "counts": {
+    "/camera/slam_camera/color/image_raw": 3976,
+    "/camera/slam_camera/aligned_depth_to_color/image_raw": 3976,
+    "/camera/slam_camera/color/camera_info": 3976,
+    "/camera/slam_camera/aligned_depth_to_color/camera_info": 3976,
+    "/camera/sam_camera/color/image_raw": 3926,
+    "/camera/sam_camera/aligned_depth_to_color/image_raw": 3926,
+    "/camera/sam_camera/color/camera_info": 3926,
+    "/camera/sam_camera/aligned_depth_to_color/camera_info": 3926
+  },
+  "comparison": "every RGB/depth buffer byte, ROS message field and bag timestamp in order"
+}
