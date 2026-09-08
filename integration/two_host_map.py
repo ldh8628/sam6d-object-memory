@@ -89,11 +89,12 @@ def synchronization_report(slam_rows, sam_rows, *, minimum_seconds=600.):
     return report
 
 
-def worker_argv(config, role, output, *, record=True, record_seconds=600.):
+def worker_argv(config, role, output, *, record=True, record_seconds=600., camera_timeout=30.):
     return ['python', 'integration/two_host_worker.py', 'camera', '--role', role,
             '--serial', config['cameras'][role + '_serial'], '--sync-mode',
             str(config['cameras'][role + '_sync_mode']), '--ros-domain-id',
             str(config['network']['ros_domain_id'] + 1), '--output', str(output),
+            '--camera-timeout', str(camera_timeout),
             *(['--record', '--record-seconds', str(record_seconds)] if record else [])]
 
 
@@ -116,10 +117,15 @@ def run(args):
     remote = local = processing = None
     try:
         report['preflight'] = preflight(config)
-        remote = RemoteSession(config, worker_argv(config, 'slam', remote_output, record_seconds=duration))
-        report['remote_ready'] = remote.wait_ready(max(180., args.camera_timeout))
-        local = RemoteSession(config, worker_argv(config, 'sam', local_output, record_seconds=duration), local=True)
-        report['local_ready'] = local.wait_ready(max(180., args.camera_timeout))
+        # Identity uses five waits; baseline and recording monitors use one each.
+        # Also allow the 40-second baseline window, drain and environment startup.
+        ready_timeout = 180. + 7 * args.camera_timeout
+        remote = RemoteSession(config, worker_argv(config, 'slam', remote_output,
+            record_seconds=duration, camera_timeout=args.camera_timeout))
+        report['remote_ready'] = remote.wait_ready(ready_timeout)
+        local = RemoteSession(config, worker_argv(config, 'sam', local_output,
+            record_seconds=duration, camera_timeout=args.camera_timeout), local=True)
+        report['local_ready'] = local.wait_ready(ready_timeout)
         started, next_check, prompted = time.monotonic(), 0., False
         print('[two-host] mode 3 동기 검증을 포함하여 10분 이상 기록합니다.', flush=True)
         while True:

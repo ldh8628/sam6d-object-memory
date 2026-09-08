@@ -40,11 +40,16 @@ sudo phc2sys -s LOCAL_INTERFACE -c CLOCK_REALTIME -w -m
 ## 맵과 URDF
 
 ```bash
-python integration/create_map_urdf.py --two-host-config integration/two_host.local.yaml --name SESSION
+python3 integration/create_map_urdf_split.py --name SESSION
 # 10분 검증 뒤 자동 종료하려면 --input-check-seconds 600
+# 다른 설정 파일: --config /path/to/two_host.yaml
 ```
 
-현재 shell은 기존 integration 의존성(numpy/PyYAML)이 있는 환경을 사용한다. 실행자는 두 호스트 commit/ROS/PTP를 검증하고 원격 master READY 이후 로컬 full slave를 시작한다. 각 worker는 실행 중 DeviceInfo serial과 실제 sync parameter를 읽는다. 두 카메라 모두 RGBD와 metadata를 자기 디스크에만 기록한다. stdin heartbeat가 끊기면 worker는 자기 자식 프로세스 그룹을 닫는다. 종료는 slave, master 순이다.
+일반 터미널에서 실행하면 저장소의 `integration/two_host.local.yaml`을 읽고 `environment.local_conda_sh`와 `orb_env`로 로컬 환경을 활성화한다. 원격 SLAM 터미널에서 별도 명령을 실행할 필요는 없다. 최초 환경 준비·배포는 위 단계에서 수행하며 촬영 명령은 패키지 설치나 Git checkout을 하지 않는다. `--help`는 conda 없이 실행된다.
+
+지원 옵션은 `--name`, `--config`, `--baseline`(기본 0.095 m), `--camera-timeout`(기본 30초, 양쪽 worker에 적용), `--input-check-seconds`(0 또는 600초 이상), `--input-check-only`, `--help`다. 기본 실행은 최소 검사 시간 이후 Enter로 종료한다. `--input-check-only`는 녹화·동기 검사까지만 수행하고 맵을 만들지 않는다. 잘못된 설정/옵션은 카메라 시작 전에 거부하며 단일 장비로 자동 전환하지 않는다. 기존 `python integration/create_map_urdf.py --two-host-config ... --name SESSION`과 단일 장비 명령도 유지한다.
+
+실행자는 두 호스트 commit/ROS/PTP를 검증하고 원격 master READY 이후 로컬 full slave를 시작한다. 각 worker는 실행 중 DeviceInfo serial과 실제 sync parameter를 읽는다. 두 카메라 모두 RGBD와 metadata를 자기 디스크에만 기록한다. stdin heartbeat가 끊기면 worker는 자기 자식 프로세스 그룹을 닫는다. 종료는 slave, master 순이다.
 
 30초의 각 카메라 baseline 및 준비 시간 외에 최소 600초 공통 구간을 기록한다. 카메라 frame counter 역행/중복, 유실률 0.1% 초과, 대응 ROS 시각과 sensor timestamp drift p95 5 ms 초과는 실패한다. sensor clock의 독립적인 부팅 epoch만 처음 30쌍으로 보정하고 이후 drift는 그대로 평가한다. 기존 호스트별 input integrity 검사에서 한 건의 누락도 실패하므로 현재 유실 허용은 이보다 엄격하다. 실패 원본과 보고서는 보존하며 mode 2로 바꾸지 않는다. [D455 full slave 사례](https://github.com/IntelRealSense/librealsense/issues/8419).
 
@@ -89,6 +94,7 @@ PoseStamped에는 촬영 시각만 있고 원격 송신 시각이 없으므로 *
 
 ```bash
 python3 integration/test_two_host.py
+python3 integration/test_create_map_urdf_split.py
 python integration/test_two_host_map.py
 python integration/test_two_host_realtime.py
 python integration/two_host_bridge.py --self-test
@@ -109,6 +115,8 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest tests/test_slam_pose_memory.py
 
 ## 2026-09-08 현장 상태
 
-로컬 IP는 `10.119.19.162`, 알려진 원격 SSH는 `jucpark@10.57.238.153:10022`다. 로컬에서 실제 SSH 시도는 connection timeout이었다. 원격 프로젝트/conda 경로는 접속 확인 전 기본값이며 로컬 설정의 PTP 인터페이스는 `UNCONFIGURED`로 남겨 두었다. 로컬 `enp130s0`와 USB NIC는 하드웨어 PTP가 없고 linuxptp도 아직 없다. 양쪽 유선 연결·IP·PTP 구성, SSH reachability 해결 후 실제 배포와 10분 검증이 필요하다.
+로컬 IP는 `10.119.19.162`, 원격 SSH alias는 `slam-codex`(port 10022), 원격 저장소는 `/home/jucpark/sam6d_object_memory`다. SSH 연결과 원격 `/home/jucpark/anaconda3/etc/profile.d/conda.sh`의 Python 3.12.14/Jazzy `realsense` 환경을 확인했다. 양쪽 녹화 imports는 정상이며 원격 ROS 메시지 버전을 로컬 검증 버전에 맞추는 초기 환경 준비와 ORB 배포를 수행한다.
+
+유선 software PTP는 SAM `enx00e04caa7ca7` SLAVE, SLAM `enx00e04cbaf0a3` MASTER이며 같은 grandmaster다. 다만 60초/12표본 중 최대 합산 오차가 **1175.653 μs**로 **1000 μs** 기준을 초과했다. SAM 녹화 공간도 **45.1 GiB 필요 / 26.3 GiB 여유**로 부족하다. 실제 10분 녹화·맵·URDF 결과 회수는 이 조건들을 해결한 뒤 검증해야 한다. 진입점/회귀 검사 통과를 실장비 완료로 간주하지 않는다.
 
 Git 이전 `notebook` 브랜치는 보존했고 수정 snapshot은 `notebook-snapshot-20260908`에 있다. `output/migration_backup_20260908/notebook.bundle`과 patch가 로컬 복구본이다. migration은 역사 재작성 없이 snapshot 다음 commit에서 기존 tree를 `sam6d_ws/` 아래로 옮겼다.

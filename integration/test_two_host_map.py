@@ -86,6 +86,8 @@ class TwoHostMapChecks(unittest.TestCase):
                       network=dict(ros_domain_id=72))
         self.assertIn('73', worker_argv(config, 'slam', '/tmp/capture'))
         self.assertNotIn('--record', worker_argv(config, 'sam', '/tmp/live', record=False))
+        command = worker_argv(config, 'sam', '/tmp/live', record=False)
+        self.assertEqual(command[command.index('--camera-timeout') + 1], '30.0')
 
     def test_calibration_rejects_reference_and_exports_only_review_artifacts(self):
         from two_host_worker import finalize_map
@@ -125,14 +127,18 @@ class TwoHostMapChecks(unittest.TestCase):
         config = dict(cameras=dict(slam_serial='123',sam_serial='456',slam_sync_mode=1,sam_sync_mode=3),
                       ssh=dict(remote_root='/remote/project'), network=dict(ros_domain_id=72,
                       local_ptp_interface='eth0',remote_ptp_interface='eth1',ptp_max_offset_us=1000))
-        events, transfers = [], []
+        events, transfers, camera_commands, ready_timeouts = [], [], [], []
         class Session:
             def __init__(self, _, argv, local=False):
                 self.role = 'finalize' if 'finalize-map' in argv else 'sam' if local else 'slam'
+                if self.role != 'finalize':
+                    camera_commands.append(argv)
                 self.process = SimpleNamespace(poll=lambda:0)
                 events.append('start '+self.role)
-            def wait_ready(self, _):
+            def wait_ready(self, timeout):
                 events.append('ready '+self.role)
+                if self.role != 'finalize':
+                    ready_timeouts.append(timeout)
                 return {}
             def check(self):
                 pass
@@ -157,7 +163,11 @@ class TwoHostMapChecks(unittest.TestCase):
                 patch('two_host_map.synchronization_report', return_value={'status':'PASS'}), \
                 patch('subprocess.run'), redirect_stdout(StringIO()):
             two_host_map.run(SimpleNamespace(two_host_config=Path('config'),name='test',
-                input_check_seconds=600,force=False,camera_timeout=30,baseline=.095,input_check_only=False))
+                input_check_seconds=600,force=False,camera_timeout=240.,baseline=.095,input_check_only=False))
+            self.assertEqual([command[command.index('--camera-timeout') + 1]
+                              for command in camera_commands], ['240.0', '240.0'])
+            self.assertEqual(len(ready_timeouts), 2)
+            self.assertTrue(all(timeout >= 7 * 240 + 40 for timeout in ready_timeouts))
             self.assertEqual(events, ['start slam','ready slam','start sam','ready sam','stop sam','stop slam',
                                       'start finalize','ready finalize','stop finalize'])
             uploaded = [(a,b) for a,b,to_remote in transfers if to_remote]
