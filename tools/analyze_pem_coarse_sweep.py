@@ -46,7 +46,7 @@ from typing import Any, Iterable
 
 import numpy as np
 
-REPO = Path("/home/etri/sam6d_realtime/sam6d_realtime")
+REPO = Path(__file__).resolve().parents[1]
 DEFAULT_SWEEP = REPO / "output" / "pem_coarse_sweep_v1"
 DEFAULT_PSEUDO_GT = REPO / "data" / "longcircle2_sam" / "self_slam" / "pseudo_ground_truth.json"
 DEFAULT_TRAJ = REPO / "data" / "longcircle2_sam" / "self_slam" / "CameraTrajectory.txt"

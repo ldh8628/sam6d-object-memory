@@ -23,6 +23,7 @@ defaults:
   hsv_sat_gain: 1.3                    # REFERENCE saturation gain
   hsv_hist_bins: [16, 8]               # joint H x S histogram -> 128-D
   hsv_lowsat_exception: false          # pinned mode-B has NO low-sat exception (final decision)
+  rg_gate_threshold: 0.0               # normalized-rg reject gate; 0 = disabled unless validated per object
   hsv_hue_correction_ocv: 0            # Phase 1C class color correction (OpenCV hue units), 0 = none.
                                        # Baked into the class HSV cache at BUILD time -> runtime stays
                                        # object-agnostic (no per-class branch). Dinosaur overrides to 9.
@@ -227,6 +228,9 @@ objects:
     object_id: Milk_high
     template_dir: template/milk_high/templates
     cad_ply: data/cad/milk_high/Milk_high.ply
+    # 260826 six-run validation: 8,034 milk candidates, threshold .55 rejects 273
+    # candidates across 39/39 visually checked false-only runs; lowest real milk = .575.
+    rg_gate_threshold: 0.55
     # 2026-08-19 (AF2) 자산 교체. 이전: template/milk/templates + data/cad/milk/Milk.ply
     #   교체 이유 — 이전 Milk.ply 는 trimesh 변환본이라 UV·텍스처가 없고, 몸통 정점이
     #   36개뿐(표면적 80%가 흰색 거대 삼각형 28장)이어서 blenderproc 이 map_vertex_color()

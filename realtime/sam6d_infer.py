@@ -14,7 +14,9 @@ from __future__ import annotations
 
 import argparse
 import json
+import mmap
 import os
+import struct
 import sys
 import time
 from pathlib import Path
@@ -72,7 +74,8 @@ def main():
     odir = out.get("dir", "output/rt_split")
     odir = odir if os.path.isabs(odir) else os.path.join(REPO, odir)
     os.makedirs(odir, exist_ok=True)
-    diag = bool(out.get("diagnostics", False))
+    live_recording = bool((out.get("live_recording") or {}).get("enabled", False))
+    diag = bool(out.get("diagnostics", False) or live_recording)
     if diag:
         os.makedirs(os.path.join(odir, "masks"), exist_ok=True)
 
@@ -132,7 +135,19 @@ def main():
         recorder = ExplorerRecorder(
             odir, _explorer_provenance(a.config, cfg, core), explorer_cfg)
 
-    # 모델이 다 올라온 뒤에야 수신 쪽이 재생을 시작하도록 신호를 남긴다
+    fifo_path = os.path.join(odir, ".sam6d_results.fifo")
+    ack_path = os.path.join(odir, ".sam6d_result_ack")
+    for _ in range(600):
+        if os.path.exists(fifo_path) and os.path.exists(ack_path):
+            break
+        time.sleep(0.1)
+    else:
+        raise SystemExit("[infer] receiver result FIFO를 찾지 못했다")
+    result_fd = os.open(fifo_path, os.O_WRONLY)
+    ack_fd = os.open(ack_path, os.O_RDONLY)
+    ack = mmap.mmap(ack_fd, 8, access=mmap.ACCESS_READ)
+
+    # 모델과 결과 수신기가 모두 준비된 뒤에야 재생을 시작한다.
     ready = os.path.join(odir, "READY")
     Path(ready).write_text(str(time.time()))
     print(f"[infer] 준비 완료 → {ready}", flush=True)
@@ -173,6 +188,7 @@ def main():
             idle_since = time.time()
             got_any = True
             rgb, depth, K, stamp_ns, recv_wall = got
+            source_seq = fr.last_source_seq
             slam_context = fr.last_slam_context
             if slam_context is not None and not slam_context.get("map_id"):
                 slam_context["map_id"] = str(slam_cfg.get("map_id", "default"))
@@ -180,7 +196,7 @@ def main():
             t_a = time.time()
             rows, ms, n_boxes, lab = core.process(
                 bgr, depth, K, want_mask=(diag or recorder is not None),
-                slam_context=slam_context)
+                slam_context=slam_context, lossless_mask=live_recording)
             t_b = time.time()
             n_proc += 1; n_det += len(rows)
             if recorder is not None:
@@ -190,7 +206,14 @@ def main():
             # bag 시각 환산: 이 프레임이 수신된 벽시계 시각을 기준점으로 삼는다(rate 1.0)
             t_start_ns = int(stamp_ns + (t_a - recv_wall) * 1e9)
             t_done_ns = int(stamp_ns + (t_b - recv_wall) * 1e9)
-            jw.write({"stamp_ns": stamp_ns, "t_done_ns": t_done_ns, "n": len(rows),
+            result = {"stamp_ns": stamp_ns, "depth_stamp_ns": fr.last_depth_stamp_ns,
+                      "source_seq": source_seq, "frame_seq": n_proc - 1,
+                      "t_done_ns": t_done_ns, "n": len(rows),
+                      "map_id": str((slam_context or {}).get(
+                          "map_id", slam_cfg.get("map_id", "default"))),
+                      "map_anchors": ({} if core.anchor_manager is None else {
+                          name: pose.round(8).tolist()
+                          for name, pose in core.anchor_manager.anchors.items()}),
                       "dets": [{"object": r["object"], "score": r["score"],
                                 "R": r["R"], "t_mm": r["t_mm"],
                                 "pose_source": r.get("pose_source", "sam6d"),
@@ -198,11 +221,24 @@ def main():
                                 "anchor_state": r.get("anchor_state"),
                                 "rejection_reason": r.get("rejection_reason")}
                                for r in rows],
-                      "ms": ms, "n_proc": n_proc, "n_det": n_det})
+                      "ms": ms, "n_proc": n_proc, "n_det": n_det}
+            payload = json.dumps(result, ensure_ascii=False).encode() + b"\n"
+            while payload:
+                payload = payload[os.write(result_fd, payload):]
+            jw.write(result)
+            deadline = time.monotonic() + 5.0
+            while struct.unpack_from("<q", ack, 0)[0] < n_proc - 1:
+                if time.monotonic() >= deadline:
+                    raise TimeoutError("receiver did not publish the inference result")
+                time.sleep(0.001)
             for r in rows:
                 f_det.write(json.dumps({**r, "stamp_ns": stamp_ns,
+                                        "depth_stamp_ns": fr.last_depth_stamp_ns,
+                                        "source_seq": source_seq,
                                         "frame_seq": n_proc - 1}, ensure_ascii=False) + "\n")
             f_frm.write(json.dumps({"stamp_ns": stamp_ns, "frame_seq": n_proc - 1,
+                                    "depth_stamp_ns": fr.last_depth_stamp_ns,
+                                    "source_seq": source_seq,
                                     "n_accept": len(rows), "n_boxes": n_boxes, "ms": ms,
                                     "t_start_ns": t_start_ns, "t_done_ns": t_done_ns,
                                     "objects": [r["object"] for r in rows],
@@ -212,8 +248,9 @@ def main():
             f_det.flush(); f_frm.flush()
             # ExplorerRecorder owns its one label PNG per attempted frame. Preserve
             # the legacy diagnostics contract outside Explorer without double-writing.
-            if recorder is None and lab is not None and rows:
-                cv2.imwrite(os.path.join(odir, "masks", f"{stamp_ns}.png"), lab)
+            if recorder is None and lab is not None:
+                if not cv2.imwrite(os.path.join(odir, "masks", f"{stamp_ns}.png"), lab):
+                    raise OSError(f"failed to write mask for {stamp_ns}")
             print(f"#{n_proc-1} {len(rows)}개 ({', '.join(r['object'] for r in rows) or '-'})  "
                   f"{ms['total']}ms [yolo {ms['yolo']} / ism {ms['ism']} / pem {ms['pem']}]",
                   flush=True)
@@ -229,7 +266,8 @@ def main():
         meta["summary"] = summary
         json.dump(meta, open(os.path.join(odir, "run_meta.json"), "w"),
                   indent=1, ensure_ascii=False)
-        f_det.close(); f_frm.close(); fr.close(); jw.close()
+        f_det.close(); f_frm.close(); fr.close(); jw.close(); os.close(result_fd)
+        ack.close(); os.close(ack_fd)
         if recorder is not None:
             recorder.close(completed=completed)
         try:

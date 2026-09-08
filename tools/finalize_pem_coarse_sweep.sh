@@ -8,11 +8,15 @@
 # 스윕이 아직 실행 중이어도 안전하다(진행 중인 n<x> 는 자동 skip).
 
 set -o pipefail
-REPO="/home/etri/sam6d_realtime/sam6d_realtime"
+REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 SWEEP="${REPO}/output/pem_coarse_sweep_v1"
 ANALYSIS="${SWEEP}/analysis"
 
-source /home/etri/miniconda3/etc/profile.d/conda.sh
+if command -v conda >/dev/null 2>&1; then
+    eval "$(conda shell.bash hook)"
+else
+    source "${HOME}/miniconda3/etc/profile.d/conda.sh"
+fi
 conda activate sam6d
 cd "${REPO}"
 
@@ -70,7 +74,7 @@ lines = [
     "",
     "## 재현 방법",
     "```",
-    "cd /home/etri/sam6d_realtime/sam6d_realtime",
+    "cd sam6d_ws",
     "conda activate sam6d",
     "# 스윕 실행",
     "bash tools/run_pem_coarse_sweep.sh",

@@ -1,16 +1,15 @@
 # 터미널 2 개 방식 — 실제 카메라판 (RealSense D455f)
 #
-#   터미널 A (먼저): 카메라 드라이버
-#       ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true \
-#            enable_sync:=true rgb_camera.color_profile:=640x480x30 \
-#            depth_module.depth_profile:=640x480x30
+#   터미널 A (먼저): 카메라 드라이버 (ROS 2 Jazzy)
+#       ./run/realsense.sh
 #   터미널 B (그 뒤): SAM-6D
-#       ros2 launch realtime/launch/sam6d_split.launch.py \
-#            config:=realtime/run_live_split.yaml
+#       ./run/sam6d.sh
 #
-# 두 터미널 모두 conda activate sam6d && export ROS_DOMAIN_ID=72 를 먼저 할 것.
+# 두 스크립트가 각 conda 환경과 ROS_DOMAIN_ID=72 를 자체 설정한다.
 
 topics:
+  rgbd: /camera/camera/rgbd
+  # Legacy split topics stay documented for bag configs; live uses rgbd above.
   rgb: /camera/camera/color/image_raw
   depth: /camera/camera/aligned_depth_to_color/image_raw
   caminfo: /camera/camera/color/camera_info
@@ -32,8 +31,8 @@ anchor:
   register_translation_mm: 50
   release_window: 5
   release_count: 4
-  release_rotation_deg: 20
-  release_translation_mm: 50
+  release_rotation_deg: 180    # SAM-6D 회전 flip은 무시(정적 객체)
+  release_translation_mm: 150  # 4/5회 지속 위치 이동만 anchor 재등록
   ism_overlap_min: 0.5
   ism_depth_tolerance_mm: 100
   fov_fraction_min: 0.2
@@ -64,7 +63,14 @@ runtime:
 
 output:
   dir: output/live_cam
+  overlay_topic: /sam6d/overlay  # 구독자가 있을 때만 모든 입력 프레임에 MAP pose 축 투영
   diagnostics: true           # frames/detections jsonl + 마스크 (영상 렌더에 필요)
+  view: false
+  live_recording:
+    enabled: false
+    depth_policy: processed   # processed | full
+    rgb_fps: 30
+    nvenc_cq: 32
 
 # bag 절이 없으므로 재생은 하지 않는다 (입력은 카메라)
 #

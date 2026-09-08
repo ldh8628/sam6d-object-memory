@@ -47,6 +47,8 @@ PEM_DIR = os.path.join(REPO, "sam6d_master", "SAM-6D", "Pose_Estimation_Model")
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from verify_config import build_appe_cfg, describe            # noqa: E402
+from slam_pose_memory import (canonical_object_points,
+                              canonical_object_rotation)       # noqa: E402
 
 import rclpy                                                    # noqa: E402
 from cv_bridge import CvBridge                                  # noqa: E402
@@ -419,7 +421,8 @@ class Sam6DRealtimeNode(Node):
                     raise SystemExit(f"[pem] {name}: 자산이 없다 — {p}")
             pts = np.load(p_pts).astype(np.float32)
             self._pts[name] = _Stub(pts)
-            self._extent[name] = (pts.max(0) - pts.min(0)) / 1000.0      # BoundingBox3D 용 [m]
+            canonical_pts = canonical_object_points(name, pts)
+            self._extent[name] = np.ptp(canonical_pts, axis=0) / 1000.0  # BoundingBox3D 용 [m]
             blob = torch.load(p_tem, map_location=self.device)
             tc = blob.get("tc")          # 점별 색 (tools/add_template_colors.py 로 추가)
             if tc is None and self.verify.get("enabled") and self.verify.get("w_col"):
@@ -769,7 +772,7 @@ class Sam6DRealtimeNode(Node):
         p.position.x, p.position.y, p.position.z = (float(t_mm[0] / 1000.0),
                                                     float(t_mm[1] / 1000.0),
                                                     float(t_mm[2] / 1000.0))
-        q = Rotation.from_matrix(R).as_quat()       # x, y, z, w
+        q = Rotation.from_matrix(canonical_object_rotation(name, R)).as_quat()
         p.orientation.x, p.orientation.y, p.orientation.z, p.orientation.w = map(float, q)
         hyp = ObjectHypothesisWithPose()
         hyp.hypothesis.class_id = name
@@ -869,6 +872,7 @@ def main():
     except KeyboardInterrupt:
         pass
     finally:
+        ex.shutdown()
         node.close()
         node.destroy_node()
         if rclpy.ok():

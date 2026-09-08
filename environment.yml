@@ -19,9 +19,11 @@ channels:
 
 dependencies:
   - python=3.12
+  - pip
 
   # ── ROS 2 Jazzy ─────────────────────────────────────────────────────────────
   - ros-jazzy-desktop
+  - ros-jazzy-realsense2-camera-msgs    # /camera/camera/rgbd combined message
   - ros-jazzy-vision-msgs                # Detection3DArray (노드 출력 타입)
   - ros-jazzy-rosbag2-storage-mcap       # 번들 bag 은 v5/sqlite3 지만 mcap 도 대비
 
@@ -43,6 +45,7 @@ dependencies:
   - cmake
   - ninja
   - pkg-config
+  - pybind11
 
   # ── ROS 빌드 보조 ───────────────────────────────────────────────────────────
   - colcon-common-extensions
@@ -55,8 +58,11 @@ dependencies:
   - scipy=1.18.0
   - pillow=12.3.0
   - pyyaml=6.0.3
+  - pycparser
   - py-opencv=4.12.0
   - scikit-image=0.26.0
+  - lazy-loader
+  - tifffile
   - imageio=2.37.0
   - trimesh=4.12.2                       # 5.x 는 API 변동 위험, 고정
   - timm=1.0.26

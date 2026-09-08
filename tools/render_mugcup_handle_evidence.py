@@ -21,7 +21,7 @@ import cv2
 import numpy as np
 
 
-REPO = Path("/home/etri/sam6d_realtime/sam6d_realtime")
+REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(REPO / "realtime"))
 sys.path.insert(0, str(REPO / "sam6d_master" / "SAM-6D" / "Pose_Estimation_Model"))

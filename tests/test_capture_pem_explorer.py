@@ -54,6 +54,17 @@ def test_full_config_is_fixed_profile_and_existing_output_fails_before_model(tmp
         MOD.capture(config_path)
 
 
+def test_direct_paths_override_dataset_specific_yaml(tmp_path, monkeypatch):
+    config_path = tmp_path / "generic.yaml"
+    config_path.write_text(yaml.safe_dump(capture_config("", "")), encoding="utf-8")
+    monkeypatch.setattr(MOD, "REPO", tmp_path)
+    output, bag = tmp_path / "session/sam6d", tmp_path / "session/converted/SAM"
+    _, _, resolved_output, resolved_bag, _ = MOD.load_capture_config(
+        config_path, bag, output)
+    assert resolved_output == output.resolve()
+    assert resolved_bag == bag.resolve()
+
+
 @pytest.mark.parametrize("mutation", ["output_profile", "diagnostic_profile", "output_path"])
 def test_capture_config_rejects_non_exhaustive_or_external_output(tmp_path, monkeypatch,
                                                                   mutation):

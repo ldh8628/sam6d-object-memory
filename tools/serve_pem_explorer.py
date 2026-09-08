@@ -8,6 +8,7 @@ import math
 import mimetypes
 import sqlite3
 import statistics
+import subprocess
 import sys
 import threading
 from collections import defaultdict, deque
@@ -75,6 +76,18 @@ def safe_run(root, name):
 
 def classify_run(path):
     path = Path(path)
+    live_path = path / "live_manifest.json"
+    if live_path.is_file() and not live_path.is_symlink():
+        try:
+            manifest = json.loads(live_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError) as exc:
+            return {"kind": "incomplete", "reason": f"invalid live manifest: {exc}"}
+        if manifest.get("format") != "live_replay" or manifest.get("schema_version") != 1:
+            return {"kind": "incomplete", "reason": "unsupported live replay schema"}
+        if manifest.get("completed"):
+            return _classify_completed_live(path.resolve(), live_path.stat().st_mtime_ns)
+        return {"kind": "live_replay", "manifest": manifest,
+                "reason": None if manifest.get("completed") else "recording is incomplete"}
     manifest_path = path / "explorer_manifest.json"
     if manifest_path.is_file() and not manifest_path.is_symlink():
         try:
@@ -130,6 +143,19 @@ def _classify_completed_run(path, _manifest_mtime_ns):
     return {"kind": "explorer_v2", "manifest": manifest}
 
 
+@lru_cache(maxsize=None)
+def _classify_completed_live(path, _manifest_mtime_ns):
+    path = Path(path)
+    manifest = json.loads((path / "live_manifest.json").read_text(encoding="utf-8"))
+    try:
+        _validate_completed_live(path, manifest)
+    except (OSError, ValueError, KeyError, TypeError, PermissionError) as exc:
+        manifest = {**manifest, "completed": False, "validation_error": str(exc)}
+        return {"kind": "live_replay", "manifest": manifest,
+                "reason": f"invalid completed recording: {exc}"}
+    return {"kind": "live_replay", "manifest": manifest, "reason": None}
+
+
 def _run_priority(row):
     name = row["name"]
     if name == "longcircle2_visualization" and row["kind"] == "explorer_v2":
@@ -138,7 +164,9 @@ def _run_priority(row):
         return (1 if name == "longcircle2_manual" else 2, name)
     if row["kind"] == "legacy":
         return (3 if name == "pem_explorer" else 4, name)
-    return (5, name)
+    if row["kind"] == "live_replay":
+        return (5, name)
+    return (6, name)
 
 
 def discover_runs(root):
@@ -168,6 +196,38 @@ def _load_jsonl(path):
                 raise ValueError(f"{path.name}:{line_no} must contain an object")
             rows.append(value)
     return rows
+
+
+def _validate_completed_live(run_dir, manifest):
+    run_dir = Path(run_dir)
+    if not manifest.get("finalized") or manifest.get("errors"):
+        raise ValueError("completed live recording is not cleanly finalized")
+    for name in ("rgb.mp4", "rgb_frames.jsonl", "depth.mkv", "depth_frames.jsonl",
+                 "frames.jsonl", "detections.jsonl", "receiver.jsonl", "run_meta.json",
+                 "run_config.yaml"):
+        target = run_dir / name
+        if target.is_symlink() or not target.is_file():
+            raise ValueError(f"completed live recording is missing {name}")
+    masks = run_dir / "masks"
+    if masks.is_symlink() or not masks.is_dir():
+        raise ValueError("completed live recording is missing masks/")
+    rgb_rows = _load_jsonl(run_dir / "rgb_frames.jsonl")
+    depth_rows = _load_jsonl(run_dir / "depth_frames.jsonl")
+    for label, rows in (("rgb", rgb_rows), ("depth", depth_rows)):
+        if [int(row.get("frame_index", -1)) for row in rows] != list(range(len(rows))):
+            raise ValueError(f"{label} frame indexes are not contiguous")
+    counts = manifest.get("counts") or {}
+    if (len(rgb_rows) != int(counts.get("rgb_recorded", -1)) or
+            len(depth_rows) != int(counts.get("depth_recorded", -1))):
+        raise ValueError("live index counts do not match manifest")
+    if not rgb_rows or not depth_rows or not (run_dir / "rgb.mp4").stat().st_size \
+            or not (run_dir / "depth.mkv").stat().st_size:
+        raise ValueError("completed live recording has empty video")
+    for frame in _load_jsonl(run_dir / "frames.jsonl"):
+        attempts = ((frame.get("diagnostics") or {}).get("pem_candidates") or [])
+        mask = masks / f"{int(frame['stamp_ns'])}.png"
+        if attempts and (mask.is_symlink() or not mask.is_file()):
+            raise ValueError(f"processed frame is missing mask: {mask.name}")
 
 
 def load_index(run_dir):
@@ -487,6 +547,100 @@ def _attempt_depth_fraction(run_dir, row):
     return None
 
 
+def _live_report(run_dir, manifest):
+    """Join recorded RGB with canonical inference JSONL without copying pose data."""
+    run_dir = Path(run_dir)
+    rgb_rows = _load_jsonl(run_dir / "rgb_frames.jsonl")
+    depth_rows = _load_jsonl(run_dir / "depth_frames.jsonl")
+    frame_rows = _load_jsonl(run_dir / "frames.jsonl")
+    event_key = lambda row: (("seq", int(row["source_seq"]))
+                             if row.get("source_seq") is not None
+                             else ("stamp", int(row["stamp_ns"])))
+    processed = {event_key(row): row for row in frame_rows}
+    processed_by_stamp = {int(row["stamp_ns"]): row for row in frame_rows}
+    detections = defaultdict(list)
+    detections_by_stamp = defaultdict(list)
+    all_detections = []
+    for raw in _load_jsonl(run_dir / "detections.jsonl"):
+        row = {**raw, "stamp_ns": str(raw["stamp_ns"])}
+        detections[event_key(raw)].append(row)
+        detections_by_stamp[int(raw["stamp_ns"])].append(row)
+        all_detections.append(row)
+    frames = []
+    status_counts = defaultdict(int)
+    camera = manifest.get("camera_info") or {}
+    resolution = manifest.get("resolution") or {}
+    K = camera.get("k")
+    image_size = [int(resolution.get("height", camera.get("height", 0)) or 0),
+                  int(resolution.get("width", camera.get("width", 0)) or 0)]
+    for expected, row in enumerate(rgb_rows):
+        if int(row.get("frame_index", -1)) != expected:
+            raise ValueError("rgb frame indexes must be contiguous")
+        stamp = int(row["stamp_ns"])
+        key = event_key(row)
+        frame = processed.get(key) or processed_by_stamp.get(stamp)
+        accepted = detections.get(key) or detections_by_stamp.get(stamp, [])
+        diagnostics = (frame or {}).get("diagnostics") or {}
+        rejected = list(diagnostics.get("rejections") or [])
+        if accepted:
+            status = "pem_passed"
+        elif rejected or any(item.get("rejection_reason") or item.get("input_rejection")
+                             for item in diagnostics.get("pem_candidates", [])):
+            status = "pem_rejected"
+        elif frame is not None:
+            status = "processed_no_detection"
+        else:
+            status = "unprocessed_realtime_drop"
+        status_counts[status] += 1
+        frames.append({"index": expected, "stamp_ns": str(stamp),
+                       "source_seq": row.get("source_seq"), "processed": frame is not None,
+                       "frame_seq": None if frame is None else frame.get("frame_seq"),
+                       "status": status, "K": K, "image_size": image_size,
+                       "detections": accepted, "rejections": rejected,
+                       "pem_candidates": diagnostics.get("pem_candidates", [])})
+    for expected, row in enumerate(depth_rows):
+        if int(row.get("frame_index", -1)) != expected:
+            raise ValueError("depth frame indexes must be contiguous")
+        row["stamp_ns"] = str(row["stamp_ns"])
+    return {"schema_version": 1, "run": run_dir.name, "kind": "live_replay",
+            "completed": bool(manifest.get("completed")), "manifest": manifest,
+            "capture_profile": (manifest.get("recording") or {}).get(
+                "depth_policy", "processed"),
+            "dataset": {"id": run_dir.name, "camera": camera,
+                        "bag_frame_count": len(rgb_rows),
+                        "processed_frame_count": len(frame_rows)},
+            "frames": frames, "depth_frames": depth_rows,
+            "detections": all_detections,
+            "status_counts": dict(status_counts)}
+
+
+def _live_depth_png(run_dir, manifest, index, depth_rows):
+    if index < 0 or index >= len(depth_rows) or int(depth_rows[index]["frame_index"]) != index:
+        raise ValueError("depth frame index out of range")
+    resolution = manifest.get("resolution") or {}
+    width, height = int(resolution.get("width", 0)), int(resolution.get("height", 0))
+    fps = float((manifest.get("recording") or {}).get("fps", 30))
+    source = Path(run_dir) / "depth.mkv"
+    if min(width, height) <= 0 or fps <= 0 or source.is_symlink() or not source.is_file():
+        raise ValueError("invalid live depth metadata or file")
+    result = subprocess.run(
+        ["ffmpeg", "-hide_banner", "-loglevel", "error", "-ss",
+         f"{(index + 0.5) / fps:.9f}", "-i", str(source), "-frames:v", "1",
+         "-f", "rawvideo", "-pix_fmt", "gray16le", "-"],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE, check=True, timeout=10)
+    if len(result.stdout) != width * height * 2:
+        raise ValueError("decoded depth frame has unexpected size")
+    import cv2
+    depth = np.frombuffer(result.stdout, np.uint16).reshape(height, width)
+    colored = cv2.applyColorMap(np.clip(depth * (255.0 / 4000.0), 0, 255).astype(np.uint8),
+                                cv2.COLORMAP_TURBO)
+    colored[depth == 0] = 0
+    ok, encoded = cv2.imencode(".png", colored)
+    if not ok:
+        raise OSError("depth PNG encoding failed")
+    return encoded.tobytes()
+
+
 class ExplorerServer(ThreadingHTTPServer):
     def __init__(self, address, root, no_model=False):
         raw_root = Path(root)
@@ -604,6 +758,14 @@ class ExplorerServer(ThreadingHTTPServer):
         self.report_cache[run] = payload
         return payload
 
+    def live_report(self, run, state):
+        if not state["manifest"].get("completed"):
+            return _live_report(safe_run(self.root, run), state["manifest"])
+        if run not in self.report_cache:
+            self.report_cache[run] = _live_report(
+                safe_run(self.root, run), state["manifest"])
+        return self.report_cache[run]
+
     def frame_source(self, run, state):
         if run not in self.frame_sources:
             from pem_explorer_live.analyzer import BagFrameCache
@@ -714,6 +876,19 @@ class Handler(BaseHTTPRequestHandler):
                 elif state["kind"] == "partial":
                     payload["detections"] = _load_jsonl(run_dir / "detections.jsonl")
                 return self._json(payload)
+            query = parse_qs(parsed.query)
+            if state["kind"] == "live_replay":
+                if action == "report":
+                    return self._json(self.server.live_report(run, state))
+                if action == "rgb":
+                    return self._stream_file(run_dir / "rgb.mp4")
+                if action == "depth":
+                    index = int(query.get("frame", ["-1"])[0])
+                    report = self.server.live_report(run, state)
+                    return self._bytes(_live_depth_png(
+                        run_dir, state["manifest"], index, report["depth_frames"]),
+                        "image/png")
+                raise ValueError("unknown live replay action")
             if state["kind"] != "explorer_v2":
                 return self._error(HTTPStatus.CONFLICT,
                                    state.get("reason", "analysis unavailable"))
@@ -724,7 +899,6 @@ class Handler(BaseHTTPRequestHandler):
                 if not preview:
                     raise FileNotFoundError("validated preview.mp4 is unavailable")
                 return self._file(run_dir / "preview.mp4")
-            query = parse_qs(parsed.query)
             if action == "frame":
                 stamp = int(query.get("stamp_ns", ["-1"])[0])
                 valid = {int(row["stamp_ns"]) for row in self.server.report(run, state)["frames"]}
@@ -812,7 +986,7 @@ class Handler(BaseHTTPRequestHandler):
         assets = {
             "/": "index.html", "/index.html": "index.html",
             "/explorer.html": "explorer.html", "/app.js": "app.js",
-            "/app.css": "app.css", "/worker.js": "worker.js",
+            "/app.css": "app.css", "/live.css": "live.css", "/worker.js": "worker.js",
             "/landing.js": "landing.js", "/landing.css": "landing.css",
         }
         if path in assets:
@@ -840,13 +1014,52 @@ class Handler(BaseHTTPRequestHandler):
         self.send_header("Content-Length", str(len(blob)))
         self.end_headers(); self.wfile.write(blob)
 
+    def _stream_file(self, path):
+        path = Path(path)
+        if path.is_symlink() or not path.is_file():
+            raise FileNotFoundError(path)
+        size = path.stat().st_size
+        start, end, status = 0, max(0, size - 1), HTTPStatus.OK
+        requested = self.headers.get("Range")
+        if requested:
+            if not requested.startswith("bytes=") or "," in requested:
+                raise ValueError("only one byte range is supported")
+            first, last = requested[6:].split("-", 1)
+            if first:
+                start = int(first)
+                end = min(int(last), size - 1) if last else size - 1
+            else:
+                length = int(last)
+                start = max(0, size - length)
+            if start < 0 or start > end or start >= size:
+                raise ValueError("byte range is outside the file")
+            status = HTTPStatus.PARTIAL_CONTENT
+        length = 0 if size == 0 else end - start + 1
+        self.send_response(status)
+        self.send_header("Content-Type", "video/mp4")
+        self.send_header("Accept-Ranges", "bytes")
+        self.send_header("Content-Length", str(length))
+        if status == HTTPStatus.PARTIAL_CONTENT:
+            self.send_header("Content-Range", f"bytes {start}-{end}/{size}")
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.end_headers()
+        with path.open("rb") as stream:
+            stream.seek(start)
+            remaining = length
+            while remaining:
+                chunk = stream.read(min(1 << 20, remaining))
+                if not chunk:
+                    break
+                self.wfile.write(chunk)
+                remaining -= len(chunk)
+
     def log_message(self, fmt, *args):
         sys.stderr.write("[pem-explorer] " + fmt % args + "\n")
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--root", default="output")
+    parser.add_argument("--root", default=REPO / "output")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--no-model", action="store_true")

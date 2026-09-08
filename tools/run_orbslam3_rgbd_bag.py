@@ -24,8 +24,8 @@ REPO = Path(__file__).resolve().parents[1]
 DEFAULT_BAG = REPO / "data" / "longcircle2_sam"
 DEFAULT_SETTINGS = REPO / "configs" / "orbslam3_longcircle2_sam_rgbd.yaml"
 DEFAULT_OUTPUT = REPO / "output" / "longcircle2_sam_self_slam"
-DEFAULT_SETUP = Path("/home/etri/orbslam3_ws/install/setup.bash")
-DEFAULT_VOCABULARY = Path("/home/etri/orbslam3_ws/src/ORB_SLAM3/Vocabulary/ORBvoc.txt")
+DEFAULT_SETUP = REPO.parent / "orbslam_ws" / "install" / "setup.bash"
+DEFAULT_VOCABULARY = REPO.parent / "orbslam_ws" / "src" / "ORB_SLAM3" / "Vocabulary" / "ORBvoc.txt"
 OPTICAL_FRAME = "camera_color_optical_frame"
 
 

@@ -27,8 +27,8 @@ anchor:
   register_translation_mm: 50
   release_window: 5
   release_count: 4
-  release_rotation_deg: 20
-  release_translation_mm: 50
+  release_rotation_deg: 180    # SAM-6D 회전 flip은 무시(정적 객체)
+  release_translation_mm: 150  # 4/5회 지속 위치 이동만 anchor 재등록
   ism_overlap_min: 0.5
   ism_depth_tolerance_mm: 100
   fov_fraction_min: 0.2
@@ -67,4 +67,5 @@ bag:
 
 output:
   dir: output/longcircle2_split
+  overlay_topic: /sam6d/overlay  # 구독자가 있을 때만 모든 입력 프레임에 MAP pose 축 투영
   diagnostics: true

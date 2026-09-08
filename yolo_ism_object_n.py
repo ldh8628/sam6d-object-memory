@@ -46,7 +46,7 @@ _OVERRIDABLE = (
     # Phase 1B HSV gate (per-object override allowed; deploy keeps them uniform)
     "hsv_gate_enabled", "hsv_gate_shadow_mode", "hsv_gate_threshold",
     "hsv_hue_shift_deg", "hsv_sat_gain", "hsv_hist_bins", "hsv_lowsat_exception",
-    "hsv_cache",
+    "hsv_cache", "rg_gate_threshold",
     # Phase 1C class color correction (OpenCV hue units, baked into the class HSV cache)
     "hsv_hue_correction_ocv",
     # Phase 3 appearance-v2 + cross-object NMS (per-object override allowed; deploy uniform)
@@ -155,7 +155,7 @@ def _hsv_on(o):
 
 
 def _apply_hsv_gate(o, res, bgr):
-    """HSV color gate on an ACCEPTED candidate. Computes+logs the HSV score always (when HSV
+    """HSV + optional normalized-rg gate on an ACCEPTED candidate. Computes+logs HSV always (when HSV
     is on), and — ONLY when `hsv_gate_enabled` is true (Phase 1C active) — flips an HSV
     failure to reject. Shadow mode (`hsv_gate_shadow_mode` true, `hsv_gate_enabled` false)
     records the fields but NEVER changes the decision (Phase 1B). Safe no-op when HSV is off,
@@ -174,10 +174,21 @@ def _apply_hsv_gate(o, res, bgr):
     res["hsv_authority_version"] = ism_hsv.HSV_AUTHORITY_VERSION
     res["hsv_template_cache_version"] = o.get("_hsv_meta", {}).get("cache_version", "")
     res["hsv_gate_enabled"] = int(bool(o.get("hsv_gate_enabled", False)))
-    # Phase 1C ACTIVE: an HSV failure removes the (color-mismatched) candidate.
     if bool(o.get("hsv_gate_enabled", False)) and not hp:
         res["accepted"] = False
         res["decision"] = "no-object(below-hsv)"
+        return
+    rg_thr = float(o.get("rg_gate_threshold", 0.0))
+    rg_pass = True
+    if rg_thr > 0:
+        rg_score = ism_hsv.shadow_rg_score(
+            bgr, res["box"], res.get("mask"), o.get("_rg_proto"))
+        rg_pass = bool(rg_score >= rg_thr)
+        res.update({"rg_score": round(float(rg_score), 5), "rg_threshold": rg_thr,
+                    "rg_pass": int(rg_pass)})
+    if bool(o.get("hsv_gate_enabled", False)) and not rg_pass:
+        res["accepted"] = False
+        res["decision"] = "no-object(below-rg)"
 
 
 def _apply_tf_gate(o, res):
@@ -310,7 +321,7 @@ def prepare_objects(objs, model, device, rebuild):
         # ---- Phase 1B: attach HSV reference proto if shadow/active requested ----
         # Loaded ONCE (never per-frame). fail-open: a missing/stale/corrupt cache leaves
         # proto=None so the shadow score is 1.0 and NEVER alters the baseline decision.
-        o["_hsv_proto"], o["_hsv_meta"] = None, {"status": "off"}
+        o["_hsv_proto"], o["_rg_proto"], o["_hsv_meta"] = None, None, {"status": "off"}
         if _hsv_on(o):
             proto, meta = ism_hsv.load_cache(o["hsv_cache"], tdir)
             want_hc = int(o.get("hsv_hue_correction_ocv", 0))
@@ -319,6 +330,7 @@ def prepare_objects(objs, model, device, rebuild):
                 meta["status"] = f"hue_correction-mismatch(cache={meta.get('hue_correction_ocv',0)},cfg={want_hc})"
                 proto = None
             o["_hsv_proto"], o["_hsv_meta"] = proto, meta
+            o["_rg_proto"] = meta.get("rg_proto")
             mode = "ACTIVE" if o.get("hsv_gate_enabled") else "shadow"
             if proto is None:
                 print(f"[hsv] {o['name']:20s} cache {meta['status']} -> fail-open "
@@ -327,6 +339,8 @@ def prepare_objects(objs, model, device, rebuild):
                 hc = int(meta.get("hue_correction_ocv", 0))
                 print(f"[hsv] {o['name']:20s} {mode} proto={tuple(proto.shape)} "
                       f"thr={o.get('hsv_gate_threshold')} hue_corr={hc}ocv ver={meta['cache_version'][:12]}")
+            if float(o.get("rg_gate_threshold", 0.0)) > 0 and o.get("_rg_proto") is None:
+                print(f"[rg]  {o['name']:20s} cache missing -> fail-open; rebuild HSV cache")
         ready.append(o)
         rk = "" if rank_blocks == blocks else f" rank={rank_blocks}"
         print(f"[templates] {o['name']:20s} cls={tuple(tcls.shape)} "
@@ -616,6 +630,13 @@ def assign_frame_relative(objs, prompt_boxes, bgr, rgb, norm_full,
                 if not r["accepted"]:
                     r["decision"] = "no-object(below-hsv)"
                 continue
+        rg_thr = float(o.get("rg_gate_threshold", 0.0))
+        rg_score = (ism_hsv.shadow_rg_score(bgr, u["box"], mask, o.get("_rg_proto"))
+                    if rg_thr > 0 else 1.0)
+        if bool(o.get("hsv_gate_enabled", False)) and rg_score < rg_thr:
+            if not r["accepted"]:
+                r["decision"] = "no-object(below-rg)"
+            continue
         if top in best and m_appe <= best[top]:
             continue                                  # one slot per object, best appe wins
         best[top] = m_appe
@@ -626,6 +647,9 @@ def assign_frame_relative(objs, prompt_boxes, bgr, rgb, norm_full,
         if hsv:
             r["hsv_score"] = round(hsv[top], 5)
             r["hsv_pass"] = 1
+        if rg_thr > 0:
+            r.update({"rg_score": round(float(rg_score), 5), "rg_threshold": rg_thr,
+                      "rg_pass": 1})
     return res
 
 

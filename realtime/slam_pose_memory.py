@@ -14,6 +14,33 @@ from pathlib import Path
 import numpy as np
 
 
+# External pose convention: +X side, +Y rear, +Z up.  SAM-6D itself stays in
+# each CAD's native frame; only published poses/boxes cross this boundary.
+_CAD_FROM_CANONICAL = {
+    "milk": np.diag([-1.0, -1.0, 1.0]),
+    "choco_hazelnut_high": np.asarray([
+        [1.0, 0.0, 0.0],
+        [0.0, 0.0, -1.0],
+        [0.0, 1.0, 0.0],
+    ]),
+}
+
+
+def canonical_object_rotation(object_name, rotation):
+    """Convert a native-CAD object rotation to the shared external frame."""
+    return np.asarray(rotation, dtype=float) @ _CAD_FROM_CANONICAL.get(
+        object_name, np.eye(3))
+
+
+def canonical_object_points(object_name, points):
+    """Express native-CAD points in the shared external object frame."""
+    return np.asarray(points) @ _CAD_FROM_CANONICAL.get(object_name, np.eye(3))
+
+
+def tracking_state_ok(value):
+    return str(value).strip().lower() in {"tracking", "tracking_ok"}
+
+
 def valid_se3(value, atol=1e-3):
     value = np.asarray(value, dtype=float)
     if value.shape != (4, 4) or not np.isfinite(value).all():
@@ -53,6 +80,83 @@ def pose_distance(a, b, symmetry_axis=None, symmetry_step_deg=10):
                                                        symmetry_step_deg))
     cosine = np.clip((best_trace - 1.0) * 0.5, -1.0, 1.0)
     return math.degrees(math.acos(cosine)), float(np.linalg.norm(a[:3, 3] - b[:3, 3]))
+
+
+def interpolate_se3(stamp_ns, left_stamp_ns, left, right_stamp_ns, right,
+                    max_span_s=None):
+    """Interpolate a map-camera pose at ``stamp_ns`` using NumPy only."""
+    left, right = np.asarray(left, float), np.asarray(right, float)
+    stamp_ns, left_stamp_ns, right_stamp_ns = map(
+        int, (stamp_ns, left_stamp_ns, right_stamp_ns))
+    if (not valid_se3(left) or not valid_se3(right)
+            or not left_stamp_ns <= stamp_ns <= right_stamp_ns
+            or left_stamp_ns >= right_stamp_ns):
+        return None
+    span_ns = right_stamp_ns - left_stamp_ns
+    if max_span_s is not None and span_ns > float(max_span_s) * 1e9:
+        return None
+    weight = (stamp_ns - left_stamp_ns) / span_ns
+    if weight == 0.0:
+        return left.copy()
+    if weight == 1.0:
+        return right.copy()
+
+    relative = left[:3, :3].T @ right[:3, :3]
+    angle = math.acos(np.clip((np.trace(relative) - 1.0) * 0.5, -1.0, 1.0))
+    if angle < 1e-12:
+        rotation = left[:3, :3].copy()
+    else:
+        if math.pi - angle < 1e-6:
+            values, vectors = np.linalg.eig(relative)
+            axis = np.real(vectors[:, np.argmin(np.abs(values - 1.0))])
+            axis /= np.linalg.norm(axis)
+        else:
+            axis = np.asarray([relative[2, 1] - relative[1, 2],
+                               relative[0, 2] - relative[2, 0],
+                               relative[1, 0] - relative[0, 1]]) / (2.0 * math.sin(angle))
+        x, y, z = axis
+        skew = np.asarray([[0.0, -z, y], [z, 0.0, -x], [-y, x, 0.0]])
+        partial = angle * weight
+        rotation = left[:3, :3] @ (
+            np.eye(3) + math.sin(partial) * skew
+            + (1.0 - math.cos(partial)) * (skew @ skew))
+
+    result = np.eye(4)
+    result[:3, :3] = rotation
+    result[:3, 3] = ((1.0 - weight) * left[:3, 3]
+                     + weight * right[:3, 3])
+    return result
+
+
+def repair_isolated_pose(left_stamp_ns, left, stamp_ns, pose,
+                         right_stamp_ns, right, translation_m=0.25,
+                         rotation_deg=15.0, max_span_s=0.5,
+                         max_endpoint_speed_m_s=2.0,
+                         max_endpoint_speed_deg_s=180.0):
+    """Replace only a one-sample spike confirmed by two continuous neighbours."""
+    pose = np.asarray(pose, float)
+    expected = interpolate_se3(
+        stamp_ns, left_stamp_ns, left, right_stamp_ns, right, max_span_s)
+    if expected is None or not valid_se3(pose):
+        return pose.copy(), False
+    span_s = (int(right_stamp_ns) - int(left_stamp_ns)) / 1e9
+    endpoint_rotation, endpoint_translation = pose_distance(left, right)
+    if (endpoint_translation / span_s > float(max_endpoint_speed_m_s)
+            or endpoint_rotation / span_s > float(max_endpoint_speed_deg_s)):
+        return pose.copy(), False
+    left_s = (int(stamp_ns) - int(left_stamp_ns)) / 1e9
+    right_s = (int(right_stamp_ns) - int(stamp_ns)) / 1e9
+    left_rotation, left_translation = pose_distance(left, pose)
+    right_rotation, right_translation = pose_distance(pose, right)
+    if (left_translation / left_s <= float(max_endpoint_speed_m_s)
+            and right_translation / right_s <= float(max_endpoint_speed_m_s)
+            and left_rotation / left_s <= float(max_endpoint_speed_deg_s)
+            and right_rotation / right_s <= float(max_endpoint_speed_deg_s)):
+        return pose.copy(), False
+    residual_rotation, residual_translation = pose_distance(pose, expected)
+    repaired = (residual_translation > float(translation_m)
+                or residual_rotation > float(rotation_deg))
+    return (expected if repaired else pose.copy()), repaired
 
 
 def dominant_pose_cluster(poses, rotation_deg, translation_m, symmetry_axis=None,
@@ -96,8 +200,11 @@ class ObjectAnchorManager:
         "register_translation_mm": 50.0,
         "release_window": 5,
         "release_count": 4,
-        "release_rotation_deg": 20.0,
-        "release_translation_mm": 50.0,
+        # Static map objects do not move because SAM-6D suddenly flips 45/100/180°.
+        # Keep the trusted orientation; only a sustained physical displacement
+        # releases the anchor. 150 mm stays above this rig's 35–45 mm p90 residual.
+        "release_rotation_deg": 180.0,
+        "release_translation_mm": 150.0,
         "timestamp_tolerance_ms": 100.0,
         "anchor_output_mode": "ism_associated",
         "ism_overlap_min": 0.5,
@@ -287,6 +394,40 @@ def pose_matrix(rotation, translation):
     value[:3, :3] = np.asarray(rotation, dtype=float)
     value[:3, 3] = np.asarray(translation, dtype=float)
     return value
+
+
+def project_pose_axes(camera_to_object, K, axis_length_m=0.08):
+    """Return image pixels for an object's origin and x/y/z axis endpoints."""
+    pose, camera = np.asarray(camera_to_object, float), np.asarray(K, float)
+    if (not valid_se3(pose) or camera.shape != (3, 3)
+            or not np.isfinite(camera).all() or axis_length_m <= 0):
+        return None
+    points = np.vstack((np.zeros(3), np.eye(3) * float(axis_length_m)))
+    points = points @ pose[:3, :3].T + pose[:3, 3]
+    if not np.isfinite(points).all() or np.any(points[:, 2] <= 1e-6):
+        return None
+    pixels = np.column_stack((camera[0, 0] * points[:, 0] / points[:, 2] + camera[0, 2],
+                              camera[1, 1] * points[:, 1] / points[:, 2] + camera[1, 2]))
+    return pixels if np.isfinite(pixels).all() else None
+
+
+def project_pose_box(camera_to_object, K, extent_m):
+    """Return the eight projected corners of a CAD axis-aligned extent."""
+    pose, camera = np.asarray(camera_to_object, float), np.asarray(K, float)
+    extent = np.asarray(extent_m, float)
+    if (not valid_se3(pose) or camera.shape != (3, 3) or extent.shape != (2, 3)
+            or not np.isfinite(camera).all() or not np.isfinite(extent).all()
+            or np.any(extent[1] <= extent[0])):
+        return None
+    lo, hi = extent
+    points = np.asarray([[x, y, z] for x in (lo[0], hi[0])
+                         for y in (lo[1], hi[1]) for z in (lo[2], hi[2])])
+    points = points @ pose[:3, :3].T + pose[:3, 3]
+    if np.any(points[:, 2] <= 1e-6):
+        return None
+    pixels = np.column_stack((camera[0, 0] * points[:, 0] / points[:, 2] + camera[0, 2],
+                              camera[1, 1] * points[:, 1] / points[:, 2] + camera[1, 2]))
+    return pixels if np.isfinite(pixels).all() else None
 
 
 class StaticSlamPoseMemory:

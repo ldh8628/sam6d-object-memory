@@ -129,7 +129,7 @@ def _resolve_repo_path(value):
     return (path if path.is_absolute() else REPO / path).resolve()
 
 
-def load_capture_config(config_path):
+def load_capture_config(config_path, bag_override="", output_override=""):
     raw_config_path = Path(config_path)
     if raw_config_path.is_symlink():
         raise CaptureError("capture config must be a real file under the repository")
@@ -150,15 +150,19 @@ def load_capture_config(config_path):
     if explorer_diag.get("capture_profile") != CAPTURE_PROFILE:
         raise CaptureError(
             f"runtime.pem_diagnostic.explorer_v2.capture_profile must be {CAPTURE_PROFILE}")
-    output = _resolve_repo_path(cfg.get("output", {}).get("dir", ""))
-    output_root = (REPO / "output").resolve()
-    if output == output_root or output_root not in output.parents:
-        raise CaptureError(f"full capture output must remain under {output_root}")
-    bag = _resolve_repo_path(explorer.get("source_bag") or cfg.get("bag", {}).get("path", ""))
-    data_root = (REPO / "data").resolve()
-    if bag != data_root and data_root not in bag.parents:
-        raise CaptureError("full capture source bag must remain under repository data/")
-    declared_bag = cfg.get("bag", {}).get("path")
+    output = (Path(output_override).expanduser().resolve() if output_override else
+              _resolve_repo_path(cfg.get("output", {}).get("dir", "")))
+    bag = (Path(bag_override).expanduser().resolve() if bag_override else
+           _resolve_repo_path(explorer.get("source_bag") or cfg.get("bag", {}).get("path", "")))
+    if not output_override:
+        output_root = (REPO / "output").resolve()
+        if output == output_root or output_root not in output.parents:
+            raise CaptureError(f"full capture output must remain under {output_root}")
+    if not bag_override:
+        data_root = (REPO / "data").resolve()
+        if bag != data_root and data_root not in bag.parents:
+            raise CaptureError("full capture source bag must remain under repository data/")
+    declared_bag = None if bag_override else cfg.get("bag", {}).get("path")
     if declared_bag and _resolve_repo_path(declared_bag) != bag:
         raise CaptureError("source_bag and bag.path must identify the same bag")
     ism_config = (cfg.get("ism") or {}).get("config")
@@ -380,11 +384,12 @@ def _capture_provenance(config_path, validation, core, references):
     return result
 
 
-def capture(config_path):
+def capture(config_path, bag_override="", output_override=""):
     from sam6d_core import Sam6DCore
     import verify_config as VC
 
-    cfg, explorer_cfg, output, bag, config_path = load_capture_config(config_path)
+    cfg, explorer_cfg, output, bag, config_path = load_capture_config(
+        config_path, bag_override, output_override)
     if output.exists() or output.is_symlink():
         raise FileExistsError(f"refusing to replace existing full capture: {output}")
     validation = validate_rgbd_dataset(bag, require_manifest=True)
@@ -497,9 +502,13 @@ def capture(config_path):
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", required=True)
+    parser.add_argument("--bag", default="", help="direct input RGB-D bag directory")
+    parser.add_argument("--output", default="", help="direct SAM-6D output directory")
     args = parser.parse_args()
+    if bool(args.bag) != bool(args.output):
+        parser.error("--bag and --output must be supplied together")
     try:
-        summary = capture(args.config)
+        summary = capture(args.config, args.bag, args.output)
     except (CaptureError, DatasetValidationError, FileExistsError) as exc:
         parser.error(str(exc))
     print(json.dumps(summary, ensure_ascii=False, indent=2))

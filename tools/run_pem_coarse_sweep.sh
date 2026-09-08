@@ -9,7 +9,7 @@
 set -o pipefail
 # conda activate hooks reference unset env vars; keep -u off intentionally.
 
-REPO="/home/etri/sam6d_realtime/sam6d_realtime"
+REPO="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
 OUT_ROOT="${REPO}/output/pem_coarse_sweep_v1"
 LOG_ROOT="${OUT_ROOT}/logs"
 BAG="data/longcircle2_sam"
@@ -34,7 +34,11 @@ if not os.path.exists(p):
                    "runs": []}, f, indent=2)
 PY
 
-source /home/etri/miniconda3/etc/profile.d/conda.sh
+if command -v conda >/dev/null 2>&1; then
+    eval "$(conda shell.bash hook)"
+else
+    source "${HOME}/miniconda3/etc/profile.d/conda.sh"
+fi
 conda activate sam6d
 cd "${REPO}"
 

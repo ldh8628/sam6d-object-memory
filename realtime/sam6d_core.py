@@ -199,7 +199,7 @@ class Sam6DCore:
 
     # ------------------------------------------------------------------ 처리
     def process(self, bgr, depth, K, want_mask=False, diagnostic_references=None,
-                slam_context=None):
+                slam_context=None, lossless_mask=False):
         """한 프레임 → (검출 목록, 단계별 ms, 마스크 라벨 이미지 or None)."""
         self.last_frame_diag = {"pem_candidates": [], "pem_error": None,
                                 "rejections": []}
@@ -424,12 +424,17 @@ class Sam6DCore:
             if want_mask:
                 # Explorer uses one uint16 bitset PNG per frame so overlapping object
                 # masks remain lossless. Legacy diagnostics keep their uint8 labels.
-                if self.pem_explorer_v2 and len(hits) > 16:
-                    raise ValueError("Explorer uint16 mask supports at most 16 objects")
-                lab = np.zeros((h, w), np.uint16 if self.pem_explorer_v2 else np.uint8)
+                bitset = self.pem_explorer_v2 or lossless_mask
+                if bitset and len(hits) > 16:
+                    raise ValueError("uint16 mask supports at most 16 objects")
+                lab = np.zeros((h, w), np.uint16 if bitset else np.uint8)
                 for i, (nm, r) in enumerate(hits):
-                    if self.pem_explorer_v2:
+                    if bitset:
                         lab[r["mask"].astype(bool)] |= np.uint16(1 << i)
+                        for item in self.last_frame_diag["pem_candidates"]:
+                            if item["object"] == nm:
+                                item["mask_bit"] = 1 << i
+                                break
                     else:
                         lab[r["mask"].astype(bool)] = i + 1
         if self.anchor_manager is not None:

@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
-"""shm_channel.py — 두 프로세스가 공유메모리로 '최신 것 하나'만 주고받는 통로.
+"""shm_channel.py — 두 프로세스가 공유메모리로 프레임과 추론 결과를 주고받는 통로.
 
 락을 쓰지 않는다. 쓰는 쪽이 순번(seq)을 **홀수로 올리고 → 쓰고 → 짝수로 올린다**.
 읽는 쪽은 순번을 앞뒤로 두 번 읽어 같고 짝수일 때만 그 스냅샷을 신뢰한다(seqlock).
-읽는 쪽이 느려도 쓰는 쪽은 절대 막히지 않고, 밀린 프레임은 그냥 덮어써진다 —
-실시간에서 원하는 동작 그대로다.
+입력 프레임은 밀리면 최신 것으로 덮어쓰고, 완료된 추론 결과는 receiver 확인 전에는
+덮어쓰지 않는다. 즉 추론 중 입력은 버리되 이미 계산한 객체 포즈는 버리지 않는다.
 """
 from __future__ import annotations
 
 import json
-from multiprocessing import shared_memory
+from multiprocessing import resource_tracker, shared_memory
 
 import numpy as np
 
 HDR = 384          # 헤더 바이트 (frame metadata + pose + K + UTF-8 map_id)
 MAXBUF = 12 << 20   # 프레임 한 장 최대 12 MB (1280x720 RGB+depth 여유)
+_OWNED_NAMES = set()
 
 
 def _hdr(buf):
@@ -29,13 +30,16 @@ class FrameWriter:
         try:
             self.shm = shared_memory.SharedMemory(name=name, create=True, size=size)
         except FileExistsError:
-            shared_memory.SharedMemory(name=name).unlink()
+            stale = shared_memory.SharedMemory(name=name)
+            stale.close()
+            stale.unlink()
             self.shm = shared_memory.SharedMemory(name=name, create=True, size=size)
+        _OWNED_NAMES.add(self.shm._name)
         self.i, self.f, self.K, self.map_id = _hdr(self.shm.buf)
         self.i[0] = 0
 
     def write(self, rgb: np.ndarray, depth: np.ndarray, K, stamp_ns: int, recv_wall: float,
-              slam_context=None, depth_stamp_ns=None):
+              slam_context=None, depth_stamp_ns=None, source_seq=None):
         h, w = rgb.shape[:2]
         nr, nd = rgb.nbytes, depth.nbytes
         if HDR + nr + nd > self.shm.size:
@@ -43,6 +47,7 @@ class FrameWriter:
         self.i[0] += 1                                   # 홀수 = 쓰는 중
         self.i[1], self.i[2], self.i[3] = stamp_ns, h, w
         self.i[6] = stamp_ns if depth_stamp_ns is None else int(depth_stamp_ns)
+        self.i[7] = -1 if source_seq is None else int(source_seq)
         self.f[0] = recv_wall
         slam_context = slam_context or {}
         pose = slam_context.get("T_map_camera")
@@ -65,15 +70,23 @@ class FrameWriter:
             self.shm.unlink()
         except FileNotFoundError:
             pass
+        _OWNED_NAMES.discard(self.shm._name)
 
 
 class FrameReader:
     def __init__(self, name="sam6d_frame"):
         self.shm = shared_memory.SharedMemory(name=name)
+        # SharedMemory registers attachments as owners too, so a reader process's
+        # resource tracker otherwise unlinks the writer's segment on reader exit.
+        # Do not unregister when writer+reader intentionally share one process: the
+        # tracker registry is a set, not a reference count, and the writer owns it.
+        if self.shm._name not in _OWNED_NAMES:
+            resource_tracker.unregister(self.shm._name, "shared_memory")
         self.i, self.f, self.K, self.map_id = _hdr(self.shm.buf)
         self.last = -1
         self.last_slam_context = None
         self.last_depth_stamp_ns = None
+        self.last_source_seq = None
 
     def read_new(self):
         """새 프레임이 있으면 (rgb, depth, K, stamp_ns, recv_wall), 없으면 None."""
@@ -82,6 +95,7 @@ class FrameReader:
             return None
         stamp, h, w = int(self.i[1]), int(self.i[2]), int(self.i[3])
         depth_stamp = int(self.i[6])
+        source_seq = int(self.i[7])
         recv, K = float(self.f[0]), np.array(self.K).reshape(3, 3)
         pose_stamp, tracking_ok = int(self.i[4]), bool(self.i[5])
         pose = np.array(self.f[1:17]).reshape(4, 4)
@@ -93,6 +107,7 @@ class FrameReader:
             return None
         self.last = s0
         self.last_depth_stamp_ns = depth_stamp
+        self.last_source_seq = source_seq
         self.last_slam_context = {
             "T_map_camera": pose,
             "pose_stamp_ns": pose_stamp,
@@ -111,13 +126,18 @@ class JsonWriter:
         try:
             self.shm = shared_memory.SharedMemory(name=name, create=True, size=size)
         except FileExistsError:
-            shared_memory.SharedMemory(name=name).unlink()
+            stale = shared_memory.SharedMemory(name=name)
+            stale.close()
+            stale.unlink()
             self.shm = shared_memory.SharedMemory(name=name, create=True, size=size)
+        _OWNED_NAMES.add(self.shm._name)
         self.i = np.ndarray((2,), np.int64, buffer=self.shm.buf, offset=0)
         self.i[0] = 0
 
     def write(self, obj):
         b = json.dumps(obj, ensure_ascii=False).encode()
+        if 16 + len(b) > self.shm.size:
+            raise ValueError("결과 공유메모리가 너무 작다")
         self.i[0] += 1
         self.i[1] = len(b)
         self.shm.buf[16:16 + len(b)] = b
@@ -129,11 +149,14 @@ class JsonWriter:
             self.shm.unlink()
         except FileNotFoundError:
             pass
+        _OWNED_NAMES.discard(self.shm._name)
 
 
 class JsonReader:
     def __init__(self, name="sam6d_result"):
         self.shm = shared_memory.SharedMemory(name=name)
+        if self.shm._name not in _OWNED_NAMES:
+            resource_tracker.unregister(self.shm._name, "shared_memory")
         self.i = np.ndarray((2,), np.int64, buffer=self.shm.buf, offset=0)
         self.last = -1
 
@@ -145,11 +168,12 @@ class JsonReader:
         b = bytes(self.shm.buf[16:16 + n])
         if int(self.i[0]) != s0:
             return None
-        self.last = s0
         try:
-            return json.loads(b.decode())
+            result = json.loads(b.decode())
         except Exception:
             return None
+        self.last = s0
+        return result
 
     def close(self):
         self.shm.close()

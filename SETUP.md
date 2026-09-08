@@ -115,11 +115,17 @@ ros2 launch realtime/launch/sam6d_realtime.launch.py config:=realtime/run_bag_ex
 **실제 카메라 (RealSense D455f)** — 터미널 2개
 ```bash
 # A: 드라이버
-ros2 launch realsense2_camera rs_launch.py align_depth.enable:=true enable_sync:=true \
-     rgb_camera.color_profile:=640x480x30 depth_module.depth_profile:=640x480x30
+./run/realsense.sh
 # B: SAM-6D
-ros2 launch realtime/launch/sam6d_split.launch.py config:=realtime/run_live_split.yaml
+./run/sam6d.sh
+# ./run/sam6d.sh --view --record
+# ./run/sam6d.sh --record-full-depth
 ```
+
+`run/realsense.sh`가 `realsense` conda 환경(ROS 2 Jazzy)을 활성화하고
+`ROS_DOMAIN_ID=72`, RGBD 결합 발행·depth 정렬·동기화·640x480x30 프로파일을 적용한다.
+기록은 `output/live_YYYYMMDD_HHMMSS/`에 저장되며 `python tools/serve_pem_explorer.py`
+실행 후 localhost Explorer에서 RGB/pose 타임라인과 선택 Depth를 다시 볼 수 있다.
 
 `bag.path` 는 **번들 루트(`sam6d_realtime/`) 기준 상대경로**로 해석된다. 현재 기본값은
 재부팅 후에도 독립적으로 사용할 수 있는 로컬 사본 `data/longcircle2` 이다.

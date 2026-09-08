@@ -1,5 +1,7 @@
 import json
+import threading
 from collections import OrderedDict
+from http.client import HTTPConnection
 from pathlib import Path
 
 import numpy as np
@@ -10,8 +12,92 @@ from realtime.pem_explorer_record import ExplorerRecorder
 from tools.pem_explorer_live.analyzer import _strided_texture_features
 from tools import serve_pem_explorer as server_module
 from tools.serve_pem_explorer import (
-    ExplorerServer, _candidate_correct, _legacy_shadow, classify_run, discover_runs,
+    ExplorerServer, _candidate_correct, _legacy_shadow, _live_depth_png, _live_report,
+    classify_run, discover_runs,
 )
+
+
+def _write_live_run(run, completed=False):
+    run.mkdir()
+    manifest = {
+        "format": "live_replay", "schema": "sam6d-live-replay",
+        "schema_version": 1, "completed": completed,
+        "resolution": {"width": 2, "height": 2},
+        "camera_info": {"frame_id": "camera_color_optical_frame", "k": [1] * 9},
+        "recording": {"fps": 30, "depth_policy": "processed"},
+    }
+    (run / "live_manifest.json").write_text(json.dumps(manifest))
+    rgb = [{"frame_index": i, "stamp_ns": stamp, "source_seq": source}
+           for i, (stamp, source) in enumerate(((100, 0), (200, 2), (300, 3)))]
+    (run / "rgb_frames.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in rgb))
+    (run / "depth_frames.jsonl").write_text(
+        json.dumps({"frame_index": 0, "stamp_ns": 100}) + "\n")
+    frames = [
+        {"stamp_ns": 100, "source_seq": 0, "frame_seq": 0, "diagnostics": {}},
+        {"stamp_ns": 200, "source_seq": 2, "frame_seq": 1, "diagnostics": {"rejections": [{
+            "object": "Bear", "rejection_reason": "mask_filter_empty",
+        }]}},
+    ]
+    (run / "frames.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in frames))
+    detections = [
+        {"stamp_ns": 100, "source_seq": 0, "object": "Bear", "score": 0.8,
+         "R": np.eye(3).tolist(), "t_mm": [0, 0, 500]},
+        {"stamp_ns": 150, "source_seq": 1, "object": "Dinosaur", "score": 0.7,
+         "R": np.eye(3).tolist(), "t_mm": [0, 0, 600]},
+    ]
+    (run / "detections.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in detections))
+    (run / "rgb.mp4").write_bytes(b"0123456789")
+    (run / "depth.mkv").write_bytes(b"depth")
+    return manifest
+
+
+def test_live_replay_joins_statuses_and_preserves_incomplete_state(tmp_path):
+    run = tmp_path / "live_20260827_120000"
+    manifest = _write_live_run(run)
+    state = classify_run(run)
+    assert state["kind"] == "live_replay"
+    assert state["reason"] == "recording is incomplete"
+    report = _live_report(run, manifest)
+    assert report["completed"] is False
+    assert [frame["status"] for frame in report["frames"]] == [
+        "pem_passed", "pem_rejected", "unprocessed_realtime_drop"]
+    assert report["frames"][0]["stamp_ns"] == "100"
+    assert report["depth_frames"][0]["stamp_ns"] == "100"
+    assert [row["object"] for row in report["detections"]] == ["Bear", "Dinosaur"]
+
+
+def test_corrupt_completed_live_run_is_exposed_as_incomplete(tmp_path):
+    run = tmp_path / "live"; _write_live_run(run, completed=True)
+    state = classify_run(run)
+    assert state["kind"] == "live_replay"
+    assert state["manifest"]["completed"] is False
+    assert "invalid completed recording" in state["reason"]
+
+
+def test_live_rgb_endpoint_supports_http_byte_ranges(tmp_path):
+    root = tmp_path / "output"; root.mkdir()
+    _write_live_run(root / "live")
+    httpd = ExplorerServer(("127.0.0.1", 0), root, no_model=True)
+    worker = threading.Thread(target=httpd.serve_forever, daemon=True); worker.start()
+    try:
+        client = HTTPConnection("127.0.0.1", httpd.server_port)
+        client.request("GET", "/api/run/live/rgb", headers={"Range": "bytes=2-5"})
+        response = client.getresponse()
+        assert response.status == 206
+        assert response.getheader("Content-Range") == "bytes 2-5/10"
+        assert response.read() == b"2345"
+        client.close()
+    finally:
+        httpd.shutdown(); worker.join(); httpd.server_close()
+
+
+def test_live_depth_rejects_unrecorded_frame_before_decoding(tmp_path):
+    run = tmp_path / "live"; manifest = _write_live_run(run)
+    with pytest.raises(ValueError, match="out of range"):
+        _live_depth_png(run, manifest, 1, [{"frame_index": 0, "stamp_ns": "100"}])
 
 
 def test_report_joins_bag_frames_and_marks_realtime_drop(monkeypatch, tmp_path):
@@ -171,6 +257,11 @@ def test_landing_and_live_explorer_keep_legacy_dom_contract():
         "response.blob()", "(frameIndex + 0.5)", 'addEventListener("seeked"'))
     assert "if (hasCandidates) analyze" not in app
     assert "node.disabled" not in app
+    assert all(token in app for token in (
+        "startLiveReplay", "BigInt(frame.stamp_ns)", "held", "show-depth",
+        "unprocessed_realtime_drop"))
+    assert all(token in explorer for token in ("live-video", "live-timeline"))
+    assert "live_replay" in (static / "landing.js").read_text(encoding="utf-8")
 
 
 def test_completed_run_validation_is_cached(monkeypatch, tmp_path):

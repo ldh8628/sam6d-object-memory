@@ -32,3 +32,9 @@
 - `independent_candidate_verify` and `sequential_candidate_select` inherit the production geometry ordering behavior for nonfinite scores; a synthetic NaN/Inf geometry value can become the raw argmax/Geometry Top-1 before later validity gates reject it.
 - The compact Explorer deliberately preserves the production index/proposal/R/t selection contract and the captured longcircle2 candidates are finite, so this story did not change production ordering semantics. The live GT/shadow comparison now treats malformed poses/evidence as unavailable rather than correct.
 - A focused follow-up should define an authoritative nonfinite geometry policy, update both production selection paths together, and version the behavior with diagnostic-OFF parity fixtures before changing winners.
+
+## Pre-existing ObjectMemory Explorer media error and playback accessibility
+
+- `integration/object_memory_explorer/app.js`의 `seekVideo()`는 기존부터 `seeked`만 기다려 preview decode 오류가 발생하면 대기가 끝나지 않을 수 있다.
+- 재생 중에도 기존 `#play` 버튼의 `aria-label`은 `재생`으로 유지되어 화면 읽기 프로그램에 실제 동작과 반대 액션을 알릴 수 있다.
+- 이번 raw/fused 비교 변경에서 새로 생긴 문제는 아니므로, 별도 접근성·media error 처리 작업에서 오류 이벤트와 동적 label을 함께 보완한다.

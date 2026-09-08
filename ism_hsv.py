@@ -33,6 +33,12 @@ HBINS, SBINS = 16, 8         # joint H x S histogram -> 128-D
 SUB_N = 20000               # deterministic per-view pixel sample (reproduces research build)
 MIN_MASK_PX = 50            # a render view with fewer mask pixels is skipped (research parity)
 
+# Brightness-invariant normalized-rg gate. Kept in this module so every HSV caller uses
+# the same mask/crop/cache authority; threshold 0 disables it for objects not validated.
+RG_AUTHORITY_VERSION = "normalized-rg-1.0-2026-08-30"
+RGBINS = 16
+MIN_RGB_SUM = 30            # numerical confidence only; never used as object brightness
+
 
 # =========================================================== core math (authority)
 def feat_rgb(rgb_px):
@@ -59,6 +65,30 @@ def query_hist(bgr_crop, mask_crop):
     x = cv2.calcHist([hsv], [0, 1], m, [HBINS, SBINS], [0, 180, 0, 256]).flatten()
     s = x.sum()
     return (x / s if s > 0 else x).astype(np.float64)
+
+
+def feat_rg(rgb_px):
+    """RGB pixels -> brightness-invariant joint normalized-r/g histogram."""
+    px = np.asarray(rgb_px, np.uint8).reshape(-1, 3).astype(np.float32)
+    total = px.sum(1)
+    px, total = px[total >= MIN_RGB_SUM], total[total >= MIN_RGB_SUM]
+    if len(px) < MIN_MASK_PX:
+        return None
+    x, _, _ = np.histogram2d(px[:, 0] / total, px[:, 1] / total, bins=RGBINS,
+                             range=((0.0, 1.0), (0.0, 1.0)))
+    return (x.ravel() / x.sum()).astype(np.float64)
+
+
+def query_rg_hist(bgr_crop, mask_crop):
+    """Masked BGR crop -> normalized-rg histogram, or None when signal is insufficient."""
+    if mask_crop is None:
+        px = bgr_crop.reshape(-1, 3)
+    else:
+        mask = np.asarray(mask_crop).astype(bool)
+        if not mask.any():
+            return None
+        px = bgr_crop[mask]
+    return feat_rg(px[:, ::-1])                     # BGR -> RGB
 
 
 def similarity(q, proto):
@@ -140,6 +170,27 @@ def build_reference(template_dir, hue_correction_ocv=0):
     return np.stack(feats), len(feats)
 
 
+def build_rg_reference(template_dir):
+    """Build the 42-view normalized-rg bank beside the existing HSV bank."""
+    feats = []
+    for i in range(42):
+        rp = os.path.join(template_dir, f"rgb_{i}.png")
+        mp = os.path.join(template_dir, f"mask_{i}.png")
+        xp = os.path.join(template_dir, f"xyz_{i}.npy")
+        if not all(os.path.isfile(x) for x in (rp, mp, xp)):
+            continue
+        m = cv2.imread(mp, cv2.IMREAD_GRAYSCALE) > 0
+        bgr = cv2.imread(rp)
+        if bgr is None or m.sum() < MIN_MASK_PX:
+            continue
+        feat = feat_rg(_sub(bgr[m][:, ::-1], seed=i))
+        if feat is not None:
+            feats.append(feat)
+    if not feats:
+        return np.zeros((0, RGBINS * RGBINS), np.float64), 0
+    return np.stack(feats), len(feats)
+
+
 def cache_path_for(template_dir, feature_dir):
     name = os.path.basename(os.path.dirname(template_dir.rstrip("/"))) \
         if template_dir.rstrip("/").endswith("templates") else os.path.basename(template_dir)
@@ -148,12 +199,15 @@ def cache_path_for(template_dir, feature_dir):
 
 def save_cache(path, proto, template_dir, n_view, hue_correction_ocv=0):
     os.makedirs(os.path.dirname(path), exist_ok=True)
+    rg_proto, rg_n_view = build_rg_reference(template_dir)
     np.savez(path, proto=proto.astype(np.float64),
              signature=_template_signature(template_dir, hue_correction_ocv),
              authority_version=HSV_AUTHORITY_VERSION,
              hue_shift=HUE_SHIFT_DEG, sat_gain=SAT_GAIN,
              hbins=HBINS, sbins=SBINS, n_view=n_view, template_dir=template_dir,
-             hue_correction_ocv=int(hue_correction_ocv))
+             hue_correction_ocv=int(hue_correction_ocv), rg_proto=rg_proto,
+             rg_authority_version=RG_AUTHORITY_VERSION, rgbins=RGBINS,
+             min_rgb_sum=MIN_RGB_SUM, rg_n_view=rg_n_view)
 
 
 def load_cache(path, template_dir, fail_open=True):
@@ -182,6 +236,11 @@ def load_cache(path, template_dir, fail_open=True):
         if sig != _template_signature(template_dir, hc):
             meta["status"] = "stale"
             return None, meta
+        meta["rg_proto"] = (z["rg_proto"].astype(np.float64)
+                            if "rg_proto" in z
+                            and str(z["rg_authority_version"]) == RG_AUTHORITY_VERSION
+                            and int(z["rgbins"]) == RGBINS
+                            and int(z["min_rgb_sum"]) == MIN_RGB_SUM else None)
         return z["proto"].astype(np.float64), meta
     except Exception as e:                                    # corrupt file
         meta["status"] = f"corrupt:{type(e).__name__}"
@@ -203,3 +262,33 @@ def shadow_score(bgr, box, mask, proto):
     mcrop = mask[y1:y2, x1:x2] if mask is not None else None
     q = query_hist(crop, mcrop)
     return similarity(q, proto)
+
+
+def shadow_rg_score(bgr, box, mask, proto):
+    """Normalized-rg score in [0,1]; missing cache/signal fails open."""
+    if proto is None or len(proto) == 0:
+        return 1.0
+    x1, y1, x2, y2 = (int(v) for v in box)
+    crop = bgr[y1:y2, x1:x2]
+    if crop.size == 0:
+        return 1.0
+    mcrop = mask[y1:y2, x1:x2] if mask is not None else None
+    q = query_rg_hist(crop, mcrop)
+    return 1.0 if q is None else similarity(q, proto)
+
+
+def _self_check():
+    rgb = np.array([[[80, 120, 200]] * 5 + [[180, 200, 220]] * 5] * 10, np.uint8)
+    proto = np.stack([feat_rg(rgb.reshape(-1, 3))])
+    mask = np.ones((10, 10), bool)
+    for gain in (0.25, 0.5, 1.0):
+        bgr = np.rint(rgb.astype(np.float32) * gain).astype(np.uint8)[..., ::-1]
+        assert shadow_rg_score(bgr, (0, 0, 10, 10), mask, proto) > 0.99
+    wrong = np.full((10, 10, 3), (30, 40, 220), np.uint8)  # BGR = red RGB
+    assert shadow_rg_score(wrong, (0, 0, 10, 10), mask, proto) < 0.55
+    assert shadow_rg_score(wrong, (0, 0, 10, 10), mask, None) == 1.0
+
+
+if __name__ == "__main__":
+    _self_check()
+    print("normalized-rg self-check: ok")

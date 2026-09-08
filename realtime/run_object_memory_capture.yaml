@@ -1,0 +1,17 @@
+topics:
+  rgb: /camera/camera/color/image_raw
+  depth: /camera/camera/aligned_depth_to_color/image_raw
+  caminfo: /camera/camera/color/camera_info
+ism:
+  config: configs/yolo_ism_objects.yaml
+  objects: []
+runtime:
+  device: cuda:0
+  det_score_thresh: 0.2
+  verify: {enabled: true, mask_iou_min: 0.420998, texture_min_score: 0.449562, cluster_rotation_deg: 30, cluster_translation_mm: 50, cluster_min_occupancy: 0.45}
+  pem_diagnostic:
+    enabled: true
+    explorer_v2: {enabled: true, capture_profile: exhaustive_visualization}
+output:
+  diagnostics: true
+  pem_explorer: {enabled: true, capture_profile: exhaustive_visualization, max_bytes_per_attempt: 40960, require_source_end: true}

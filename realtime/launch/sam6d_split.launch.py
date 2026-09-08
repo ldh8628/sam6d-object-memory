@@ -19,7 +19,7 @@ from pathlib import Path
 import yaml
 from launch import LaunchDescription
 from launch.actions import (DeclareLaunchArgument, EmitEvent, ExecuteProcess,
-                            OpaqueFunction, RegisterEventHandler)
+                            OpaqueFunction, RegisterEventHandler, TimerAction)
 from launch.event_handlers import OnProcessExit
 from launch.events import Shutdown
 from launch.substitutions import LaunchConfiguration
@@ -39,6 +39,7 @@ def _setup(context, *args, **kwargs):
         raise RuntimeError(f"설정 파일이 없다: {cfg_path}")
     cfg = yaml.safe_load(cfg_path.read_text(encoding="utf-8")) or {}
     out_dir = _abs(cfg.get("output", {}).get("dir", "output/rt_split"))
+    recording = cfg.get("output", {}).get("live_recording", {}) or {}
     explorer_on = bool((cfg.get("output", {}).get("pem_explorer") or {}).get("enabled"))
     if explorer_on and out_dir.exists():
         protected = (
@@ -50,6 +51,14 @@ def _setup(context, *args, **kwargs):
         if existing:
             raise RuntimeError(
                 f"Explorer output already contains run data; refusing replacement: "
+                f"{out_dir} ({', '.join(existing)})")
+    if bool(recording.get("enabled", False)) and out_dir.exists():
+        protected = ("live_manifest.json", "rgb.mp4", "rgb_frames.jsonl",
+                     "depth.mkv", "depth_frames.jsonl")
+        existing = [name for name in protected if (out_dir / name).exists()]
+        if existing:
+            raise RuntimeError(
+                f"live output already contains recording data; refusing replacement: "
                 f"{out_dir} ({', '.join(existing)})")
     out_dir.mkdir(parents=True, exist_ok=True)
     ready = out_dir / "READY"
@@ -65,13 +74,46 @@ def _setup(context, *args, **kwargs):
     infer = ExecuteProcess(
         cmd=[sys.executable, str(REPO / "realtime" / "sam6d_infer.py"),
              "--config", str(cfg_path)],
-        cwd=str(out_dir), output="screen", sigterm_timeout="30")
+        cwd=str(out_dir), output="screen", sigterm_timeout="30",
+        additional_env={name: "1" for name in (
+            "OMP_NUM_THREADS", "MKL_NUM_THREADS", "OPENBLAS_NUM_THREADS",
+            "NUMEXPR_NUM_THREADS", "OPENCV_FOR_THREADS_NUM")})
     # External bag playback (bag.play:false) still relies on inference idle_exit_s.
     # Always propagate a clean inference exit to the whole launch so the receiver is
     # not left running after the compact recorder has finalized its manifest.
     acts = [RegisterEventHandler(OnProcessExit(
-                target_action=infer, on_exit=[EmitEvent(event=Shutdown())])),
+                target_action=infer, on_exit=[TimerAction(
+                    period=5.0, actions=[EmitEvent(event=Shutdown())])])),
             recv, infer]
+
+    if bool(cfg.get("output", {}).get("view", False)):
+        viewer = ["nice", "-n", "5", sys.executable,
+                  str(REPO / "realtime" / "sam6d_viewer.py")]
+        if bool(cfg.get("object_memory", {}).get("enabled", False)):
+            viewer += ["--overlay-topic", str(cfg.get("output", {}).get(
+                "overlay_topic", "/sam6d/overlay"))]
+            topdown_map = str(cfg.get("output", {}).get("topdown_map", "")).strip()
+            if topdown_map:
+                slam = cfg.get("slam", {}) or {}
+                memory = cfg.get("object_memory", {}) or {}
+                viewer += [
+                    "--map-pcd", str(_abs(topdown_map)),
+                    "--slam-pose-topic", str(slam.get("pose_topic", "/orbslam3/pose")),
+                    "--sam-pose-topic", str(slam.get("sam_pose_topic", "/sam6d/camera_pose")),
+                    "--tracking-topic", str(slam.get(
+                        "tracking_topic", "/orbslam3/tracking_state")),
+                    "--landmarks-topic", str(memory.get(
+                        "landmarks_topic", "/object_memory/landmarks")),
+                ]
+        acts.append(ExecuteProcess(
+            cmd=viewer,
+            cwd=str(out_dir), output="screen", sigterm_timeout="10"))
+    if bool(recording.get("enabled", False)):
+        acts.append(ExecuteProcess(
+            cmd=["nice", "-n", "10", sys.executable,
+                 str(REPO / "realtime" / "sam6d_live_recorder.py"),
+                 "--config", str(cfg_path)],
+            cwd=str(out_dir), output="screen", sigterm_timeout="30"))
 
     bag = cfg.get("bag", {}) or {}
     if bool(bag.get("play", False)):

@@ -223,6 +223,7 @@ ros2 launch realtime/launch/sam6d_realtime.launch.py config:=<bag.play=false 인
 | 토픽 | 타입 | 내용 |
 |---|---|---|
 | `/sam6d/detections` | `vision_msgs/Detection3DArray` | `header.stamp` = **촬영 시각**, `results[0].hypothesis.class_id` = 객체 이름, `.score` = PEM 점수, `.pose` = 카메라 기준 `T_cam_obj` [m] |
+| `/sam6d/overlay` | `sensor_msgs/Image` (`rgb8`) | 최신 `T_map_object`를 현재 SLAM 카메라 포즈로 매 입력 프레임에 투영한 `MAP` XYZ 축. 구독자가 없으면 렌더하지 않음 |
 | `/sam6d/status` | `std_msgs/String` (JSON) | 처리 Hz, 건너뛴 장수, 마지막 프레임의 단계별 소요 ms |
 
 출력 pose 형식은 계속 카메라 기준 `T_camera_object`다. `anchor.enabled: true`이면 같은
@@ -314,24 +315,25 @@ python realtime/sam6d_viewer.py --scale 0.6           # 창이 크면 축소
 
 ```bash
 # 터미널 A  — 카메라 드라이버. 먼저 켠다.
-ros2 launch realsense2_camera rs_launch.py \
-     align_depth.enable:=true enable_sync:=true \
-     rgb_camera.color_profile:=640x480x30 depth_module.depth_profile:=640x480x30
+./run/realsense.sh
 
 # 터미널 B  — SAM-6D
-ros2 launch realtime/launch/sam6d_split.launch.py config:=realtime/run_live_split.yaml
+./run/sam6d.sh
+# 선택: --view, --record, --record-full-depth, --view --record
 ```
 
-끝낼 때는 터미널 B 에서 Ctrl-C (카메라판은 스스로 종료하지 않는다).
-결과는 `output/live_cam/` 에 쌓인다.
-시각화가 필요하면 **터미널 C 에서 (1b) 의 뷰어를 그대로 띄우면 된다** — 카메라판에서는
-`tools/render_result_video.py` 를 쓸 수 없으므로(영상이 저장되지 않는다),
-영상 기록이 필요하면 `--save` 로 뷰어가 녹화하게 한다.
+카메라 스크립트가 `realsense` conda 환경(ROS 2 Jazzy)을 활성화하고
+`ROS_DOMAIN_ID=72`, depth 정렬·동기화·640x480x30 프로파일을 적용한다.
+
+끝낼 때는 터미널 B 에서 Ctrl-C 한다. 기본 결과는 `output/live_cam/`, 기록 실행은
+`output/live_YYYYMMDD_HHMMSS/`에 원본 RGB·Depth·pose/검증 JSONL·mask를 보존한다.
+`--record`는 30 Hz RGB와 실제 추론 Depth, `--record-full-depth`는 recorder가 수신한
+모든 Depth를 기록하며 지연 프레임은 추론을 막지 않고 drop 수로 남긴다.
 
 **카메라판에서 먼저 확인할 것**
 
 ```bash
-ros2 topic hz /camera/camera/color/image_raw          # 30 Hz 나오는지
+ros2 topic hz /camera/camera/rgbd                     # 결합 메시지가 30 Hz 나오는지
 ros2 topic list | grep aligned_depth                  # 정렬 depth 가 있는지
 ros2 topic echo --once /sam6d/status std_msgs/msg/String   # 수신·처리 수
 ```

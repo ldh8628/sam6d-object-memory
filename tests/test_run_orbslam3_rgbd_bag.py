@@ -11,6 +11,13 @@ MOD = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MOD)
 
 
+def test_default_orbslam_paths_use_sibling_workspace():
+    workspace = MOD.REPO.parent / "orbslam_ws"
+
+    assert MOD.DEFAULT_SETUP == workspace / "install" / "setup.bash"
+    assert MOD.DEFAULT_VOCABULARY == workspace / "src" / "ORB_SLAM3" / "Vocabulary" / "ORBvoc.txt"
+
+
 def test_trajectory_stats_reports_same_stamp_coverage(tmp_path):
     trajectory = tmp_path / "CameraTrajectory.txt"
     trajectory.write_text(

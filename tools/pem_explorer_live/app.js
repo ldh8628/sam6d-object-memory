@@ -338,6 +338,154 @@
     }
   };
 
+  function liveDepthIndex(stamp) {
+    const rows = report.depth_frames;
+    if (!rows.length) return -1;
+    const target = BigInt(stamp);
+    let lo = 0; let hi = rows.length;
+    while (lo < hi) {
+      const mid = (lo + hi) >> 1;
+      if (BigInt(rows[mid].stamp_ns) <= target) lo = mid + 1;
+      else hi = mid;
+    }
+    const after = Math.min(rows.length - 1, lo);
+    const before = Math.max(0, lo - 1);
+    return target - BigInt(rows[before].stamp_ns) <= BigInt(rows[after].stamp_ns) - target
+      ? before : after;
+  }
+
+  function renderLiveTimeline(current) {
+    const canvas = $("#live-timeline");
+    const width = Math.min(1200, Math.max(1, report.frames.length));
+    canvas.width = width; canvas.height = 28;
+    const ctx = canvas.getContext("2d");
+    const colors = {pem_passed: "#36c98d", pem_rejected: "#e55768",
+      processed_no_detection: "#68839a", unprocessed_realtime_drop: "#24394b"};
+    for (let x = 0; x < width; x += 1) {
+      const frame = report.frames[Math.min(
+        report.frames.length - 1, Math.floor(x * report.frames.length / width),
+      )];
+      ctx.fillStyle = colors[frame.status] || "#24394b";
+      ctx.fillRect(x, 0, 1, canvas.height);
+    }
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(Math.min(width - 1, Math.floor(current * width / report.frames.length)), 0, 2, 28);
+  }
+
+  function renderLiveCards(frame) {
+    const grid = $("#object-grid");
+    const raw = [
+      ...frame.detections.map(item => ({...item, status: "pem_passed"})),
+      ...frame.rejections.map(item => ({...item, status: "pem_rejected"})),
+      ...frame.pem_candidates.filter(item => (
+        item.rejection_reason || item.input_rejection
+      )).map(item => ({...item, status: "pem_rejected"})),
+    ];
+    const rows = [...new Map(raw.map(item => [
+      `${item.object}:${item.status}:${item.rejection_reason || item.input_rejection || ""}`, item,
+    ])).values()];
+    grid.innerHTML = rows.map(item => `<div class="object-card ${item.status}">
+      <span class="object-name">${esc(item.object)}</span>
+      <span class="state">${esc(labels[item.status])}</span>
+      <span class="score">${esc(item.rejection_reason || item.input_rejection || `pose ${fmt(item.score)}`)}</span>
+    </div>`).join("");
+  }
+
+  function renderLiveDetails(frame, heldPoses) {
+    const current = frame.detections[0];
+    const rejection = frame.rejections[0] || frame.pem_candidates.find(
+      item => item.rejection_reason || item.input_rejection,
+    );
+    const evidence = current || rejection || {};
+    const fine = evidence.verify?.fine || {};
+    const heldText = heldPoses.length ? heldPoses.map(pose => {
+      const held = Number(BigInt(frame.stamp_ns) - BigInt(pose.stamp_ns)) / 1e9;
+      return `${esc(pose.object)} · score ${fmt(pose.score)} · held ${held.toFixed(2)} s`;
+    }).join("<br>") : "아직 없음";
+    const depthIndex = liveDepthIndex(frame.stamp_ns);
+    $("#details").className = "details";
+    $("#details").innerHTML = `<div class="detail-head"><div><p class="eyebrow">live replay</p>
+      <h2>${esc(labels[frame.status] || frame.status)}</h2></div>
+      <b class="${report.completed ? "pass" : "fail"}">${report.completed ? "COMPLETE" : "INCOMPLETE"}</b></div>
+      <div class="summary-grid"><div class="summary-card"><b>마지막 accepted pose</b>
+        <small>${heldText}</small>
+      </div><div class="summary-card"><b>현재 프레임</b><small>source ${frame.source_seq ?? "—"} · ${esc(frame.stamp_ns)}</small></div></div>
+      <div class="section-title">현재 프레임 검증 수치</div>
+      <div class="matrix">pose score ${fmt(evidence.pem?.pose_score ?? evidence.score)}\nMask IoU ${fmt(evidence.mask_iou ?? fine.mask_iou)}\nTexture ${fmt(evidence.texture_score ?? fine.texture_score)}\ncluster occupancy ${fmt(evidence.cluster_occupancy)}\nrejection ${rejection?.rejection_reason ?? rejection?.input_rejection ?? "none"}</div>
+      <div class="section-title">저장 Depth</div>
+      ${depthIndex < 0 ? "<p>저장된 Depth가 없습니다.</p>" : `<button id="show-depth">가장 가까운 Depth #${depthIndex} 보기</button><p><img id="depth-image" class="depth-preview" alt="선택 Depth 컬러맵"></p>`}`;
+    const button = $("#show-depth");
+    if (button) button.onclick = () => {
+      $("#depth-image").src = `/api/run/${encodeURIComponent(run)}/depth?frame=${depthIndex}`;
+    };
+  }
+
+  function startLiveReplay() {
+    const frames = report.frames;
+    if (!frames.length) throw Error("recorded RGB frames are unavailable");
+    const fps = Number(report.manifest.recording?.fps || 30);
+    const byObject = new Map();
+    report.detections.forEach(pose => {
+      if (!byObject.has(pose.object)) byObject.set(pose.object, []);
+      byObject.get(pose.object).push(pose);
+    });
+    byObject.forEach(events => events.sort((a, b) => Number(
+      BigInt(a.stamp_ns) - BigInt(b.stamp_ns),
+    )));
+    const before = (pose, frame) => (
+      pose.source_seq != null && frame.source_seq != null
+        ? Number(pose.source_seq) <= Number(frame.source_seq)
+        : BigInt(pose.stamp_ns) <= BigInt(frame.stamp_ns)
+    );
+    const heldAt = frame => [...byObject.values()].flatMap(events => {
+      let lo = 0; let hi = events.length;
+      while (lo < hi) {
+        const mid = (lo + hi) >> 1;
+        if (before(events[mid], frame)) lo = mid + 1;
+        else hi = mid;
+      }
+      return lo ? [events[lo - 1]] : [];
+    });
+    const video = $("#live-video");
+    $("#frame-image").hidden = true;
+    video.hidden = false;
+    video.src = `/api/run/${encodeURIComponent(run)}/rgb`;
+    $("#live-timeline").hidden = false;
+    $("#rgb-source").textContent = "30 Hz H.264/NVENC 원본 RGB";
+    $("#title").textContent = `${run} · Live RGB-D Replay`;
+    $("#dataset-source").textContent = report.dataset.camera.frame_id || "RealSense color";
+    $("#frame-count").textContent = `${frames.length.toLocaleString()} RGB · 처리 ${report.dataset.processed_frame_count.toLocaleString()}`;
+    $("#profile-badge").textContent = `${report.capture_profile} depth`;
+    $("#notice").textContent = report.completed
+      ? "accepted/rejected/unprocessed는 저장 timestamp로 결합됩니다. pose held 시간을 함께 확인하세요."
+      : "불완전 실행입니다. 종료 전까지 저장된 프레임만 표시합니다.";
+    const slider = $("#frame-slider"); const search = $("#frame-search");
+    slider.max = search.max = frames.length - 1;
+    const show = frameIndex => {
+      index = Math.max(0, Math.min(frames.length - 1, frameIndex));
+      const frame = frames[index];
+      const heldPoses = heldAt(frame);
+      slider.value = search.value = index;
+      $("#frame-label").textContent = `#${index} · ${frame.stamp_ns} · ${labels[frame.status]}`;
+      clearPose();
+      if (heldPoses.length) drawAcceptedAxes({...frame, slots: heldPoses.map(
+        accepted_pose => ({object: accepted_pose.object, accepted_pose}),
+      )});
+      renderLiveTimeline(index); renderLiveCards(frame); renderLiveDetails(frame, heldPoses);
+    };
+    const seek = frameIndex => { video.currentTime = (frameIndex + 0.5) / fps; show(frameIndex); };
+    video.ontimeupdate = () => show(Math.floor(video.currentTime * fps));
+    video.onseeked = () => show(Math.floor(video.currentTime * fps));
+    slider.oninput = event => seek(Number(event.target.value));
+    search.onchange = event => seek(Number(event.target.value) || 0);
+    $("#prev").onclick = () => seek(index - 1);
+    $("#next").onclick = () => seek(index + 1);
+    $("#live-timeline").onclick = event => seek(Math.floor(
+      event.offsetX * frames.length / event.currentTarget.clientWidth,
+    ));
+    show(0);
+  }
+
   async function start() {
     if (!run) {
       $("#notice").textContent = "run query가 없습니다.";
@@ -345,6 +493,10 @@
     }
     try {
       report = await json(`/api/run/${encodeURIComponent(run)}/report`);
+      if (report.kind === "live_replay") {
+        startLiveReplay();
+        return;
+      }
       await preparePreview();
       const requested = Number(query.get("frame"));
       if (Number.isInteger(requested)) {
