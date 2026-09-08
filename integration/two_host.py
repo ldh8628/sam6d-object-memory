@@ -16,6 +16,7 @@ import shlex
 import signal
 import subprocess
 import sys
+import tempfile
 import threading
 import time
 import uuid
@@ -351,8 +352,11 @@ def ptp_probe(interface, role):
         raise ValueError(f'PTP interface missing: {interface}')
     if (Path('/sys/class/net') / interface / 'wireless').exists():
         raise ValueError('PTP requires the configured wired interface')
-    text = execute(['pmc', '-u', '-b', '0', 'GET PORT_PROPERTIES_NP', 'GET TIME_STATUS_NP',
-                    'GET TIME_PROPERTIES_DATA_SET'], timeout=5)
+    # pmc defaults its client socket to /var/run, which normal users cannot write.
+    with tempfile.TemporaryDirectory(prefix='ptp-', dir='/tmp') as client_dir:
+        text = execute(['pmc', '-u', '-b', '0', '-i', client_dir + '/pmc',
+                        'GET PORT_PROPERTIES_NP', 'GET TIME_STATUS_NP',
+                        'GET TIME_PROPERTIES_DATA_SET'], timeout=5)
     result = parse_ptp(text, role)
     interfaces = re.findall(r'^\s*interface\s+(\S+)\s*$', text, re.M)
     timestamping = re.findall(r'^\s*timestamping\s+(\S+)\s*$', text, re.M)

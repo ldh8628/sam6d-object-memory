@@ -231,8 +231,17 @@ class HostChecks(unittest.TestCase):
         path = lambda value: interfaces if str(value) == '/sys/class/net' else original_path(value)
         text = ('portState SLAVE\nmaster_offset -250\ngmPresent true\ngmIdentity clock1\ncurrentUtcOffset 37\n'
                 'ptpTimescale 1\ninterface eth0\ntimestamping SOFTWARE\n')
-        with patch.object(host, 'Path', side_effect=path), patch.object(host, 'execute', return_value=text):
+        client_paths = []
+        def query(argv, **kwargs):
+            import socket
+            client = original_path(argv[argv.index('-i') + 1])
+            with socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sock:
+                sock.bind(str(client))
+            client_paths.append(client)
+            return text
+        with patch.object(host, 'Path', side_effect=path), patch.object(host, 'execute', side_effect=query):
             result = host.ptp_probe('eth0', 'local')
+            self.assertFalse(client_paths[-1].parent.exists())
             self.assertEqual(result['timestamping'], 'software')
             self.assertEqual(result['system_offset_us'], 0)
             self.assertIsNone(result['phc'])
@@ -245,15 +254,16 @@ class HostChecks(unittest.TestCase):
             with patch.object(host, 'Path', side_effect=path), patch.object(host, 'execute', return_value=changed):
                 with self.assertRaises(ValueError): host.ptp_probe('eth0', 'local')
         (wired / 'device' / 'ptp' / 'ptp7').mkdir(parents=True)
+        real_open, real_close = host.os.open, host.os.close
         with patch.object(host, 'Path', side_effect=path), \
              patch.object(host, 'execute', return_value=text.replace('SOFTWARE', 'HARDWARE')), \
-             patch.object(host.os, 'open', return_value=9) as opened, \
-             patch.object(host.os, 'close') as closed, \
+             patch.object(host.os, 'open', side_effect=lambda p, *a, **kw: 9 if p == '/dev/ptp7' else real_open(p, *a, **kw)) as opened, \
+             patch.object(host.os, 'close', side_effect=lambda fd: None if fd == 9 else real_close(fd)) as closed, \
              patch.object(host.time, 'time_ns', side_effect=[100000000000, 100000000200] * 5), \
              patch.object(host.time, 'clock_gettime_ns', return_value=137000500100) as clock:
             result = host.ptp_probe('eth0', 'local')
-            opened.assert_called_once_with('/dev/ptp7', host.os.O_RDONLY)
-            closed.assert_called_once_with(9)
+            opened.assert_any_call('/dev/ptp7', host.os.O_RDONLY)
+            closed.assert_any_call(9)
             clock.assert_called_with(((~9) << 3) | 3)
             self.assertEqual(result['system_offset_us'], -500)
             self.assertEqual(result['measurement_uncertainty_us'], .1)
