@@ -1,0 +1,13 @@
+{
+  "injected_first_frame_numbers": [
+    0,
+    3
+  ],
+  "expected_missing_numbers_per_stream": 2,
+  "before_report": "orb3_zero_counter/before/summary.json",
+  "after_report": "orb3_faults_verified/zero_counter_gap/summary.json",
+  "before_incorrectly_accepted": true,
+  "after_rejected_with_two_missing_frames": true,
+  "first_zero_frame_processed": true,
+  "verified": true
+}

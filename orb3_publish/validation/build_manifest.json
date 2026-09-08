@@ -1,0 +1,21 @@
+{
+  "platform": "Linux-6.6.87.2-microsoft-standard-WSL2-x86_64-with-glibc2.35",
+  "python": "3.10.12",
+  "sha256": {
+    "run_orb3_publish.py": "179b931c4cb83a0b18af402dccec1b79764fb1fcc297d75523d59291cc16cf6d",
+    "orbslam_ws/src/orbslam3_ros2/src/orb3_live_node.cpp": "93a55fcdb07d037a802f0f94fff0889e9d92070390e79ba8dec28d3bbca53159",
+    "orbslam_ws/src/orbslam3_ros2/CMakeLists.txt": "a98c144e421d97c465d4d91f71cf520eed8e2a28c598a7ee33f78d9a45674ffc",
+    "orbslam_ws/src/ORB_SLAM3/CMakeLists.txt": "22ea85c141e7393fad6e7a19646dc7221800fffe997d2533b9f708177ec6a116",
+    "orbslam_ws/src/ORB_SLAM3/src/Tracking.cc": "d70215cd70d94dc208713d3763ec21805d5ea1a6ae45e8301da498b175ee0a2d",
+    "orbslam_ws/src/ORB_SLAM3/src/MLPnPsolver.cpp": "42fbe6759dcb351247fd2816ac36d477fe58740bf9c221cccecfc7a6b5217c6a",
+    "orbslam_ws/src/ORB_SLAM3/src/System.cc": "247a8d7e6d96a52bac283b4e361f68cf4161aaf2f45b296969d361f86abb0a3e",
+    "orbslam_ws/src/ORB_SLAM3/include/Tracking.h": "795771b856103e4a71c1df09df8f6db2420d5df3f33a379ba99cedb7f29f4f64",
+    "orbslam_ws/src/ORB_SLAM3/src/Optimizer.cc": "a1ab6e9eb182ed518902ea4fb4db2bd1afb87353f5c790f6989ff60569516261",
+    "orbslam_ws/src/ORB_SLAM3/include/Optimizer.h": "6fdd0974980adf1caac9856c1fa484253a8a4705f4d68e85d6bcad965c7261e3",
+    "orbslam_ws/src/ORB_SLAM3/src/Frame.cc": "b4ca7027e2600a879ea19f8382f656eb9dbd2f505ad8e4aca6ece8d3da95c93a",
+    "orbslam_ws/src/ORB_SLAM3/src/KeyFrame.cc": "31b9d9a08688a3703787abd44d6217958bd7a8514f9cf3993115b7bd895e2a69",
+    "orbslam_ws/src/ORB_SLAM3/include/System.h": "246decb4a197b73c9be02d255f610c6c86b65ff8244a683998e17caac81c97aa",
+    "orbslam_ws/src/ORB_SLAM3/lib/libORB_SLAM3.so": "fa6aa7dd149dd9a8e7e6fd7d77f1474879522315208af1d3149fed3d08468e59",
+    "orbslam_ws/install_jazzy/orbslam3_ros2/lib/orbslam3_ros2/orb3_live_node": "27dfddcd60cb6ca393782bd0d19841240c34ca2262dc4a9b5ad864866962e838"
+  }
+}

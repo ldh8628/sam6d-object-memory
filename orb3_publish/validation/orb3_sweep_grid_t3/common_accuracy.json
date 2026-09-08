@@ -1,0 +1,32 @@
+{
+  "common_valid_timestamps": 645,
+  "baseline": {
+    "associated_poses": 640,
+    "ate_rmse_m": 0.022136626344085548,
+    "ate_p99_m": 0.059922919601715134,
+    "relative_pairs": 633,
+    "rpe_rotation_rmse_deg": 0.4790286545810947,
+    "rpe_translation_rmse_m": 0.008059653686022813,
+    "fast_rotation_threshold_deg_s": 30,
+    "fast_rotation_pairs": 546,
+    "fast_rotation_rpe_rmse_deg": 0.49056304255551386,
+    "fast_rotation_rpe_p99_deg": 1.3749740935055548,
+    "groundtruth_interpolation": "linear translation and SLERP; bracket <=50ms",
+    "alignment": "rigid SE3 for ATE only; no scale fit; RPE independent of alignment"
+  },
+  "candidate": {
+    "associated_poses": 640,
+    "ate_rmse_m": 0.02118694663823645,
+    "ate_p99_m": 0.05742594012052404,
+    "relative_pairs": 633,
+    "rpe_rotation_rmse_deg": 0.4621814144870135,
+    "rpe_translation_rmse_m": 0.007772345281764729,
+    "fast_rotation_threshold_deg_s": 30,
+    "fast_rotation_pairs": 546,
+    "fast_rotation_rpe_rmse_deg": 0.47298724614233967,
+    "fast_rotation_rpe_p99_deg": 1.2966146201713564,
+    "groundtruth_interpolation": "linear translation and SLERP; bracket <=50ms",
+    "alignment": "rigid SE3 for ATE only; no scale fit; RPE independent of alignment"
+  },
+  "method": "Same valid timestamps for both runs; missing frames still count against per-run availability"
+}

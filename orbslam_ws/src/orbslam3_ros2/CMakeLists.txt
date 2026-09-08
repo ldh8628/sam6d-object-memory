@@ -11,6 +11,7 @@ cmake_minimum_required(VERSION 3.8)
   find_package(ament_cmake REQUIRED)
 
   find_package(rclcpp REQUIRED)
+  find_package(distributed_slam_interfaces REQUIRED)
   find_package(sensor_msgs REQUIRED)
   find_package(geometry_msgs REQUIRED)
   find_package(nav_msgs REQUIRED)
@@ -93,6 +94,7 @@ cmake_minimum_required(VERSION 3.8)
   )
 
   ament_target_dependencies(rgbd_node
+    distributed_slam_interfaces
     rclcpp
     sensor_msgs
     geometry_msgs
@@ -157,5 +159,25 @@ cmake_minimum_required(VERSION 3.8)
     DESTINATION share/${PROJECT_NAME}
     OPTIONAL
   )
+
+  find_package(realsense2 REQUIRED)
+  add_executable(orb3_live_node src/orb3_live_node.cpp)
+  # ORB core uses -march=native in Release. Match Eigen's alignment ABI at
+  # this boundary as well (the native geometry regression requires it too).
+  if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(orb3_live_node PRIVATE $<$<CONFIG:Release>:-march=native>)
+  endif()
+  target_include_directories(orb3_live_node PRIVATE ${ORB_SLAM3_INCLUDE_DIRS} ${OpenCV_INCLUDE_DIRS} ${EIGEN3_INCLUDE_DIR})
+  ament_target_dependencies(orb3_live_node rclcpp geometry_msgs distributed_slam_interfaces)
+  target_link_libraries(orb3_live_node
+    ${ORB_SLAM3_LIB} ${DBOW2_LIB} ${G2O_LIB} ${OpenCV_LIBS}
+    realsense2::realsense2 Eigen3::Eigen Boost::serialization OpenSSL::Crypto
+    spdlog::spdlog console_bridge ${GLDISPATCH_LIB})
+  get_target_property(orb3_pangolin_links rgbd_node LINK_LIBRARIES)
+  target_link_libraries(orb3_live_node ${orb3_pangolin_links})
+  set_target_properties(orb3_live_node PROPERTIES
+    BUILD_RPATH "${ORB_SLAM3_ROOT}/lib;${ORB_SLAM3_ROOT}/Thirdparty/g2o/lib;/opt/orb-live/lib"
+    INSTALL_RPATH "${ORB_SLAM3_ROOT}/lib;${ORB_SLAM3_ROOT}/Thirdparty/g2o/lib;/opt/orb-live/lib")
+  install(TARGETS orb3_live_node DESTINATION lib/${PROJECT_NAME})
 
   ament_package()

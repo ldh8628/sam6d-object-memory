@@ -179,6 +179,7 @@ public:
     // Information from most recent processed frame
     // You can call this right after TrackMonocular (or stereo or RGBD)
     int GetTrackingState();
+    size_t GetAtlasKeyFrameCount();
     std::vector<MapPoint*> GetTrackedMapPoints();
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
     std::vector<Eigen::Vector3f> GetAllMapPointsWorld();

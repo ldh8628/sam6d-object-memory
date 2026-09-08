@@ -1,0 +1,14 @@
+{
+  "associated_poses": 643,
+  "ate_rmse_m": 0.021456075930476017,
+  "ate_p99_m": 0.0601115777458606,
+  "relative_pairs": 637,
+  "rpe_rotation_rmse_deg": 0.4690388787326361,
+  "rpe_translation_rmse_m": 0.008005891756759292,
+  "fast_rotation_threshold_deg_s": 30,
+  "fast_rotation_pairs": 550,
+  "fast_rotation_rpe_rmse_deg": 0.47988395153826713,
+  "fast_rotation_rpe_p99_deg": 1.2999915599343173,
+  "groundtruth_interpolation": "linear translation and SLERP; bracket <=50ms",
+  "alignment": "rigid SE3 for ATE only; no scale fit; RPE independent of alignment"
+}

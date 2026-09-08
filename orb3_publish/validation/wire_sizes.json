@@ -1,0 +1,7 @@
+{
+  "pose_bytes": 76,
+  "state_bytes": 252,
+  "combined_payload_bytes_per_second_at_30hz": 9840,
+  "excludes_dds_udp_ip_ethernet_overhead": true,
+  "packet_capture_performed": false
+}

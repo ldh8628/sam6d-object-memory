@@ -1,0 +1,47 @@
+{
+  "processed_frames": 20000,
+  "received_frame_states": 20000,
+  "received_valid_poses": 18705,
+  "image_state_messages_only": true,
+  "wire_poses_match_tracking": true,
+  "session_received": true,
+  "last_session_mode": "stopped",
+  "all_sequences_received_in_order": true,
+  "no_image_topics": true,
+  "atlas_unchanged": true,
+  "local_process_receive_p99_ms": 38.286006,
+  "remote_lan_verified": false,
+  "source": "dataset",
+  "topics": [
+    [
+      "/distributed_slam/session",
+      [
+        "distributed_slam_interfaces/msg/Session"
+      ]
+    ],
+    [
+      "/distributed_slam/state",
+      [
+        "distributed_slam_interfaces/msg/State"
+      ]
+    ],
+    [
+      "/orbslam3/pose",
+      [
+        "geometry_msgs/msg/PoseStamped"
+      ]
+    ],
+    [
+      "/parameter_events",
+      [
+        "rcl_interfaces/msg/ParameterEvent"
+      ]
+    ],
+    [
+      "/rosout",
+      [
+        "rcl_interfaces/msg/Log"
+      ]
+    ]
+  ]
+}

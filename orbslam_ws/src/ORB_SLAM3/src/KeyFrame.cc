@@ -704,7 +704,6 @@ void KeyFrame::EraseConnection(KeyFrame* pKF)
 vector<size_t> KeyFrame::GetFeaturesInArea(const float &x, const float &y, const float &r, const bool bRight) const
 {
     vector<size_t> vIndices;
-    vIndices.reserve(N);
 
     float factorX = r;
     float factorY = r;
@@ -725,11 +724,13 @@ vector<size_t> KeyFrame::GetFeaturesInArea(const float &x, const float &y, const
     if(nMaxCellY<0)
         return vIndices;
 
+    // Initial storage only; dense searches still return all matching features.
+    vIndices.reserve(64);
     for(int ix = nMinCellX; ix<=nMaxCellX; ix++)
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
-            const vector<size_t> vCell = (!bRight) ? mGrid[ix][iy] : mGridRight[ix][iy];
+            const vector<size_t>& vCell = (!bRight) ? mGrid[ix][iy] : mGridRight[ix][iy];
             for(size_t j=0, jend=vCell.size(); j<jend; j++)
             {
                 const cv::KeyPoint &kpUn = (NLeft == -1) ? mvKeysUn[vCell[j]]

@@ -1,0 +1,16 @@
+{
+  "error": "Native process exited before writing summary; see console.log",
+  "complete_input_processing": false,
+  "processed_frames": 0,
+  "valid_poses": 0,
+  "exit_code": 2,
+  "atlas_unchanged": true,
+  "map_id": "173bbcb0508e38c1679c045c969d7304aa0d55bfd937cbabe7bbe2750ce5d38b",
+  "source": "dataset",
+  "lan_latency_verified": false,
+  "hardware_verified": false,
+  "all_frames_valid": false,
+  "realtime_input_contract_met": false,
+  "local_33ms_met": false,
+  "full_requirement_verified": false
+}

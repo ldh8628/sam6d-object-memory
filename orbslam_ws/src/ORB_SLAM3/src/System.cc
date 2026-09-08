@@ -564,8 +564,8 @@ void System::Shutdown()
             if(waited_ms >= wait_timeout_ms)
             {
                 cout << "Shutdown: WARNING - background threads still busy after "
-                     << (wait_timeout_ms / 1000) << " s; saving anyway." << endl;
-                break;
+                     << (wait_timeout_ms / 1000) << " s; refusing unsafe Atlas save." << endl;
+                std::_Exit(EXIT_FAILURE);
             }
         }
         if(reported)
@@ -605,6 +605,11 @@ void System::SaveTrajectoryTUM(const string &filename)
 
     vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
     sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+
+    if (vpKFs.empty()) {
+        cerr << "No keyframes: trajectory was not saved." << endl;
+        return;
+    }
 
     // Transform all keyframes so that the first keyframe is at the origin.
     // After a loop closure the first keyframe might not be at the origin.
@@ -660,6 +665,11 @@ void System::SaveKeyFrameTrajectoryTUM(const string &filename)
 
     vector<KeyFrame*> vpKFs = mpAtlas->GetAllKeyFrames();
     sort(vpKFs.begin(),vpKFs.end(),KeyFrame::lId);
+
+    if (vpKFs.empty()) {
+        cerr << "No keyframes: trajectory was not saved." << endl;
+        return;
+    }
 
     // Transform all keyframes so that the first keyframe is at the origin.
     // After a loop closure the first keyframe might not be at the origin.
@@ -1346,6 +1356,14 @@ void System::SaveDebugData(const int &initIdx)
 }
 
 
+size_t System::GetAtlasKeyFrameCount()
+{
+    size_t count = 0;
+    for(Map* map : mpAtlas->GetAllMaps())
+        if(map && !map->IsBad()) count += map->KeyFramesInMap();
+    return count;
+}
+
 int System::GetTrackingState()
 {
     unique_lock<mutex> lock(mMutexState);
@@ -1362,7 +1380,11 @@ vector<Eigen::Vector3f> System::GetAllMapPointsWorld()
 {
     vector<Eigen::Vector3f> points;
 
-    Map* pCurrentMap = mpAtlas->GetCurrentMap();
+    Map* pCurrentMap = isShutDown() ? nullptr : mpAtlas->GetCurrentMap();
+    if (isShutDown()) for (Map* candidate : mpAtlas->GetAllMaps())
+        if (candidate && !candidate->IsBad() &&
+            (!pCurrentMap || candidate->KeyFramesInMap() > pCurrentMap->KeyFramesInMap()))
+            pCurrentMap = candidate;
     if (!pCurrentMap)
         return points;
 
@@ -1384,7 +1406,11 @@ void System::SaveLoopEdges(const string &filename)
 {
     ofstream f(filename.c_str());
     f << fixed;
-    Map* pCurrentMap = mpAtlas->GetCurrentMap();
+    Map* pCurrentMap = isShutDown() ? nullptr : mpAtlas->GetCurrentMap();
+    if (isShutDown()) for (Map* candidate : mpAtlas->GetAllMaps())
+        if (candidate && !candidate->IsBad() &&
+            (!pCurrentMap || candidate->KeyFramesInMap() > pCurrentMap->KeyFramesInMap()))
+            pCurrentMap = candidate;
     if (!pCurrentMap)
         return;
     vector<KeyFrame*> vpKFs = pCurrentMap->GetAllKeyFrames();

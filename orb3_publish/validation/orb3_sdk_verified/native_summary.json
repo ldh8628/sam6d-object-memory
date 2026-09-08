@@ -1,0 +1,17 @@
+{
+  "source": "sdk_replay",
+  "peak_rss_kb": 634112,
+  "camera_serial": "SOFTWARE_TEST_ONLY",
+  "startup_seconds": 10.91582882, "slam_shutdown_seconds": 0.005152188,
+  "raw_rgb_received": 1500, "raw_depth_received": 1500,
+  "received_pairs": 1500, "accepted_pairs": 1500, "processed_frames": 1500,
+  "valid_poses": 1500, "tracking_availability": 1,
+  "rejected_pairs": 0, "rgb_gaps": 0, "depth_gaps": 0,
+  "queue_high_water": 4, "elapsed_seconds": 52.06753739,
+  "track_p50_ms": 13.08608, "track_p99_ms": 24.451833,
+  "all_enqueue_to_publish_p99_ms": 34.436406,
+  "valid_enqueue_to_publish_p99_ms": 34.436406,
+  "valid_enqueue_to_publish_max_ms": 77.274512, "valid_over_33ms": 19,
+  "complete_input_processing": true,
+  "lan_latency_verified": false, "error": ""
+}

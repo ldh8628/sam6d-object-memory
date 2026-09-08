@@ -33,6 +33,7 @@
 
 #include <mutex>
 #include <chrono>
+#include <memory>
 
 
 using namespace std;
@@ -94,6 +95,11 @@ Tracking::Tracking(System *pSys, ORBVocabulary* pVoc, FrameDrawer *pFrameDrawer,
         }
     }
 
+    cv::FileStorage extraSettings(strSettingPath, cv::FileStorage::READ);
+    if(!extraSettings["Tracking.RotationFallback"].empty())
+        mbRotationFallback = static_cast<int>(extraSettings["Tracking.RotationFallback"]) != 0;
+
+    cout << "[ORB-SLAM3] rotation recovery: " << (mbRotationFallback ? "enabled" : "disabled") << endl;
     initID = 0; lastID = 0;
     mbInitWith3KFs = false;
     mnNumDataset = 0;
@@ -1864,6 +1870,12 @@ void Tracking::Track()
         mState = NOT_INITIALIZED;
     }
 
+    if(mState==NOT_INITIALIZED && mbRotationFallback && IsLocalizingOnPriorMap())
+    {
+        // Select the loaded map before taking its update lock, then localize
+        // this first input frame instead of unconditionally throwing it away.
+        if(ActivatePriorMapForLocalization()) pCurrentMap=mpAtlas->GetCurrentMap();
+    }
     mLastProcessedState=mState;
 
     if ((mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD) && !mbCreatedMap)
@@ -2054,8 +2066,10 @@ void Tracking::Track()
             // On a prior map we would rather have NO pose than a fictional one,
             // so treat unanchored as LOST and keep relocalizing.
             const bool bUnanchored = mbVO && IsLocalizingOnPriorMap();
-            if(mState==LOST || bUnanchored)
+            const bool bRecoverPrior = mbRotationFallback && IsLocalizingOnPriorMap() && mState==RECENTLY_LOST;
+            if(mState==LOST || bUnanchored || bRecoverPrior)
             {
+                if(bRecoverPrior) { mState=LOST; mbVelocity=false; }
                 if(mSensor == System::IMU_MONOCULAR || mSensor == System::IMU_STEREO || mSensor == System::IMU_RGBD)
                     Verbose::PrintMess("IMU. State LOST", Verbose::VERBOSITY_NORMAL);
                 if(bUnanchored && mState!=LOST)
@@ -2065,6 +2079,7 @@ void Tracking::Track()
                          << "(VO fallback suppressed); relocalizing..." << endl;
                 }
                 bOK = Relocalization();
+                if(bOK) mbVO = false; // A geometric map match restores the anchor.
             }
             else
             {
@@ -2074,6 +2089,13 @@ void Tracking::Track()
                     if(mbVelocity)
                     {
                         bOK = TrackWithMotionModel();
+                        if(mbRotationFallback && IsLocalizingOnPriorMap() && (!bOK || mbVO))
+                        {
+                            // Like the mapping path, recover from an inaccurate
+                            // constant-velocity prediction without waiting a frame.
+                            bOK = TrackReferenceKeyFrame();
+                            if(bOK) mbVO = false;
+                        }
                     }
                     else
                     {
@@ -2161,6 +2183,23 @@ void Tracking::Track()
             // the camera we will use the local map again.
             if(bOK && !mbVO)
                 bOK = TrackLocalMap();
+            // TrackWithMotionModel can set mbVO in THIS frame. Do not
+            // publish an unanchored temporal-VO result as a prior-map pose.
+            if(IsLocalizingOnPriorMap() && mbVO)
+                bOK = false;
+            if(!bOK && mbRotationFallback && IsLocalizingOnPriorMap() && mState==OK)
+            {
+                // A local-map verification failure used to leave the tracker in
+                // RECENTLY_LOST while repeatedly applying an unreliable velocity.
+                // Attempt geometric place recognition on the first failed frame.
+                // This is failure-only work; ordinary frames pay no extra search.
+                bOK = Relocalization();
+                if(bOK)
+                {
+                    mbVO = false;
+                    bOK = TrackLocalMap();
+                }
+            }
         }
 
         if(bOK)
@@ -2229,7 +2268,9 @@ void Tracking::Track()
         if(bOK || mState==RECENTLY_LOST)
         {
             // Update motion model
-            if(mLastFrame.isSet() && mCurrentFrame.isSet())
+            if(mLastFrame.isSet() && mCurrentFrame.isSet() &&
+               !(mbRotationFallback && IsLocalizingOnPriorMap() &&
+                 (mLastProcessedState!=OK || mnLastRelocFrameId==mCurrentFrame.mnId)))
             {
                 Sophus::SE3f LastTwc = mLastFrame.GetPose().inverse();
                 mVelocity = mCurrentFrame.GetPose() * LastTwc;
@@ -3744,8 +3785,8 @@ bool Tracking::Relocalization()
     // If enough matches are found we setup a PnP solver
     ORBmatcher matcher(fMatchRatio,true);
 
-    vector<MLPnPsolver*> vpMLPnPsolvers;
-    vpMLPnPsolvers.resize(nKFs);
+    // Each relocalization call owns its solvers, including unsuccessful candidates.
+    vector<std::unique_ptr<MLPnPsolver>> vpMLPnPsolvers(nKFs);
 
     vector<vector<MapPoint*> > vvpMapPointMatches;
     vvpMapPointMatches.resize(nKFs);
@@ -3770,9 +3811,8 @@ bool Tracking::Relocalization()
             }
             else
             {
-                MLPnPsolver* pSolver = new MLPnPsolver(mCurrentFrame,vvpMapPointMatches[i]);
-                pSolver->SetRansacParameters(0.99,10,300,6,0.5,5.991);  //This solver needs at least 6 points
-                vpMLPnPsolvers[i] = pSolver;
+                vpMLPnPsolvers[i].reset(new MLPnPsolver(mCurrentFrame,vvpMapPointMatches[i]));
+                vpMLPnPsolvers[i]->SetRansacParameters(0.99,10,300,6,0.5,5.991);  //This solver needs at least 6 points
                 nCandidates++;
             }
         }
@@ -3805,7 +3845,7 @@ bool Tracking::Relocalization()
             int nInliers;
             bool bNoMore;
 
-            MLPnPsolver* pSolver = vpMLPnPsolvers[i];
+            MLPnPsolver* pSolver = vpMLPnPsolvers[i].get();
             Eigen::Matrix4f eigTcw;
             bool bTcw = pSolver->iterate(5,bNoMore,vbInliers,nInliers, eigTcw);
 

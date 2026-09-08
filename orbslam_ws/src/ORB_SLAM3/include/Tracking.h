@@ -160,6 +160,8 @@ public:
 
     // True if local mapping is deactivated and we are performing only localization
     bool mbOnlyTracking;
+    // Retry map-anchored BoW matching when constant velocity is unreliable.
+    bool mbRotationFallback = false;
 
     void Reset(bool bLocMap = false);
     void ResetActiveMap(bool bLocMap = false);

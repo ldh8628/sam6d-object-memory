@@ -1,0 +1,18 @@
+test_floating_ros_parameter_defaults (test_parameters.RosParameterTypes) ... ok
+test_incompatible_sources (test_parameters.RosParameterTypes) ... ok
+test_recorded_d455_calibration_matches_sdk_projection (test_parameters.RosParameterTypes) ... ok
+test_accuracy_known_rigid_transform (test_publish.ConfigurationTests) ... ok
+test_association_never_reuses_depth (test_publish.ConfigurationTests) ... ok
+test_bad_settings_do_not_reach_native (test_publish.ConfigurationTests) ... ok
+test_default_and_discovery (test_publish.ConfigurationTests) ... ok
+test_invalid_limits_rejected (test_publish.ConfigurationTests) ... ok
+test_opencv_round_trip_and_no_calibration_change (test_publish.ConfigurationTests) ... ok
+test_replay_geometry_matches_calibration (test_publish.ConfigurationTests) ... ok
+test_regular_30hz_and_invalid_frames_are_counted (test_rates.FrameRates) ... ok
+test_retimed_slow_replay_does_not_pass_ingress_rate (test_rates.FrameRates) ... ok
+test_slow_sensor_does_not_pass_rate_check (test_rates.FrameRates) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 2.134s
+
+OK

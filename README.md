@@ -1,5 +1,9 @@
 # sam6d-object-memory
 
+카메라 한 대로 저장 지도 localization을 수행하고 LAN용 ROS pose를 발행하려면
+[`run_orb3_publish.py`](run_orb3_publish.py)를 사용한다. 실행 옵션·프레임 손실 검사와
+재현 시험은 [orb3_publish/README.md](orb3_publish/README.md)에 정리했다.
+
 ORB-SLAM3 로 추정한 **현재 위치**와 SAM-6D 가 낸 **객체 6D 포즈**를 하나의 map 에
 등록하고 계속 기억하는(object memory) 스택.
 

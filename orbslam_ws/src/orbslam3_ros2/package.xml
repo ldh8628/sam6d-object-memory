@@ -12,6 +12,7 @@
   <build_depend>orbslam3_core</build_depend>
 
   <depend>rclcpp</depend>
+  <depend>librealsense2</depend>
   <depend>sensor_msgs</depend>
   <depend>geometry_msgs</depend>
   <depend>nav_msgs</depend>
@@ -33,4 +34,5 @@
   <export>
     <build_type>ament_cmake</build_type>
   </export>
+  <depend>distributed_slam_interfaces</depend>
 </package>

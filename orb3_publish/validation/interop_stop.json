@@ -1,0 +1,10 @@
+{
+  "verified": false,
+  "outer_exit_code": 1,
+  "shutdown_seconds": 15.011733063001884,
+  "processed_frames": null,
+  "valid_poses": null,
+  "output": "/mnt/c/ldh_ws/orb3slam_ws/sam6d-object-memory/orbslam_ws/output/orb3_publish/interop_validation",
+  "source": "dataset",
+  "remote_lan_verified": false
+}

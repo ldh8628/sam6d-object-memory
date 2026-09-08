@@ -657,7 +657,6 @@ Eigen::Vector3f Frame::inRefCoordinates(Eigen::Vector3f pCw)
 vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const float  &r, const int minLevel, const int maxLevel, const bool bRight) const
 {
     vector<size_t> vIndices;
-    vIndices.reserve(N);
 
     float factorX = r;
     float factorY = r;
@@ -686,13 +685,16 @@ vector<size_t> Frame::GetFeaturesInArea(const float &x, const float  &y, const f
         return vIndices;
     }
 
+    // Most local searches return a handful of features. This initial capacity
+    // is not a limit: the vector grows to retain every matching index.
+    vIndices.reserve(64);
     const bool bCheckLevels = (minLevel>0) || (maxLevel>=0);
 
     for(int ix = nMinCellX; ix<=nMaxCellX; ix++)
     {
         for(int iy = nMinCellY; iy<=nMaxCellY; iy++)
         {
-            const vector<size_t> vCell = (!bRight) ? mGrid[ix][iy] : mGridRight[ix][iy];
+            const vector<size_t>& vCell = (!bRight) ? mGrid[ix][iy] : mGridRight[ix][iy];
             if(vCell.empty())
                 continue;
 

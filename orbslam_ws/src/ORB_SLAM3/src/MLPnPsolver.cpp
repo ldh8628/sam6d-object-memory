@@ -96,6 +96,8 @@ namespace ORB_SLAM3 {
         SetRansacParameters();
     }
 
+    MLPnPsolver::~MLPnPsolver() = default;
+
     //RANSAC methods
     bool MLPnPsolver::iterate(int nIterations, bool &bNoMore, vector<bool> &vbInliers, int &nInliers, Eigen::Matrix4f &Tout){
         Tout.setIdentity();
@@ -112,7 +114,8 @@ namespace ORB_SLAM3 {
 	    vector<size_t> vAvailableIndices;
 
 	    int nCurrentIterations = 0;
-	    while(mnIterations<mRansacMaxIts || nCurrentIterations<nIterations)
+	    // Respect BOTH the total RANSAC budget and the caller's per-candidate slice.
+	    while(mnIterations<mRansacMaxIts && nCurrentIterations<nIterations)
 	    {
 	        nCurrentIterations++;
 	        mnIterations++;
