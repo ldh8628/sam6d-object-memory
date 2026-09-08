@@ -59,6 +59,21 @@ def parse_events(path):
     return result
 
 
+def latest_report(config):
+    candidates = []
+    for path in (ROOT / 'output/remote_codex').glob('*/report.json'):
+        try:
+            report = json.loads(path.read_text())
+            if (report.get('runner') == 'remote_codex_v1' and report.get('status') == 'completed'
+                    and report.get('target') == config['ssh']['target']
+                    and report.get('remote_root') == config['ssh']['remote_root']):
+                uuid.UUID(report['session_id'])
+                candidates.append((path.stat().st_mtime_ns, path))
+        except (OSError, ValueError, KeyError, TypeError):
+            continue
+    return max(candidates)[1] if candidates else None
+
+
 def run(config, prompt, seconds=300, sandbox='read-only', model='gpt-6-astra', resume=None):
     if not prompt.strip():
         raise ValueError('prompt must not be empty')
@@ -141,7 +156,9 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('--config', type=Path)
     parser.add_argument('--prompt-file', type=Path)
-    parser.add_argument('--resume-report', type=Path)
+    resume = parser.add_mutually_exclusive_group()
+    resume.add_argument('--resume-report', type=Path)
+    resume.add_argument('--resume-latest', action='store_true', help='resume the latest completed worker for this target/root; otherwise start a new one')
     parser.add_argument('--timeout', type=int, default=300)
     parser.add_argument('--sandbox', choices=['read-only', 'workspace-write'], default='read-only')
     parser.add_argument('--model', default='gpt-6-astra')
@@ -153,8 +170,10 @@ def main():
     if args.config is None or args.prompt_file is None:
         parser.error('--config and --prompt-file are required')
     try:
-        report, _ = run(load_config(args.config), args.prompt_file.read_text(),
-                        args.timeout, args.sandbox, args.model, args.resume_report)
+        config = load_config(args.config)
+        previous = latest_report(config) if args.resume_latest else args.resume_report
+        report, _ = run(config, args.prompt_file.read_text(),
+                        args.timeout, args.sandbox, args.model, previous)
     except (OSError, ValueError, KeyError) as exc:
         parser.exit(1, f'remote Codex setup failed: {exc}\n')
     if report['status'] != 'completed':
