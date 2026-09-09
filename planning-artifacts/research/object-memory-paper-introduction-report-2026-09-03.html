@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>객체 메모리 중심 SAM-6D–SLAM 논문 설계 보고서</title>
+  <style>
+    :root {
+      --ink:#172033; --muted:#5d687b; --paper:#fff; --bg:#eef2f7;
+      --line:#d7dee9; --blue:#2563eb; --blue-soft:#eff6ff;
+      --green:#059669; --green-soft:#ecfdf5; --orange:#ea580c;
+      --orange-soft:#fff7ed; --purple:#7c3aed; --purple-soft:#f5f3ff;
+      --red:#b42318; --red-soft:#fff1f0;
+    }
+    *{box-sizing:border-box} html{scroll-behavior:smooth}
+    body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.7 Inter,"Noto Sans KR","Noto Sans",system-ui,sans-serif}
+    a{color:#1d4ed8;text-decoration-thickness:1px;text-underline-offset:3px}
+    .page{width:min(1180px,calc(100% - 32px));margin:28px auto 72px;background:var(--paper);box-shadow:0 18px 60px #17203318;border-radius:24px;overflow:hidden}
+    header{padding:58px 64px 48px;background:linear-gradient(125deg,#102a56,#17488c 57%,#087a68);color:white}
+    header .eyebrow{font-size:13px;letter-spacing:.12em;text-transform:uppercase;opacity:.8;font-weight:750}
+    header h1{max-width:880px;margin:14px 0 14px;font-size:clamp(32px,5vw,54px);line-height:1.13;letter-spacing:-.035em}
+    header p{max-width:880px;margin:0;font-size:18px;opacity:.88}
+    header .meta{display:flex;flex-wrap:wrap;gap:10px;margin-top:26px}.pill{padding:6px 12px;border:1px solid #ffffff42;border-radius:999px;background:#ffffff12;font-size:13px}
+    main{padding:44px 64px 70px} section{scroll-margin-top:20px;margin:0 0 62px}
+    h2{margin:0 0 20px;font-size:30px;line-height:1.25;letter-spacing:-.025em;border-bottom:2px solid var(--line);padding-bottom:11px}
+    h3{margin:32px 0 12px;font-size:22px;line-height:1.35;letter-spacing:-.015em}
+    h4{margin:24px 0 9px;font-size:17px} p{margin:9px 0 15px}
+    .lead{font-size:19px;line-height:1.75;color:#354158}
+    .toc{columns:2;column-gap:38px;padding:22px 30px;background:#f8fafc;border:1px solid var(--line);border-radius:16px}
+    .toc a{display:block;break-inside:avoid;padding:5px 0;text-decoration:none;color:#334155}.toc a:hover{color:var(--blue)}
+    .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid.three{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .card{padding:21px 23px;border:1px solid var(--line);border-radius:16px;background:#fff}.card h3,.card h4{margin-top:0}
+    .card.blue{background:var(--blue-soft);border-color:#bfdbfe}.card.green{background:var(--green-soft);border-color:#a7f3d0}.card.orange{background:var(--orange-soft);border-color:#fed7aa}.card.purple{background:var(--purple-soft);border-color:#ddd6fe}
+    .callout{padding:20px 23px;border-left:5px solid var(--blue);border-radius:8px 14px 14px 8px;background:var(--blue-soft);margin:20px 0}.callout.warn{border-color:var(--orange);background:var(--orange-soft)}.callout.danger{border-color:var(--red);background:var(--red-soft)}.callout.good{border-color:var(--green);background:var(--green-soft)}
+    blockquote{margin:22px 0;padding:18px 24px;border-left:5px solid var(--green);background:var(--green-soft);font-size:18px;font-weight:600}
+    table{width:100%;border-collapse:separate;border-spacing:0;margin:18px 0 28px;font-size:14px;line-height:1.5;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+    th,td{padding:12px 13px;text-align:left;vertical-align:top;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}th:last-child,td:last-child{border-right:0}tr:last-child td{border-bottom:0}th{background:#eef2f7;font-weight:750}tbody tr:nth-child(even){background:#fafbfd}
+    .tag{display:inline-block;padding:3px 9px;border-radius:999px;font-size:12px;font-weight:750;background:#e2e8f0;color:#334155}.tag.rec{background:#d1fae5;color:#065f46}.tag.cond{background:#ede9fe;color:#5b21b6}.tag.now{background:#dbeafe;color:#1e40af}
+    .equation{overflow:auto;margin:15px 0;padding:16px 20px;text-align:center;border:1px solid #cbd5e1;border-radius:12px;background:#f8fafc;font:17px/1.6 "STIX Two Math","Times New Roman",serif}
+    pre{overflow:auto;padding:16px 18px;background:#111827;color:#e5e7eb;border-radius:12px;font:13px/1.55 ui-monospace,SFMono-Regular,Consolas,monospace}
+    code{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.92em}.copy{font-size:12px;color:var(--muted);margin-top:-8px}
+    figure{margin:28px 0;padding:18px;border:1px solid var(--line);border-radius:18px;background:#fbfdff}figcaption{margin:12px 8px 2px;color:var(--muted);font-size:14px}
+    .intro{margin:20px 0;border:1px solid var(--line);border-radius:16px;overflow:hidden}.intro summary{cursor:pointer;padding:18px 22px;background:#f8fafc;font-weight:750;font-size:18px}.intro[open] summary{border-bottom:1px solid var(--line)}.intro-body{padding:22px 26px}.intro-body p{font-family:Georgia,"Times New Roman",serif;font-size:16px;line-height:1.72;color:#20293a}.intro-note{padding:10px 14px;border-radius:10px;background:#fff7ed;color:#9a3412;font-family:Inter,"Noto Sans KR",sans-serif!important;font-size:14px!important}
+    ol,ul{padding-left:23px}li{margin:6px 0}.refs li{margin:10px 0}.small{font-size:13px;color:var(--muted)}
+    footer{padding:26px 64px 34px;border-top:1px solid var(--line);color:var(--muted);font-size:13px;background:#f8fafc}
+    @media(max-width:800px){.page{width:100%;margin:0;border-radius:0}header,main,footer{padding-left:24px;padding-right:24px}.grid,.grid.three{grid-template-columns:1fr}.toc{columns:1}table{display:block;overflow-x:auto}}
+    @media print{body{background:white;font-size:11pt}.page{width:100%;margin:0;box-shadow:none;border-radius:0}header{background:white!important;color:var(--ink);padding:24px 0;border-bottom:2px solid var(--ink)}header p{color:var(--muted)}main{padding:28px 0}.intro{break-inside:avoid}.intro:not([open]) .intro-body{display:block}.intro summary{list-style:none}a{color:inherit;text-decoration:none}section{break-before:auto}figure,table,.card{break-inside:avoid}footer{padding:20px 0;background:white}}
+  </style>
+</head>
+<body>
+<article class="page">
+  <header>
+    <div class="eyebrow">기술 조사 · 논문 구성 · 아키텍처</div>
+    <h1>객체 메모리 중심 SAM-6D–SLAM 논문 설계 보고서</h1>
+    <p>단발성·고지연 6D 자세 출력을 지속적이고 수정 가능한 객체 중심 지도 상태로 바꾸기 위한 서론, 선행연구 포지셔닝, 수식화, 아키텍처 및 실험 권고안</p>
+    <div class="meta"><span class="pill">2026-09-03</span><span class="pill">최소 유효 구조 우선</span><span class="pill">현재 구현과 제안 구조 분리</span><span class="pill">1차 문헌·공식 문서 검증</span></div>
+  </header>
+
+  <main>
+    <section id="summary">
+      <h2>핵심 요약</h2>
+      <p class="lead">가장 좋은 논문 문제는 “느린 SAM-6D를 실시간처럼 보이게 한다”가 아니다. <strong>서로 다른 속도로 동작하는 6D 인지와 SLAM 사이에서 지연된 프레임 단위 측정을 지속적인 객체 상태로 어떻게 바꿀 것인가</strong>가 핵심이다.</p>
+      <blockquote>로봇은 인지 결과의 출력 여부를 세계의 상태와 동일시해서는 안 된다.</blockquote>
+      <div class="grid three">
+        <div class="card blue"><h4>현재 방어 가능한 기여</h4><p>촬영 시각 기반 자세 정합, 지속적 다중 인스턴스 식별, 대칭성 인지 융합, 가시성 기반 베르누이 생명주기.</p></div>
+        <div class="card green"><h4>주 추천 추가 기여</h4><p>불확실성 기반 SE(3) 융합(V1)과 메모리 유도 희소 RGB-D 추적(V2).</p></div>
+        <div class="card purple"><h4>조건부 강한 기여</h4><p>객체 요인으로 카메라와 객체를 함께 보정하는 고정 지연 그래프(V3). 외부 정답값(GT)이 있을 때만 주장한다.</p></div>
+      </div>
+      <div class="callout warn"><strong>정직한 경계:</strong> 마지막 지도 자세의 연속 재투영은 화면 공백과 지연 유발 변환 오차를 줄이지만 새 관측이 아니므로 정확도 향상 자체가 아니다. 추론 중 정확도 향상에는 V2처럼 실제 중간 측정을 만드는 구조가 필요하다.</div>
+    </section>
+
+    <section id="toc">
+      <h2>목차</h2>
+      <nav class="toc">
+        <a href="#problem">1. 논문에서 주장할 필요성</a>
+        <a href="#current">2. 현재 시스템의 논문적 해석</a>
+        <a href="#related">3. 기존 연구와 연구 공백</a>
+        <a href="#claim">4. 권장 논지와 기여문</a>
+        <a href="#introductions">5. 서론 초안 4개</a>
+        <a href="#architecture">6. 제안 아키텍처 그림</a>
+        <a href="#versions">7. 아키텍처 버전 비교</a>
+        <a href="#math">8. 핵심 수식</a>
+        <a href="#implementation">9. 최소 구현 경로</a>
+        <a href="#evaluation">10. 실험 및 제거 분석</a>
+        <a href="#decision">11. 최종 추천</a>
+        <a href="#references">12. 참고문헌</a>
+      </nav>
+    </section>
+
+    <section id="problem">
+      <h2>1. 논문에서 주장할 현재 기술의 필요성</h2>
+      <div class="grid">
+        <div class="card"><h3>프레임 단위 자세 ≠ 세계 상태</h3><p>SAM-6D가 주는 것은 특정 촬영 시각의 <code>T_cam_obj</code>다. 로봇이 필요한 것은 물리 객체별 식별자, 지도 자세, 불확실성, 가시성, 존재확률과 갱신 이력이다.</p></div>
+        <div class="card"><h3>지연은 기하 오차가 된다</h3><p>늦게 도착한 객체 자세를 최신 카메라 자세와 곱하면 추론 지연이 지도 좌표계의 병진·회전 편향으로 바뀐다. 타임스탬프는 로깅 정보가 아니라 측정 모델의 일부다.</p></div>
+        <div class="card"><h3>미출력 ≠ 객체 소멸</h3><p>가림, 시야각 이탈, 프레임 누락, 처리 중 상태는 서로 다르다. 검출기 출력 유무로 객체 존재를 결정하면 유령 객체와 성급한 삭제가 동시에 발생한다.</p></div>
+        <div class="card"><h3>안정된 객체는 제약조건이 된다</h3><p>충분히 검증된 정적 객체는 단순 주석이 아니라 카메라 자세와 재지역화를 돕는 랜드마크가 될 수 있다. 단, V3와 정답값 검증이 필요하다.</p></div>
+      </div>
+      <p>따라서 논문의 필요성은 <strong>일반화 가능한 6D 인지의 성능 부족</strong>만이 아니라, 그 출력을 고속 로봇 상태추정과 연결하는 <strong>비동기 지속성 문제</strong>에서 나온다.</p>
+    </section>
+
+    <section id="current">
+      <h2>2. 현재 시스템의 논문적 해석</h2>
+      <table>
+        <thead><tr><th>현재 구성</th><th>논문 용어</th><th>상태</th><th>주의할 주장</th></tr></thead>
+        <tbody>
+          <tr><td><code>PoseBuffer.lookup(capture_stamp)</code></td><td>지연 측정의 시간 정합</td><td><span class="tag now">구현됨</span></td><td>도착 시각 융합 대비 지도 번짐 억제</td></tr>
+          <tr><td>지도 좌표계 다중 인스턴스 연관</td><td>지속적 객체 식별 및 데이터 연관</td><td><span class="tag now">구현됨</span></td><td>검출 ID와 객체 ID 분리</td></tr>
+          <tr><td>회전 모드 + CAD 대칭성</td><td>대칭성 인지 다중 모드 자세 융합</td><td><span class="tag now">구현됨</span></td><td>관측되지 않은 평균 회전 방지</td></tr>
+          <tr><td>베르누이 존재확률 + 생명주기</td><td>가시성 조건부 객체 영속성</td><td><span class="tag now">구현됨</span></td><td>시야 밖 누락에는 벌점 없음</td></tr>
+          <tr><td>최신 앵커의 전 프레임 재투영</td><td>지속적 재투영 기준선</td><td><span class="tag now">구현됨</span></td><td>정확도 향상이 아니라 시간적 관측 범위</td></tr>
+          <tr><td>SE(3) 공분산 필터</td><td>불확실성 기반 확률적 랜드마크 상태</td><td><span class="tag">제안 V1</span></td><td>잔차 보정 필요</td></tr>
+          <tr><td>RGB-D 희소 프레임 간 추적기</td><td>메모리 유도 측정 연결부</td><td><span class="tag rec">추천 V2</span></td><td>추론 공백 중 실제 측정 생성</td></tr>
+          <tr><td>카메라–객체 공동 최적화기</td><td>객체 보강 고정 지연 SLAM</td><td><span class="tag cond">조건부 V3</span></td><td>외부 카메라 정답값 없이 지도 정확도 주장 금지</td></tr>
+        </tbody>
+      </table>
+      <div class="callout good"><strong>현재 구현만으로도 논문 가능:</strong> 범위를 “정확도 개선 추적기”가 아니라 “지연 인지 지속 객체 메모리”로 제한하고, 내부 rosbag 데이터 4종의 결과를 외부 정답값 또는 공개 데이터 평가로 보강하면 된다.</div>
+    </section>
+
+    <section id="related">
+      <h2>3. 기존 연구와 연구 공백</h2>
+      <table>
+        <thead><tr><th>연구 계열</th><th>대표 연구</th><th>해결한 문제</th><th>본 논문과 만나는 간극</th></tr></thead>
+        <tbody>
+          <tr><td>제로샷 6D 자세</td><td><a href="#r1">SAM-6D [1]</a>, <a href="#r3">FoundationPose [3]</a></td><td>미지 객체의 등록·자세 추정 및 일부 추적</td><td>장면 수준의 지속적 식별·존재와 지연된 다중 속도 SLAM 통합은 중심 문제가 아님</td></tr>
+          <tr><td>시간적·다중 시점 자세</td><td><a href="#r4">BundleTrack [4]</a>, <a href="#r5">CosyPose [5]</a></td><td>시간적 자세 그래프 또는 다중 시점 일관성</td><td>검출 결과를 고려한 생명주기와 장기 다중 객체 메모리는 범위가 다름</td></tr>
+          <tr><td>객체 수준 SLAM</td><td><a href="#r6">SLAM++ [6]</a>, <a href="#r7">CubeSLAM [7]</a>, <a href="#r8">Fusion++ [8]</a>, <a href="#r9">DSP-SLAM [9]</a></td><td>객체 랜드마크와 카메라·객체 공동 최적화</td><td>고지연 제로샷 SAM-6D 결과를 기존 SLAM과 결합하는 구체적 스트리밍 계약이 다름</td></tr>
+          <tr><td>지속적 의미 지도화</td><td><a href="#r10">Hydra [10]</a>, <a href="#r11">LTC-Mapping [11]</a></td><td>지속적 장면 그래프 및 중복·변화 처리</td><td>CAD 좌표계 6D 자세, 대칭성, 추론 지연 보상은 주목표가 아님</td></tr>
+        </tbody>
+      </table>
+      <div class="callout"><strong>권장 연구 공백 문장:</strong> “검토한 연구 계열 사이에는 지연된 제로샷 6D 추론, 지속적인 다중 객체 상태, 고속 SLAM이 교차하는 지점에 실용적인 공백이 남아 있다.”</div>
+      <div class="callout danger"><strong>피해야 할 신규성 표현:</strong> “최초의 객체 메모리”, “최초의 객체 수준 SLAM”, “최초의 지속적 객체 지도”. 해당 개념은 SLAM++, Fusion++, Hydra, LTC-Mapping 등에 이미 존재한다.</div>
+    </section>
+
+    <section id="claim">
+      <h2>4. 권장 논지와 기여문</h2>
+      <h3>권장 핵심 논지</h3>
+      <blockquote>로봇은 인지 결과의 출력 여부를 세계의 상태와 동일시해서는 안 된다. 촬영 시각과 도착 시각, 검출 관측과 지속 객체 상태를 분리함으로써 비동기 객체 메모리는 희소한 제로샷 6D 자세 추정을 시간적으로 연속되고 불확실성을 표현하며 수정 가능한 랜드마크로 바꾼다.</blockquote>
+      <h3>구현 준비도에 따른 기여문</h3>
+      <ol>
+        <li><span class="tag now">현재</span> 촬영 시각의 SLAM 자세로 지연된 SAM-6D 측정을 등록하는 자원 사용 제한형 스트리밍 통합.</li>
+        <li><span class="tag now">현재</span> 검출 ID와 독립된 다중 인스턴스 식별, 가시성 기반 존재확률과 생명주기를 갖는 지속 객체 메모리.</li>
+        <li><span class="tag now">현재</span> 서로 다른 회전 모드를 허구의 평균 자세로 만들지 않는 대칭성 인지 모드 융합.</li>
+        <li><span class="tag">V1 후</span> 보정된 공분산, 마할라노비스 연관, 불확실성 가중 SE(3) 융합.</li>
+        <li><span class="tag rec">V2 후</span> 고비용 추론 사이에서 검증 가능한 중간 객체 자세 측정을 만드는 메모리 유도 RGB-D 추적기.</li>
+        <li><span class="tag cond">V3+GT 후</span> 지연 객체 요인으로 카메라 궤적과 객체 랜드마크를 함께 개선하는 고정 지연 최적화.</li>
+      </ol>
+      <h3>논문 제목 후보</h3>
+      <ul>
+        <li><em>느리게 보면서 기억하기: 지속적 6D 객체 지도화를 위한 비동기 객체 메모리</em></li>
+        <li><em>제로샷 6D 인지와 SLAM을 잇는 비동기 객체 메모리</em></li>
+        <li><em>SAM-6D와 시각 SLAM을 이용한 지연 인지 지속 객체 지도화</em></li>
+        <li><em>프레임 단위 6D 자세에서 지속적 객체 중심 지도로</em></li>
+      </ul>
+    </section>
+
+    <section id="introductions">
+      <h2>5. 서론 초안 4개</h2>
+      <p>아래 초안은 논문의 실제 구현 범위에 맞춰 선택·편집할 수 있다. 참고문헌 번호는 본 보고서의 참고문헌 목록과 대응한다.</p>
+
+      <details class="intro" open>
+        <summary>버전 A · 비동기성과 지연 — V2 구현 후 가장 추천</summary>
+        <div class="intro-body" lang="ko">
+          <p class="intro-note"><strong>사용 조건:</strong> V1 불확실성 모델과 V2 프레임 간 추적기를 구현하고 평가한 경우.</p>
+          <p>6자유도 객체 자세는 시각 인지와 로봇 행동을 연결하는 핵심 기하 인터페이스다. 물체 조작, 증강현실, 객체 인지 내비게이션을 수행하려면 객체의 종류뿐 아니라 카메라에 대한 위치와 방향을 알아야 한다. 최근 연구는 이 능력의 일반화 범위를 크게 넓혔다. 대표적으로 SAM-6D는 인스턴스 분할 모델과 자세 추정 모델을 결합하여 객체별 재학습 없이 RGB-D 관측으로부터 미지 객체의 자세를 복원한다 [1]. FoundationPose도 모델 기반 및 모델 비의존 설정에서 미지 객체의 등록과 추적을 통합한다 [3]. 이러한 발전으로 일반화 가능한 6D 인지는 점차 실용화되고 있지만, 희소하고 지연된 자세 출력이 온라인 로봇에서 어떻게 지속 상태가 되어야 하는지는 그 자체로 해결하지 않는다.</p>
+          <p>이 구분이 중요한 이유는 카메라 스트림, 시각 SLAM, 최신 6D 자세 추정 파이프라인이 서로 다른 속도로 동작하기 때문이다. 카메라와 SLAM이 카메라 자세를 계속 갱신하는 동안 분할·자세 추정 네트워크는 이전 영상을 처리하고 있을 수 있다. 따라서 출력은 결과 도착 시각이 아니라 영상 촬영 시각의 장면을 측정한 것이다. 지연된 객체 자세를 최신 카메라 자세와 결합하면 추론 지연이 지도 좌표계의 체계적 오차로 바뀐다. 반대로 마지막으로 채택한 객체 자세를 매 프레임 재투영하는 방법은 화면의 공백을 가릴 뿐 새로운 증거를 만들지 않으며, 불확실성을 표현하거나 미검출 객체가 가려졌는지, 시야 밖에 있는지, 실제로 사라졌는지를 판별하지 못한다.</p>
+          <p>시간적 6D 추적과 다중 시점 추정은 이 문제를 부분적으로 다룬다. BundleTrack은 메모리 보강 자세 그래프 최적화로 누적 오차가 낮은 추적을 수행하고 [4], FoundationPose는 등록 이후 미지 객체 추적을 지원하며 [3], CosyPose는 다중 시점 일관성을 이용해 카메라 시점과 여러 객체 자세를 공동 정련한다 [5]. 한편 SLAM++, CubeSLAM, Fusion++, DSP-SLAM과 같은 객체 수준 SLAM은 객체가 압축적이고 최적화 가능한 랜드마크로 기능하며 재지역화 또는 카메라 자세 추정을 지원할 수 있음을 보였다 [6–9]. Hydra와 LTC-Mapping 같은 지속 공간 표현은 장기 로봇 운용에 일시적 검출이 아니라 수정 가능한 객체 수준 지도가 필요함을 강조한다 [10,11]. 그러나 지연된 제로샷 6D 측정을 고속 SLAM과 통합하면서 다중 객체 식별, 자세 불확실성, 가시성 기반 존재확률, 유한한 온라인 연산량을 함께 보장하는 문제는 이 연구 계열들의 교차점에 여전히 남아 있다.</p>
+          <p>본 연구는 제로샷 6D 인지와 시각 SLAM 사이에 비동기 객체 메모리 계층을 두어 이 공백을 해결한다. 각 검출은 원본 RGB-D 프레임의 타임스탬프를 보존하며, 유한 길이의 SLAM 자세 이력을 이용해 지도 좌표계로 변환된다. 생성된 객체 랜드마크는 검출기와 독립적으로 지속되고, 대칭성 인지 연관, 불확실성 기반 SE(3) 융합, 가시성 조건부 베르누이 존재 추론으로 갱신된다. 고비용 6D 추정기의 출력이 없는 구간에는 메모리가 각 랜드마크를 현재 시점에 투영하여 가벼운 희소 RGB-D 추적기를 초기화한다. 검증된 중간 측정만 객체 상태를 갱신하며, 추적이 실패하거나 모호하면 지도를 훼손하지 않고 예측 상태로 되돌아간다.</p>
+          <p>본 연구의 기여는 다음과 같다. (1) 지연된 제로샷 6D 측정과 계속 변화하는 SLAM 궤적을 촬영 시각 기준으로 융합하는 정식화, (2) 자세·불확실성·식별자·대칭성·존재확률을 함께 표현하는 지속적 다중 인스턴스 객체 메모리, (3) 네트워크 갱신 사이에 기하학적 객체 자세 증거를 생성하는 메모리 유도 프레임 간 정련 기법, (4) 제어된 지연 및 구성요소 제거 실험을 통해 시간적 관측 범위, 객체 자세 정확도, 지도 일관성, 지연을 분리해 평가하는 프로토콜이다. 이를 통해 간헐적인 프레임 단위 자세 추정을 온라인 로봇 인지에 적합한 연속적이고 수정 가능한 객체 중심 지도로 전환한다.</p>
+        </div>
+      </details>
+
+      <details class="intro">
+        <summary>버전 B · 객체 메모리와 객체 영속성</summary>
+        <div class="intro-body" lang="ko">
+          <p class="intro-note"><strong>사용 조건:</strong> 객체 메모리 자체를 논문의 핵심 개념과 명칭으로 전면에 둘 경우.</p>
+          <p>로봇이 활동하는 세계는 지속되는 개체로 구성되지만, 대부분의 시각 검출기는 서로 독립적인 프레임에서 동작한다. 객체는 가려지거나 카메라 시야를 벗어나거나 인지 모델이 다른 프레임을 처리하는 동안 관측되지 않았다고 해서 사라지지 않는다. 따라서 긴 궤적을 이동하는 로봇의 객체 인지는 “지금 무엇이 보이는가?”를 넘어, 어떤 물리 인스턴스를 관측했는지, 그 인스턴스가 공통 지도에서 어디에 있는지, 추정이 얼마나 확실한지, 이후의 관측 부재가 가림·센서 실패·실제 환경 변화 중 무엇을 의미하는지 유지해야 한다.</p>
+          <p>일반화 가능한 6D 자세 추정기는 이 문제의 기하학적 요소에 대한 접근성을 크게 높였다. SAM-6D는 전용 인스턴스 분할 및 자세 추정 네트워크를 통해 RGB-D 영상에서 미지 객체의 자세를 추정하고 [1], FoundationPose는 미지 객체의 등록과 시간적 추적을 모두 지원한다 [3]. 그러나 정확한 카메라 상대 자세의 연속이 곧 객체 메모리는 아니다. 검출 식별자는 일시적이고, 반복 관측은 중복 랜드마크를 만들 수 있으며, 대칭 객체는 서로 양립할 수 없는 회전 모드를 생성한다. 또한 가시성을 고려하지 않은 미검출 처리는 단지 시야 밖에 있는 객체를 성급하게 삭제할 수 있다.</p>
+          <p>객체 중심 지도화 연구는 오래전부터 지속적 장면 표현의 필요성을 제기해 왔다. SLAM++는 실시간 지도화와 예측을 위한 객체 수준 자세 그래프를 도입했고 [6], Fusion++는 최적화 가능한 그래프에서 객체 복원, 의미 라벨, 존재확률을 유지했으며 [8], CubeSLAM과 DSP-SLAM은 카메라와 객체를 공동 최적화했다 [7,9]. 최근에는 Hydra가 계층적 3차원 장면 그래프를 구성하고 [10], LTC-Mapping이 장기 객체 지도에서 중복 인스턴스와 장면 변화를 명시적으로 다룬다 [11]. 이들 연구는 객체 영속성의 가치를 확립했지만, 비동기 제로샷 CAD 좌표계 6D 자세 추정을 기존 SLAM 후단과 결합된 경량 다중 객체 메모리로 전환하는 문제와는 목표와 측정 모델이 다르다.</p>
+          <p>본 연구는 객체 메모리를 물리 객체와 개별 검출기 출력을 분리하는 확률적 상태 계층으로 정식화한다. 저장된 객체는 지속 식별자, 지도 좌표계 6D 자세, 대칭성 모델, 불확실성, 존재확률, 생명주기 상태를 갖는다. 지연 측정은 촬영 타임스탬프의 카메라 자세를 이용해 등록되고 지도 좌표계에서 연관되며, 기하 및 품질 증거가 일관될 때만 융합된다. 객체가 보일 것으로 예상된 경우에만 미검출이 존재확률을 낮추고, 시야 밖 객체는 상태를 유지하여 재관측 시 다시 활성화된다. 이 설계는 모든 과거 검출을 영구 랜드마크로 만들지 않으면서도 객체 영속성을 보존한다.</p>
+          <p>제안 프레임워크의 기여는 (1) 고속 SLAM과 저속 제로샷 6D 인지를 잇는 타임스탬프 정합 스트리밍 인터페이스, (2) 공통 지도 좌표계에서의 지속적 다중 인스턴스 데이터 연관 및 생명주기 관리, (3) 안정적인 장기 랜드마크를 위한 대칭성 인지 자세 융합과 가시성 기반 베르누이 존재 갱신, (4) 고비용 추론 구간에도 객체 자세를 갱신하는 메모리 유도 중간 추적 방식이다. 결과 표현은 압축적이고 수정 가능하며 연속 시각화, 검색, 후속 로봇 행동에 직접 사용할 수 있다.</p>
+        </div>
+      </details>
+
+      <details class="intro">
+        <summary>버전 C · 양방향 객체-SLAM — V3와 정답값 확보 후에만 사용</summary>
+        <div class="intro-body" lang="ko">
+          <p class="intro-note"><strong>조건:</strong> 공동 최적화기와 카메라 궤적 정답값이 없으면 이 버전을 사용하지 않는다.</p>
+          <p>시각 SLAM과 객체 자세 추정은 흔히 단방향 파이프라인으로 배치된다. SLAM이 카메라를 지역화하고, 검출기가 현재 카메라 좌표계에서 객체 자세를 추정한 뒤, 두 변환을 합성하여 객체를 지도에 배치한다. 이러한 모듈식 설계는 편리하지만 가치 있는 기하 정보를 버린다. 정적 객체가 반복 관측되어 신뢰할 수 있는 랜드마크로 저장되면, 이후 관측은 카메라 자세를 제약하고 재지역화를 지원하며 전역 지도 일관성을 높일 수 있다. 따라서 객체는 기하 지도에 붙는 주석을 넘어 추정 문제의 지속적 요인이 될 수 있다.</p>
+          <p>기존 객체 수준 SLAM은 이러한 상호 관계를 보여준다. SLAM++는 6자유도 카메라–객체 제약을 최적화된 객체 그래프에 포함하고 객체 예측을 실시간 추적에 사용한다 [6]. CubeSLAM은 카메라·객체·점 상태를 공동 최적화하며 객체 제약이 단안 드리프트를 줄일 수 있음을 보고했다 [7]. Fusion++는 복원된 객체를 최적화 가능한 6자유도 자세 그래프에 저장하고 [8], DSP-SLAM은 카메라 자세·객체 위치·특징점에 대한 객체 인지 번들 조정을 수행한다 [9]. CosyPose 역시 일반적인 온라인 SLAM 외부에서 다중 시점 객체 일관성이 시점과 객체 자세를 함께 개선할 수 있음을 보였다 [5].</p>
+          <p>최신 제로샷 자세 추정기는 상호 보완적 능력과 새로운 시스템 문제를 동시에 제시한다. SAM-6D는 RGB-D 입력에서 미지 CAD 객체의 6자유도 자세를 추정할 수 있지만 [1], 다단계 추론은 카메라 및 SLAM 스트림과 비동기적으로 측정을 출력한다. 지연된 객체 관측은 과거 카메라 상태에 속한다. 이를 최신 상태에 연결하면 랜드마크와 그로부터 파생된 피드백 제약이 모두 편향되고, 버리면 강한 객체 수준 정보를 낭비한다. 따라서 공동 추정기는 획득 시각을 명시적으로 표현하고 고속 추적 루프를 막지 않으면서 지연 요인을 반영해야 한다.</p>
+          <p>본 연구는 SLAM 상대 자세 제약, 제로샷 카메라–객체 측정, 지속 객체 랜드마크를 공통 SE(3) 그래프에서 최적화하는 객체 보강 고정 지연 정식화를 제안한다. 지연 측정은 촬영 시각의 카메라 노드에 삽입되며, 대칭성 인지 강인 요인은 대칭 동치 회전을 일관되게 처리하고 잘못된 회전의 영향을 억제한다. 가시성 기반 존재 과정은 어떤 객체 랜드마크를 정적 제약으로 유지할지 결정하고, 메모리 유도 RGB-D 추적기는 고비용 네트워크 갱신 사이에 중간 요인을 제공한다. 오래된 카메라 상태는 주변화하여 연산량을 제한하는 반면 확립된 객체 랜드마크는 향후 재지역화와 지도 보정에 계속 사용한다.</p>
+          <p>본 연구의 기여는 (1) 제로샷 6D 객체 인지와 시각 SLAM을 결합하는 지연 측정 요인 그래프 정식화, (2) 대칭성·보정된 불확실성·확률적 존재를 갖는 지속 객체 변수, (3) 메모리 유도 중간 객체 요인을 활용하는 고정 지연 온라인 최적화 전략, (4) 제어된 추론 지연·가림·재방문 조건에서 카메라 궤적과 객체 랜드마크를 함께 평가하는 정답값 기반 실험이다.</p>
+        </div>
+      </details>
+
+      <details class="intro" open>
+        <summary>버전 D · 현재 시스템을 위한 보수적 초안 — 지금 가장 안전</summary>
+        <div class="intro-body" lang="ko">
+          <p class="intro-note"><strong>현재 사용:</strong> 구현되지 않은 V1–V3를 기여에서 제외한 현재 시스템용 초안.</p>
+          <p>최근 제로샷 6D 객체 자세 추정기는 객체별 학습의 필요성을 낮추고 이전에 보지 못한 객체에도 CAD 기반 인지를 적용할 수 있게 한다. 예를 들어 SAM-6D는 인스턴스 분할과 점 대응 기반 자세 추정을 결합하여 복잡한 RGB-D 영상에서 미지 객체의 자세를 복원한다 [1]. 그러나 온라인 로봇에서 프레임 단위 자세 추정은 세계 표현으로서 불완전하다. 추정기는 카메라보다 느리게 동작할 수 있고, 카메라가 이동한 뒤 관측이 도착할 수 있으며, 가림으로 검출이 누락될 수 있다. 또한 반복 관측은 지속되는 물리 인스턴스와 연관되어야 한다.</p>
+          <p>시각 SLAM은 검출을 안정된 기준 좌표계로 표현하는 데 필요한 카메라 궤적을 제공한다. ORB-SLAM3는 실시간 RGB-D 지역화와 지도화를 지원하지만 [2], 그 기하 지도는 작업 수준 객체의 식별자, 자세 이력, 존재 생명주기를 직접 정의하지 않는다. 지연된 카메라 상대 객체 자세를 결과 도착 시점의 카메라 자세와 단순 합성하면 시간적으로 불일치하는 랜드마크가 생성된다. 마지막 객체 자세를 화면에 유지하면 빈 오버레이는 피할 수 있지만, 연관 오류, 다중 모드 회전, 중복 인스턴스, 관측되지 않은 객체와 사라진 객체의 차이는 해결하지 못한다.</p>
+          <p>객체 수준 SLAM과 의미 지도화는 중요한 선행 사례를 제공한다. SLAM++와 Fusion++는 객체를 최적화 가능한 지도의 지속 요소로 표현하고 [6,8], CubeSLAM과 DSP-SLAM은 공동 추정에서 객체 제약을 활용하며 [7,9], LTC-Mapping은 중복 억제와 장기 장면 변화를 다룬다 [11]. BundleTrack과 FoundationPose 같은 시간적 6D 시스템도 프레임 간 축적 정보의 가치를 보여준다 [3,4]. 본 연구는 이들과 상보적으로, 기존 고속 SLAM 궤적과 지연된 SAM-6D 검출을 연결하면서 지속적인 다중 객체 상태를 보존하는 작고 후단 독립적인 메모리 계층에 초점을 둔다.</p>
+          <p>본 연구는 SLAM 보조 SAM-6D 인지를 위한 스트리밍 객체 메모리를 제시한다. 시스템은 타임스탬프가 있는 유한 길이의 카메라 자세 이력을 저장하고, 각 검출을 결과 도착 시각이 아니라 원본 프레임에 대응하는 자세로 변환한다. 지도 좌표계에서 검출은 같은 클래스의 여러 가능한 인스턴스와 연관되고, 대칭성을 고려한 회전 모드로 융합되며, 검출 ID와 독립된 지속 식별자를 부여받는다. 베르누이 존재 모델은 품질 가중 채택 측정에 따라 신뢰도를 높이고, 객체가 보일 것으로 예상될 때만 미검출에 벌점을 준다. 따라서 확립된 객체는 시야 밖에서도 기억되고 재관측 시 다시 활성화될 수 있다.</p>
+          <p>본 연구의 기여는 다음과 같다. (1) SAM-6D와 RGB-D SLAM의 촬영 시각 정합 비동기 통합, (2) 지도 좌표계에서의 지속적 다중 인스턴스 객체 연관과 생명주기 관리, (3) 가시성 조건부 존재 추론을 결합한 대칭성 인지 다중 모드 자세 융합, (4) 지연 민감도, 랜드마크 안정성, 중복 억제, 장기 객체 영속성을 측정하는 스트리밍 평가 방법이다. 이 보수적 버전은 현재 구현과 일치하며 프레임 사이 자세 보정이나 SLAM 궤적 향상을 주장하지 않는다.</p>
+        </div>
+      </details>
+    </section>
+
+    <section id="architecture">
+      <h2>6. 제안 아키텍처</h2>
+      <p>실선은 권장 핵심 구조(V1–V2), 점선은 검증 후에만 추가할 V3 피드백이다. 논문 편집용 원본은 <a href="object-memory-proposed-architecture.svg">SVG 파일</a>로 별도 제공한다.</p>
+      <figure>
+        <svg viewBox="0 0 1200 690" width="100%" role="img" aria-labelledby="arch-title arch-desc">
+          <title id="arch-title">비동기 객체 메모리 아키텍처</title>
+          <desc id="arch-desc">고속 SLAM과 지연된 SAM-6D 측정을 촬영 시각에 맞춰 지속 객체 메모리에 정합한다. 메모리 예측은 프레임 간 RGB-D 추적과 연속 출력을 유도하며 공동 최적화는 선택 사항이다.</desc>
+          <defs>
+            <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#2563eb"/></marker>
+            <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#ea580c"/></marker>
+            <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+            <marker id="ap" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10Z" fill="#7c3aed"/></marker>
+            <style>.bt{font:700 17px Inter,Arial;fill:#172033}.bs{font:13px Inter,Arial;fill:#566176}.ln{fill:none;stroke-width:3}.lab{font:12px Inter,Arial;fill:#566176}</style>
+          </defs>
+          <rect width="1200" height="690" rx="18" fill="#f8fafc"/>
+          <text x="40" y="44" style="font:700 23px Inter,Arial;fill:#172033">제안 비동기 객체 메모리 파이프라인</text>
+          <g><rect x="35" y="270" width="155" height="120" rx="14" fill="#fff" stroke="#94a3b8" stroke-width="2"/><text x="112" y="310" text-anchor="middle" class="bt">RGB-D 입력</text><text x="112" y="340" text-anchor="middle" class="bs">Iₖ · Dₖ · K · tₖ</text><text x="112" y="365" text-anchor="middle" class="bs">카메라 속도</text></g>
+          <g><rect x="250" y="100" width="175" height="105" rx="14" fill="#eff6ff" stroke="#60a5fa" stroke-width="2"/><text x="337" y="140" text-anchor="middle" class="bt">ORB-SLAM3</text><text x="337" y="170" text-anchor="middle" class="bs">고속 자세 Xₖ</text></g>
+          <g><rect x="485" y="100" width="180" height="105" rx="14" fill="#eff6ff" stroke="#60a5fa" stroke-width="2"/><text x="575" y="140" text-anchor="middle" class="bt">자세 이력</text><text x="575" y="170" text-anchor="middle" class="bs">시각으로 Xₜ 조회</text></g>
+          <g><rect x="250" y="300" width="175" height="115" rx="14" fill="#fff7ed" stroke="#fb923c" stroke-width="2"/><text x="337" y="340" text-anchor="middle" class="bt">SAM-6D</text><text x="337" y="370" text-anchor="middle" class="bs">저속 ISM → PEM</text><text x="337" y="393" text-anchor="middle" class="bs">지연 측정 Zⱼ,ₜ</text></g>
+          <g><rect x="485" y="300" width="180" height="115" rx="14" fill="#fff7ed" stroke="#fb923c" stroke-width="2"/><text x="575" y="337" text-anchor="middle" class="bt">촬영 시각 정합</text><text x="575" y="369" text-anchor="middle" class="bs">Lᵐⱼ,ₜ = Xₜ Zⱼ,ₜ</text><text x="575" y="393" text-anchor="middle" class="bs">에포크·오래된 측정 검사</text></g>
+          <g><rect x="740" y="105" width="250" height="330" rx="18" fill="#ecfdf5" stroke="#34d399" stroke-width="2.5"/><text x="865" y="143" text-anchor="middle" class="bt">지속 객체 메모리</text><rect x="765" y="170" width="200" height="55" rx="10" fill="#fff" stroke="#a7f3d0"/><text x="865" y="194" text-anchor="middle" class="bs">다중 인스턴스 식별</text><text x="865" y="213" text-anchor="middle" class="bs">지도 좌표계 연관</text><rect x="765" y="243" width="200" height="55" rx="10" fill="#fff" stroke="#a7f3d0"/><text x="865" y="267" text-anchor="middle" class="bs">SE(3) 확률적 자세 상태</text><text x="865" y="286" text-anchor="middle" class="bs">대칭성 · 공분산</text><rect x="765" y="316" width="200" height="55" rx="10" fill="#fff" stroke="#a7f3d0"/><text x="865" y="340" text-anchor="middle" class="bs">베르누이 존재확률</text><text x="865" y="359" text-anchor="middle" class="bs">생명주기 · 가시성</text><text x="865" y="406" text-anchor="middle" class="bs">V1 핵심</text></g>
+          <g><rect x="690" y="505" width="330" height="105" rx="14" fill="#f0fdf4" stroke="#22c55e" stroke-width="2"/><text x="855" y="542" text-anchor="middle" class="bt">메모리 유도 RGB-D 추적기</text><text x="855" y="572" text-anchor="middle" class="bs">예측 ROI → 광류 → PnP RANSAC</text><text x="855" y="593" text-anchor="middle" class="bs">검증된 Z̃ⱼ,ₖ · V2</text></g>
+          <g><rect x="1035" y="125" width="140" height="145" rx="14" fill="#fff" stroke="#34d399" stroke-width="2"/><text x="1105" y="162" text-anchor="middle" class="bt">출력</text><text x="1105" y="193" text-anchor="middle" class="bs">랜드마크</text><text x="1105" y="218" text-anchor="middle" class="bs">재투영</text><text x="1105" y="243" text-anchor="middle" class="bs">신뢰도</text></g>
+          <g><rect x="1035" y="450" width="140" height="135" rx="14" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="2" stroke-dasharray="8 6"/><text x="1105" y="486" text-anchor="middle" class="bt">고정 지연</text><text x="1105" y="510" text-anchor="middle" class="bt">공동 그래프</text><text x="1105" y="541" text-anchor="middle" class="bs">선택 사항 V3</text><text x="1105" y="564" text-anchor="middle" class="bs">GT 검증 후 적용</text></g>
+          <path d="M190 300C220 230 225 180 250 155" class="ln" stroke="#2563eb" marker-end="url(#ab)"/><path d="M190 350L250 350" class="ln" stroke="#ea580c" marker-end="url(#ao)"/><path d="M425 152L485 152" class="ln" stroke="#2563eb" marker-end="url(#ab)"/><path d="M425 357L485 357" class="ln" stroke="#ea580c" marker-end="url(#ao)"/><path d="M575 205L575 300" class="ln" stroke="#2563eb" marker-end="url(#ab)"/><path d="M665 357L740 310" class="ln" stroke="#059669" marker-end="url(#ag)"/><path d="M990 190L1035 190" class="ln" stroke="#059669" marker-end="url(#ag)"/><path d="M865 435L865 505" class="ln" stroke="#059669" marker-end="url(#ag)"/><path d="M690 560C600 625 185 585 150 390" class="ln" stroke="#2563eb" marker-end="url(#ab)"/><path d="M760 505C700 470 705 410 750 385" class="ln" stroke="#059669" marker-end="url(#ag)"/><path d="M1020 555L1035 530" class="ln" stroke="#7c3aed" stroke-dasharray="8 6" marker-end="url(#ap)"/><path d="M1035 470C995 420 980 390 960 365" class="ln" stroke="#7c3aed" stroke-dasharray="8 6" marker-end="url(#ap)"/>
+          <text x="60" y="657" class="lab">파랑: 고속 카메라 경로</text><text x="275" y="657" class="lab">주황: 지연 SAM-6D</text><text x="500" y="657" class="lab">초록: 지속 메모리 갱신</text><text x="775" y="657" class="lab">보라 점선: 선택적 SLAM 피드백</text>
+        </svg>
+        <figcaption><strong>그림 1.</strong> 고속 카메라 지역화 결과와 지연된 6D 측정을 원본 촬영 타임스탬프에 맞춰 정합한다. 지속 메모리는 객체 상태를 연속적으로 예측하고 SAM-6D 갱신 사이에 경량 RGB-D 추적기를 유도한다. 공동 최적화는 선택 사항이며 최소 시스템에는 포함되지 않는다.</figcaption>
+      </figure>
+    </section>
+
+    <section id="versions">
+      <h2>7. 아키텍처 버전 비교</h2>
+      <table>
+        <thead><tr><th>버전</th><th>추론 공백 동작</th><th>객체 자세 개선</th><th>SLAM·지도 개선</th><th>비용</th><th>역할</th></tr></thead>
+        <tbody>
+          <tr><td>V0 지속적 재투영</td><td>마지막 랜드마크를 최신 카메라에 투영</td><td>아니오</td><td>아니오</td><td>완료</td><td>기준선</td></tr>
+          <tr><td>V1 불확실성 기반 메모리</td><td>자세 믿음 상태·존재확률 예측</td><td>예, 새 SAM 측정 도착 시</td><td>아니오</td><td>낮음~중간</td><td>최소 알고리즘 기여</td></tr>
+          <tr><td><strong>V2 메모리 유도 추적기</strong></td><td>RGB-D 특징 추적과 PnP로 중간 측정 생성</td><td><strong>예</strong></td><td>요인 사용 시 가능</td><td>중간</td><td><span class="tag rec">주 추천</span></td></tr>
+          <tr><td>V3 공동 고정 지연 그래프</td><td>지연 요인을 촬영 시각 노드에 삽입</td><td>예</td><td>예</td><td>높음</td><td>정답값 확인 후 확장</td></tr>
+          <tr><td>V4 동적 메모리</td><td>객체 운동 상태 예측</td><td>예</td><td>조건부</td><td>매우 높음</td><td>현재 제외</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="math">
+      <h2>8. 핵심 수식화</h2>
+      <h3>8.1 촬영 시각 정합</h3>
+      <div class="equation">L<sup>m</sup><sub>j,t</sub> = X<sub>t</sub> Z<sub>j,t</sub>, &nbsp; t = t<sub>capture</sub></div>
+      <p><code>X_t = T_map←cam(t)</code>, <code>Z_j,t = T_cam←obj</code>, <code>L_j = T_map←obj</code>이다. 도착 시각의 <code>X_k</code>를 쓰는 <code>X_k Z_j,t</code>는 카메라 이동을 객체 오차로 섞는다.</p>
+
+      <h3>8.2 SE(3) 공분산 전파 및 갱신</h3>
+      <div class="equation">R<sup>L</sup><sub>j,t</sub> ≈ Ad<sub>Z̄<sup>−1</sup></sub> Σ<sup>X</sup><sub>t</sub> Ad<sub>Z̄<sup>−1</sup></sub><sup>T</sup> + Σ<sup>Z</sup><sub>j,t</sub></div>
+      <div class="equation">r = Log(L̂<sup>−1</sup>L<sup>m</sup>), &nbsp; K = Σ(Σ + R<sup>L</sup>)<sup>−1</sup>, &nbsp; L̂<sup>+</sup> = L̂ Exp(Kr)</div>
+      <p>ORB-SLAM3와 SAM-6D의 공분산을 임의 상수로 두지 말고, 별도 검증 데이터의 잔차를 점수·깊이·추적 상태 구간별로 보정한다.</p>
+
+      <h3>8.3 대칭성 인지 연관</h3>
+      <div class="equation">d²<sub>ij</sub> = min<sub>S∈G<sub>j</sub></sub> r(S)<sup>T</sup>(Σ<sub>i</sub> + R<sup>L</sup><sub>j</sub>)<sup>−1</sup>r(S)</div>
+      <p>CAD 대칭군 <code>G_j</code>의 동치 자세 중 가장 가까운 잔차를 사용하고 카이제곱 게이트를 적용한다.</p>
+
+      <h3>8.4 가시성 기반 존재확률</h3>
+      <div class="equation">p<sup>+</sup> = p<sup>−</sup>(1−P<sub>D</sub>) / (1−p<sup>−</sup>P<sub>D</sub>) &nbsp; (시야 내 미검출)</div>
+      <div class="equation">logit(p<sup>+</sup>) = logit(p<sup>−</sup>) + log Λ(z) &nbsp; (채택된 검출)</div>
+      <p>시야 밖이면 <code>P_D = 0</code>이므로 존재확률을 낮추지 않는다.</p>
+
+      <h3>8.5 메모리 유도 프레임 간 자세</h3>
+      <div class="equation">p<sup>o</sup><sub>i</sub> = Z<sup>−1</sup><sub>j,t₀</sub> π<sup>−1</sup>(u<sub>i</sub>, d<sub>i</sub>; K), &nbsp; Z̃<sub>j,k</sub> = PnP-RANSAC({p<sup>o</sup><sub>i</sub> ↔ u<sub>i,k</sub>})</div>
+      <p>SAM 핵심 프레임의 마스크와 깊이로 객체 좌표계 3차원 점을 만들고, 광류로 추적한 현재 화소와 PnP를 풀어 추론 공백의 실제 측정을 만든다.</p>
+
+      <h3>8.6 선택적 공동 그래프</h3>
+      <div class="equation">min<sub>{X},{L}</sub> Σ ρ<sub>s</sub>(‖Log(U<sub>k</sub><sup>−1</sup>X<sub>k</sub><sup>−1</sup>X<sub>k+1</sub>)‖²) + Σ min<sub>S∈G</sub>ρ<sub>o</sub>(‖Log((Z<sub>k,j</sub>S)<sup>−1</sup>X<sub>k</sub><sup>−1</sup>L<sub>j</sub>)‖²)</div>
+      <p>지연 객체 요인은 도착 시점이 아니라 촬영 시각의 카메라 노드에 연결한다. V2 요인의 신뢰성이 검증되기 전에는 추가하지 않는다.</p>
+    </section>
+
+    <section id="implementation">
+      <h2>9. 최소 구현 경로</h2>
+      <h3>1단계 · V1 불확실성</h3>
+      <ul><li><code>ObjectLandmark</code>에 6×6 공분산과 갱신 출처 추가.</li><li>기존 대칭성·모드 로직을 유지하며 공분산 기반 갱신과 마할라노비스 게이트 추가.</li><li>합성 SE(3) 검사 하나와 기존 rosbag 회귀검사 재사용.</li></ul>
+      <h3>2단계 · V2 희소 RGB-D 추적기</h3>
+      <ol><li>SAM이 채택한 마스크 안에서 Shi–Tomasi 코너 추출.</li><li>깊이와 <code>Z_j,t0</code>로 객체 좌표계 3차원 점 저장.</li><li>Lucas–Kanade 양방향 광류 계산.</li><li><code>solvePnPRansac</code>으로 현재 객체 자세 추정.</li><li>내점 비율, 재투영 오차, 깊이, 대칭성 인지 혁신량으로 검증.</li><li>실패 시 랜드마크를 갱신하지 않고 V1 예측으로 복귀.</li></ol>
+      <p>OpenCV의 <a href="https://docs.opencv.org/4.13.0/dc/d6b/group__video__track.html">Lucas–Kanade</a>와 <a href="https://docs.opencv.org/4.5.2/d9/d0c/group__calib3d.html">PnP RANSAC</a>을 사용하므로 새 의존성이 필요 없다. 현재 CAD 투영, 시야각, 깊이 검증도 재사용할 수 있다.</p>
+      <h3>3단계 · V3 진입 조건</h3>
+      <p>V2 객체 요인이 충분히 안정적이고 외부 카메라 정답값에서 유의한 ATE/RPE 개선이 보일 때만 GTSAM/iSAM2 또는 ORB-SLAM3 g2o 통합을 검토한다. 두 최적화기가 서로 다른 카메라 자세의 최종 권한을 갖지 않도록 설계를 먼저 고정해야 한다.</p>
+    </section>
+
+    <section id="evaluation">
+      <h2>10. 실험 및 제거 분석</h2>
+      <table>
+        <thead><tr><th>실험</th><th>구성</th><th>입증할 주장</th></tr></thead>
+        <tbody><tr><td>A0</td><td>최신 SAM 출력만 사용</td><td>프레임 단위 기준선</td></tr><tr><td>A1</td><td>A0 + 지속적 재투영</td><td>시간적 관측 범위</td></tr><tr><td>A2</td><td>A1 + 촬영 시각 정합</td><td>지연 유발 지도 번짐 제거</td></tr><tr><td>A3</td><td>A2 + 불확실성·존재확률</td><td>흔들림, 유령 객체, 중복 억제</td></tr><tr><td>A4</td><td>A3 + 희소 RGB-D 추적</td><td>추론 공백의 자세 정확도</td></tr><tr><td>A5</td><td>A4 + 객체 요인</td><td>SLAM 궤적·지도 정확도</td></tr></tbody>
+      </table>
+      <div class="grid">
+        <div class="card"><h3>객체 자세</h3><ul><li>BOP AR: VSD, MSSD, MSPD</li><li>공백 길이별 자세 오차</li><li>운동 보상 후 흔들림</li><li>유효 자세 관측 범위</li></ul></div>
+        <div class="card"><h3>객체 메모리</h3><ul><li>객체당 중복 랜드마크 수</li><li>ID 전환 및 재식별</li><li>시야 밖 객체 생존 재현율</li><li>유령 객체 지속 시간</li></ul></div>
+        <div class="card"><h3>SLAM</h3><ul><li>ATE RMSE</li><li>병진·회전 RPE</li><li>추적 손실 지속 시간</li><li>재지역화 성공률</li></ul></div>
+        <div class="card"><h3>실행 성능</h3><ul><li>촬영부터 출력까지의 p50/p95/p99 지연</li><li>수신기·추적기·SAM 처리율</li><li>프레임 누락 비율</li><li>CPU·GPU 시간 및 메모리</li></ul></div>
+      </div>
+      <div class="callout danger"><strong>정답값 진입 조건:</strong> 현재 rosbag 데이터 4종은 일관성, 안정성, 관측 범위, 지연 강건성을 측정할 수 있지만 절대 정확도의 정답값은 아니다. “객체 자세 정확도”와 “SLAM 지도 정확도”를 주장하려면 모션 캡처, 정밀 측량 또는 적절한 공개 정답 시퀀스가 필요하다.</div>
+    </section>
+
+    <section id="decision">
+      <h2>11. 최종 추천</h2>
+      <div class="card green">
+        <h3>권장 논문 범위</h3>
+        <p><strong>메모리 유도 프레임 간 정련을 결합한 비동기 불확실성 기반 객체 메모리</strong></p>
+        <p>V0를 기준선으로 두고 현재 메모리를 바탕으로 V1을 수학화하며, V2를 추론 공백의 실측 연결부로 추가한다. 서론은 V2 완료 전에는 버전 D, 완료 후에는 버전 A를 사용한다.</p>
+      </div>
+      <h3>지금 하지 않을 것</h3>
+      <ul><li>별도 데이터베이스, 클라우드 서비스, 메시지 브로커.</li><li>새 신경망 추적기 또는 FoundationPose 전체 추가.</li><li>V2 검증 전 공동 요인 그래프.</li><li>동적 객체 정답값 없이 V4 운동 모델.</li><li>외부 정답값 없이 “정확도 향상”이라는 표현.</li></ul>
+    </section>
+
+    <section id="references">
+      <h2>12. 참고문헌</h2>
+      <ol class="refs">
+        <li id="r1">J. Lin et al., “SAM-6D: Segment Anything Model Meets Zero-Shot 6D Object Pose Estimation,” CVPR, 2024. <a href="https://openaccess.thecvf.com/content/CVPR2024/papers/Lin_SAM-6D_Segment_Anything_Model_Meets_Zero-Shot_6D_Object_Pose_Estimation_CVPR_2024_paper.pdf">논문</a></li>
+        <li id="r2">C. Campos et al., “ORB-SLAM3: An Accurate Open-Source Library for Visual, Visual-Inertial, and Multi-Map SLAM,” IEEE T-RO, 2021. <a href="https://arxiv.org/abs/2007.11898">논문</a></li>
+        <li id="r3">B. Wen et al., “FoundationPose: Unified 6D Pose Estimation and Tracking of Novel Objects,” CVPR, 2024. <a href="https://openaccess.thecvf.com/content/CVPR2024/papers/Wen_FoundationPose_Unified_6D_Pose_Estimation_and_Tracking_of_Novel_Objects_CVPR_2024_paper.pdf">논문</a></li>
+        <li id="r4">B. Wen and K. Bekris, “BundleTrack: 6D Pose Tracking for Novel Objects without Instance or Category-Level 3D Models,” IROS, 2021. <a href="https://arxiv.org/abs/2108.00516">논문</a></li>
+        <li id="r5">Y. Labbé et al., “CosyPose: Consistent Multi-View Multi-Object 6D Pose Estimation,” ECCV, 2020. <a href="https://www.ecva.net/papers/eccv_2020/papers_ECCV/papers/123620562.pdf">논문</a></li>
+        <li id="r6">R. Salas-Moreno et al., “SLAM++: Simultaneous Localisation and Mapping at the Level of Objects,” CVPR, 2013. <a href="https://openaccess.thecvf.com/content_cvpr_2013/html/Salas-Moreno_SLAM_Simultaneous_Localisation_2013_CVPR_paper.html">논문</a></li>
+        <li id="r7">S. Yang and S. Scherer, “CubeSLAM: Monocular 3-D Object SLAM,” IEEE T-RO, 2019. <a href="https://ieeexplore.ieee.org/document/8708251/">논문</a></li>
+        <li id="r8">J. McCormac et al., “Fusion++: Volumetric Object-Level SLAM,” 3DV, 2018. <a href="https://doi.org/10.1109/3DV.2018.00015">논문</a></li>
+        <li id="r9">J. Wang et al., “DSP-SLAM: Object Oriented SLAM with Deep Shape Priors,” 3DV, 2021. <a href="https://arxiv.org/abs/2108.09481">논문</a></li>
+        <li id="r10">N. Hughes et al., “Hydra: A Real-time Spatial Perception System for 3D Scene Graph Construction and Optimization,” RSS, 2022. <a href="https://www.roboticsproceedings.org/rss18/p050.pdf">논문</a></li>
+        <li id="r11">J. Mendez et al., “LTC-Mapping: Enhancing Long-Term Consistency of Object-Oriented Semantic Maps in Robotics,” Sensors, 2022. <a href="https://pmc.ncbi.nlm.nih.gov/articles/PMC9318171/">논문</a></li>
+        <li id="r12">T. Hodaň et al., “BOP: Benchmark for 6D Object Pose Estimation,” ECCV, 2018. <a href="https://openaccess.thecvf.com/content_ECCV_2018/html/Tomas_Hodan_PESTO_6D_Object_ECCV_2018_paper.html">논문</a></li>
+        <li id="r13">H. Yoon et al., “A General Solution for Update with Out-of-Sequence Measurements: The Augmented Fixed-Lag Smoother,” 2015. <a href="https://pure.kaist.ac.kr/en/publications/a-general-solution-for-update-with-out-of-sequence-measurements-t/">자료</a></li>
+      </ol>
+      <p class="small">출처 정책: 원 논문, 공식 프로젝트 저장소, 공식 ROS/OpenCV 문서를 우선했다. 연구 공백 문장은 검토 범위 안에서의 종합이며, 완전한 체계적 문헌고찰을 주장하지 않는다.</p>
+    </section>
+  </main>
+
+  <footer>객체 메모리 논문 조사 보고서 · 생성일 2026-09-03 · 연구 원장: technical-object-memory-slam-sam6d-latency-research-2026-09-03.md · 편집 가능한 그림: object-memory-proposed-architecture.svg</footer>
+</article>
+</body>
+</html>

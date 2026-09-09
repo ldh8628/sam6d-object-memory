@@ -1,0 +1,166 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900" role="img" aria-labelledby="title desc">
+  <title id="title">제안 비동기 객체 메모리 아키텍처</title>
+  <desc id="desc">고속 SLAM 경로와 지연된 SAM-6D 경로를 타임스탬프 정합 객체 메모리에서 결합한다. 메모리는 SAM-6D 갱신 사이에 경량 RGB-D 추적을 유도하고 지속 객체 자세를 연속적으로 재투영한다. 선택적 고정 지연 최적화기는 보정된 상태를 메모리에 되먹임한다.</desc>
+  <defs>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="5" flood-color="#0f172a" flood-opacity="0.12"/>
+    </filter>
+    <marker id="arrow-blue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#2563eb"/></marker>
+    <marker id="arrow-orange" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#ea580c"/></marker>
+    <marker id="arrow-green" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#059669"/></marker>
+    <marker id="arrow-purple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse"><path d="M0 0L10 5L0 10Z" fill="#7c3aed"/></marker>
+    <style>
+      text { font-family: Inter, "Noto Sans KR", "Noto Sans", Arial, sans-serif; fill: #172033; }
+      .title { font-size: 29px; font-weight: 750; }
+      .subtitle { font-size: 15px; fill: #5b6475; }
+      .box-title { font-size: 20px; font-weight: 700; }
+      .box-sub { font-size: 14px; fill: #485267; }
+      .small { font-size: 13px; fill: #596579; }
+      .tag { font-size: 12px; font-weight: 700; letter-spacing: .04em; }
+      .blue-line { stroke: #2563eb; stroke-width: 3.2; fill: none; marker-end: url(#arrow-blue); }
+      .orange-line { stroke: #ea580c; stroke-width: 3.2; fill: none; marker-end: url(#arrow-orange); }
+      .green-line { stroke: #059669; stroke-width: 3.2; fill: none; marker-end: url(#arrow-green); }
+      .purple-line { stroke: #7c3aed; stroke-width: 3; stroke-dasharray: 10 8; fill: none; marker-end: url(#arrow-purple); }
+    </style>
+  </defs>
+
+  <rect width="1600" height="900" fill="#f8fafc"/>
+  <text x="60" y="55" class="title">지속적 6D 객체 지도화를 위한 비동기 객체 메모리</text>
+  <text x="60" y="82" class="subtitle">실선: 권장 V1–V2 핵심 구조 · 점선: 선택적 V3 카메라–객체 공동 최적화</text>
+
+  <!-- Input -->
+  <g filter="url(#shadow)">
+    <rect x="55" y="325" width="200" height="170" rx="18" fill="#ffffff" stroke="#94a3b8" stroke-width="2"/>
+    <rect x="55" y="325" width="200" height="38" rx="18" fill="#e2e8f0"/>
+    <rect x="55" y="345" width="200" height="18" fill="#e2e8f0"/>
+    <text x="155" y="351" text-anchor="middle" class="tag">센서 스트림</text>
+    <text x="155" y="400" text-anchor="middle" class="box-title">RGB-D 카메라</text>
+    <text x="155" y="429" text-anchor="middle" class="box-sub">영상 Iₖ · 깊이 Dₖ</text>
+    <text x="155" y="453" text-anchor="middle" class="box-sub">내부 파라미터 K · 시각 tₖ</text>
+    <text x="155" y="478" text-anchor="middle" class="small">≈ 30 Hz</text>
+  </g>
+
+  <!-- Fast path -->
+  <g filter="url(#shadow)">
+    <rect x="330" y="145" width="230" height="125" rx="16" fill="#eff6ff" stroke="#60a5fa" stroke-width="2.2"/>
+    <text x="445" y="184" text-anchor="middle" class="box-title">ORB-SLAM3</text>
+    <text x="445" y="214" text-anchor="middle" class="box-sub">고속 카메라 자세</text>
+    <text x="445" y="239" text-anchor="middle" class="small">Xₖ = T<tspan baseline-shift="sub">map←cam</tspan>(tₖ)</text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="625" y="145" width="240" height="125" rx="16" fill="#eff6ff" stroke="#60a5fa" stroke-width="2.2"/>
+    <text x="745" y="182" text-anchor="middle" class="box-title">자세 이력</text>
+    <text x="745" y="212" text-anchor="middle" class="box-sub">유한 타임스탬프 버퍼</text>
+    <text x="745" y="238" text-anchor="middle" class="small">X<tspan baseline-shift="sub">t</tspan> 조회·보간</text>
+  </g>
+
+  <!-- Slow path -->
+  <g filter="url(#shadow)">
+    <rect x="330" y="365" width="230" height="145" rx="16" fill="#fff7ed" stroke="#fb923c" stroke-width="2.2"/>
+    <text x="445" y="402" text-anchor="middle" class="box-title">SAM-6D</text>
+    <text x="445" y="432" text-anchor="middle" class="box-sub">ISM → PEM 핵심 프레임 추론</text>
+    <text x="445" y="459" text-anchor="middle" class="small">클래스 · 점수 · 마스크</text>
+    <text x="445" y="484" text-anchor="middle" class="small">Z<tspan baseline-shift="sub">j,t</tspan> = T<tspan baseline-shift="sub">cam←obj</tspan></text>
+  </g>
+  <g filter="url(#shadow)">
+    <rect x="625" y="365" width="240" height="145" rx="16" fill="#fff7ed" stroke="#fb923c" stroke-width="2.2"/>
+    <text x="745" y="402" text-anchor="middle" class="box-title">촬영 시각 정합</text>
+    <text x="745" y="434" text-anchor="middle" class="box-sub">도착 시각 대신 촬영 시각 사용</text>
+    <text x="745" y="466" text-anchor="middle" class="small">L<tspan baseline-shift="sub">j</tspan><tspan baseline-shift="super">m</tspan> = X<tspan baseline-shift="sub">t</tspan> Z<tspan baseline-shift="sub">j,t</tspan></text>
+    <text x="745" y="490" text-anchor="middle" class="small">오래되거나 잘못된 지도 에포크 거부</text>
+  </g>
+
+  <!-- Object memory -->
+  <g filter="url(#shadow)">
+    <rect x="930" y="145" width="330" height="430" rx="22" fill="#ecfdf5" stroke="#34d399" stroke-width="2.8"/>
+    <rect x="930" y="145" width="330" height="55" rx="22" fill="#d1fae5"/>
+    <rect x="930" y="178" width="330" height="22" fill="#d1fae5"/>
+    <text x="1095" y="180" text-anchor="middle" class="box-title">지속 객체 메모리</text>
+
+    <rect x="960" y="225" width="270" height="62" rx="12" fill="#ffffff" stroke="#a7f3d0"/>
+    <text x="1095" y="250" text-anchor="middle" font-size="16" font-weight="700">식별 및 연관</text>
+    <text x="1095" y="274" text-anchor="middle" class="small">다중 인스턴스 · 지도 좌표 게이트</text>
+
+    <rect x="960" y="303" width="270" height="72" rx="12" fill="#ffffff" stroke="#a7f3d0"/>
+    <text x="1095" y="330" text-anchor="middle" font-size="16" font-weight="700">SE(3) 확률적 자세 상태</text>
+    <text x="1095" y="353" text-anchor="middle" class="small">대칭성 · 강인 융합 · 공분산</text>
+
+    <rect x="960" y="391" width="270" height="72" rx="12" fill="#ffffff" stroke="#a7f3d0"/>
+    <text x="1095" y="418" text-anchor="middle" font-size="16" font-weight="700">존재확률 및 생명주기</text>
+    <text x="1095" y="441" text-anchor="middle" class="small">활성 · 손실 · 기억 · 삭제</text>
+
+    <rect x="960" y="479" width="270" height="65" rx="12" fill="#ffffff" stroke="#a7f3d0"/>
+    <text x="1095" y="505" text-anchor="middle" font-size="16" font-weight="700">지도 에포크 안전성</text>
+    <text x="1095" y="528" text-anchor="middle" class="small">추적 유효성 · 오래된 요인 거부</text>
+  </g>
+
+  <!-- Output -->
+  <g filter="url(#shadow)">
+    <rect x="1330" y="185" width="220" height="180" rx="18" fill="#ffffff" stroke="#34d399" stroke-width="2.2"/>
+    <text x="1440" y="225" text-anchor="middle" class="box-title">연속 출력</text>
+    <text x="1440" y="261" text-anchor="middle" class="box-sub">지속적 6D 랜드마크</text>
+    <text x="1440" y="288" text-anchor="middle" class="box-sub">현재 프레임 재투영</text>
+    <text x="1440" y="315" text-anchor="middle" class="box-sub">자세 신뢰도 · 출처</text>
+    <text x="1440" y="341" text-anchor="middle" class="small">시각화 및 로봇 작업용</text>
+  </g>
+
+  <!-- Tracker -->
+  <g filter="url(#shadow)">
+    <rect x="700" y="665" width="410" height="135" rx="18" fill="#f0fdf4" stroke="#22c55e" stroke-width="2.2"/>
+    <text x="905" y="704" text-anchor="middle" class="box-title">메모리 유도 RGB-D 추적기</text>
+    <text x="905" y="735" text-anchor="middle" class="box-sub">예측 ROI → 희소 광류 → PnP RANSAC</text>
+    <text x="905" y="762" text-anchor="middle" class="small">검증된 중간 요인 Z̃<tspan baseline-shift="sub">j,k</tspan> · 실패 시 예측 복귀</text>
+    <rect x="720" y="680" width="45" height="23" rx="11" fill="#dcfce7"/>
+    <text x="742" y="696" text-anchor="middle" class="tag" fill="#15803d">V2</text>
+  </g>
+
+  <!-- Optional optimizer -->
+  <g filter="url(#shadow)">
+    <rect x="1255" y="605" width="295" height="175" rx="18" fill="#f5f3ff" stroke="#8b5cf6" stroke-width="2.2" stroke-dasharray="9 7"/>
+    <text x="1402" y="645" text-anchor="middle" class="box-title">고정 지연 공동 그래프</text>
+    <text x="1402" y="678" text-anchor="middle" class="box-sub">카메라 상태 X · 객체 상태 L</text>
+    <text x="1402" y="705" text-anchor="middle" class="box-sub">촬영 시각의 지연 객체 요인</text>
+    <text x="1402" y="732" text-anchor="middle" class="small">검증 후 선택적 SLAM 피드백</text>
+    <rect x="1485" y="620" width="45" height="23" rx="11" fill="#ede9fe"/>
+    <text x="1507" y="636" text-anchor="middle" class="tag" fill="#6d28d9">V3</text>
+  </g>
+
+  <!-- Flow arrows -->
+  <path d="M255 370 C285 300 295 235 330 212" class="blue-line"/>
+  <text x="274" y="287" class="small" fill="#2563eb">고속 경로</text>
+  <path d="M255 435 L330 435" class="orange-line"/>
+  <text x="266" y="423" class="small" fill="#ea580c">선택 프레임</text>
+  <path d="M560 208 L625 208" class="blue-line"/>
+  <path d="M560 437 L625 437" class="orange-line"/>
+  <text x="576" y="425" class="small" fill="#ea580c">지연</text>
+  <path d="M745 270 L745 365" class="blue-line"/>
+  <text x="759" y="320" class="small" fill="#2563eb">X<tspan baseline-shift="sub">t</tspan></text>
+  <path d="M865 437 C900 437 900 355 930 355" class="green-line"/>
+  <path d="M1260 275 L1330 275" class="green-line"/>
+  <path d="M865 208 C1140 85 1320 115 1383 185" class="blue-line"/>
+  <text x="1135" y="103" class="small" fill="#2563eb">현재 X<tspan baseline-shift="sub">k</tspan></text>
+
+  <path d="M1095 575 C1095 625 1050 635 1005 665" class="green-line"/>
+  <text x="1112" y="620" class="small" fill="#059669">예측 ROI · 자세</text>
+  <path d="M255 480 C390 640 530 735 700 735" class="blue-line"/>
+  <text x="420" y="640" class="small" fill="#2563eb">현재 RGB-D</text>
+  <path d="M800 665 C760 620 825 565 930 515" class="green-line"/>
+  <text x="760" y="603" class="small" fill="#059669">검증된 Z̃<tspan baseline-shift="sub">j,k</tspan></text>
+
+  <path d="M1110 730 C1170 730 1205 710 1255 695" class="purple-line"/>
+  <path d="M515 270 C540 825 1080 850 1255 740" class="purple-line"/>
+  <text x="1125" y="825" class="small" fill="#7c3aed">카메라 제약</text>
+  <path d="M1325 605 C1285 565 1265 535 1225 505" class="purple-line"/>
+
+  <!-- Legend -->
+  <g transform="translate(60 835)">
+    <line x1="0" y1="0" x2="48" y2="0" stroke="#2563eb" stroke-width="4"/>
+    <text x="60" y="5" class="small">고속 카메라 경로</text>
+    <line x1="245" y1="0" x2="293" y2="0" stroke="#ea580c" stroke-width="4"/>
+    <text x="305" y="5" class="small">지연 SAM-6D 경로</text>
+    <line x1="515" y1="0" x2="563" y2="0" stroke="#059669" stroke-width="4"/>
+    <text x="575" y="5" class="small">지속 메모리 갱신</text>
+    <line x1="820" y1="0" x2="868" y2="0" stroke="#7c3aed" stroke-width="4" stroke-dasharray="9 7"/>
+    <text x="880" y="5" class="small">선택적 공동 최적화</text>
+  </g>
+</svg>
