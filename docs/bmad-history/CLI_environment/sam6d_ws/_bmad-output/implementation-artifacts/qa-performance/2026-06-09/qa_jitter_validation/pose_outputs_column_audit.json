@@ -1,0 +1,47 @@
+{
+  "previous_pose_outputs_columns": [
+    "frame",
+    "ism_ok",
+    "ism_candidates",
+    "best_ism_score",
+    "pose_output",
+    "skip_reason",
+    "score",
+    "tx",
+    "ty",
+    "tz"
+  ],
+  "current_pose_outputs_columns": [
+    "frame",
+    "ism_ok",
+    "ism_candidates",
+    "best_ism_score",
+    "pose_output",
+    "skip_reason",
+    "confidence_score",
+    "score",
+    "tx",
+    "ty",
+    "tz",
+    "qx",
+    "qy",
+    "qz",
+    "qw"
+  ],
+  "translation_recorded": true,
+  "rotation_recorded": true,
+  "confidence_recorded": true,
+  "rejection_reason_recorded": true,
+  "frame_id_recorded": true,
+  "timestamp_recorded": false,
+  "missing_fields_after_patch": [
+    "timestamp"
+  ],
+  "minimum_rotation_fields": [
+    "qx",
+    "qy",
+    "qz",
+    "qw"
+  ],
+  "modification_needed": false
+}

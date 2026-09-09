@@ -1,0 +1,375 @@
+{
+  "SLAM_with_milk_nomilk": {
+    "baseline": {
+      "tp": 187,
+      "fp": 324,
+      "tn": 1,
+      "fn": 0,
+      "precision": 0.3659491193737769,
+      "recall": 1.0,
+      "fpr": 0.9969230769230769,
+      "fnr": 0.0,
+      "frames": 512,
+      "visible_frames": 187,
+      "hidden_non_hand_frames": 218,
+      "hand_interaction_frames": 107,
+      "visible_recall": 1.0,
+      "hidden_fpr_non_hand": 1.0,
+      "hand_interaction_fpr": 0.9906542056074766,
+      "final_pose_output_count": 511,
+      "candidate_recall_visible": 1.0,
+      "no_ism_candidate_count": 0,
+      "temporal_jump_reject_count": 0,
+      "skip_reason_counts": {
+        "": 511,
+        "no valid detection": 1
+      },
+      "continuity": {
+        "valid_pose_count": 511,
+        "valid_pose_rate": 0.998046875,
+        "longest_pose_gap_frames": 1,
+        "rotation_metrics_available": false,
+        "position_std_x_mm": 718.7260392270332,
+        "position_std_y_mm": 856.6732187812837,
+        "position_std_z_mm": 955.219220299314,
+        "position_std_norm_mm": 1470.6800746828976,
+        "frame_to_frame_delta_mean_mm": 1328.5279233712392,
+        "frame_to_frame_delta_median_mm": 1288.9417798145646,
+        "frame_to_frame_delta_max_mm": 4300.954212365014,
+        "jitter_score_mm": 2799.2079980541366
+      },
+      "re_visible": {
+        "segments": [
+          {
+            "segment_index": 1,
+            "start_frame": "001251",
+            "length_frames": 57,
+            "recovered": true,
+            "first_pose_latency_frames": 0,
+            "pose_count": 57
+          },
+          {
+            "segment_index": 2,
+            "start_frame": "001724",
+            "length_frames": 17,
+            "recovered": true,
+            "first_pose_latency_frames": 0,
+            "pose_count": 17
+          },
+          {
+            "segment_index": 3,
+            "start_frame": "002185",
+            "length_frames": 32,
+            "recovered": true,
+            "first_pose_latency_frames": 0,
+            "pose_count": 32
+          }
+        ],
+        "re_visible_segments": 3,
+        "recovered_segments": 3,
+        "recovery_success_rate": 1.0,
+        "max_first_pose_latency_frames": 0
+      },
+      "false_negative_reasons": {},
+      "false_positive_count": 324
+    },
+    "improved": {
+      "tp": 3,
+      "fp": 0,
+      "tn": 325,
+      "fn": 184,
+      "precision": 1.0,
+      "recall": 0.016042780748663103,
+      "fpr": 0.0,
+      "fnr": 0.983957219251337,
+      "frames": 512,
+      "visible_frames": 187,
+      "hidden_non_hand_frames": 218,
+      "hand_interaction_frames": 107,
+      "visible_recall": 0.016042780748663103,
+      "hidden_fpr_non_hand": 0.0,
+      "hand_interaction_fpr": 0.0,
+      "final_pose_output_count": 3,
+      "candidate_recall_visible": 0.03208556149732621,
+      "no_ism_candidate_count": 506,
+      "temporal_jump_reject_count": 3,
+      "skip_reason_counts": {
+        "no_ism_candidate": 506,
+        "": 3,
+        "temporal_jump_reject": 3
+      },
+      "continuity": {
+        "valid_pose_count": 3,
+        "valid_pose_rate": 0.005859375,
+        "longest_pose_gap_frames": 442,
+        "rotation_metrics_available": false,
+        "position_std_x_mm": 0.0,
+        "position_std_y_mm": 0.0,
+        "position_std_z_mm": 0.0,
+        "position_std_norm_mm": 0.0,
+        "frame_to_frame_delta_mean_mm": 0.0,
+        "frame_to_frame_delta_median_mm": 0.0,
+        "frame_to_frame_delta_max_mm": 0.0,
+        "jitter_score_mm": 0.0
+      },
+      "re_visible": {
+        "segments": [
+          {
+            "segment_index": 1,
+            "start_frame": "001251",
+            "length_frames": 57,
+            "recovered": false,
+            "first_pose_latency_frames": null,
+            "pose_count": 0
+          },
+          {
+            "segment_index": 2,
+            "start_frame": "001724",
+            "length_frames": 17,
+            "recovered": false,
+            "first_pose_latency_frames": null,
+            "pose_count": 0
+          },
+          {
+            "segment_index": 3,
+            "start_frame": "002185",
+            "length_frames": 32,
+            "recovered": true,
+            "first_pose_latency_frames": 26,
+            "pose_count": 2
+          }
+        ],
+        "re_visible_segments": 3,
+        "recovered_segments": 1,
+        "recovery_success_rate": 0.3333333333333333,
+        "max_first_pose_latency_frames": 26
+      },
+      "false_negative_reasons": {
+        "no_ism_candidate": 181,
+        "temporal_jump_reject": 3
+      },
+      "false_positive_count": 0
+    },
+    "improved_recall_recovery": {
+      "tp": 151,
+      "fp": 3,
+      "tn": 322,
+      "fn": 36,
+      "precision": 0.9805194805194806,
+      "recall": 0.8074866310160428,
+      "fpr": 0.009230769230769232,
+      "fnr": 0.1925133689839572,
+      "frames": 512,
+      "visible_frames": 187,
+      "hidden_non_hand_frames": 218,
+      "hand_interaction_frames": 107,
+      "visible_recall": 0.8074866310160428,
+      "hidden_fpr_non_hand": 0.013761467889908258,
+      "hand_interaction_fpr": 0.0,
+      "final_pose_output_count": 154,
+      "candidate_recall_visible": 0.8074866310160428,
+      "no_ism_candidate_count": 358,
+      "temporal_jump_reject_count": 0,
+      "skip_reason_counts": {
+        "no_ism_candidate": 358,
+        "": 154
+      },
+      "continuity": {
+        "valid_pose_count": 154,
+        "valid_pose_rate": 0.30078125,
+        "longest_pose_gap_frames": 208,
+        "rotation_metrics_available": false,
+        "position_std_x_mm": 201.59305824038015,
+        "position_std_y_mm": 23.787393038687537,
+        "position_std_z_mm": 64.26556934810448,
+        "position_std_norm_mm": 212.92173351239262,
+        "frame_to_frame_delta_mean_mm": 23.165089908083825,
+        "frame_to_frame_delta_median_mm": 20.91786089147082,
+        "frame_to_frame_delta_max_mm": 241.72512467338194,
+        "jitter_score_mm": 236.08682342047643
+      },
+      "re_visible": {
+        "segments": [
+          {
+            "segment_index": 1,
+            "start_frame": "001251",
+            "length_frames": 57,
+            "recovered": true,
+            "first_pose_latency_frames": 0,
+            "pose_count": 43
+          },
+          {
+            "segment_index": 2,
+            "start_frame": "001724",
+            "length_frames": 17,
+            "recovered": true,
+            "first_pose_latency_frames": 0,
+            "pose_count": 17
+          },
+          {
+            "segment_index": 3,
+            "start_frame": "002185",
+            "length_frames": 32,
+            "recovered": true,
+            "first_pose_latency_frames": 0,
+            "pose_count": 21
+          }
+        ],
+        "re_visible_segments": 3,
+        "recovered_segments": 3,
+        "recovery_success_rate": 1.0,
+        "max_first_pose_latency_frames": 0
+      },
+      "false_negative_reasons": {
+        "no_ism_candidate": 36
+      },
+      "false_positive_count": 3,
+      "false_negative_montage": "_bmad-output/implementation-artifacts/qa-performance/2026-06-09/ism_recall_recovery/failure_montages/SLAM_with_milk_nomilk_after_false_negative_montage.jpg",
+      "false_positive_montage": "_bmad-output/implementation-artifacts/qa-performance/2026-06-09/ism_recall_recovery/failure_montages/SLAM_with_milk_nomilk_after_false_positive_montage.jpg"
+    }
+  },
+  "only_Milk": {
+    "baseline": {
+      "tp": 164,
+      "fp": 0,
+      "tn": 0,
+      "fn": 9,
+      "precision": 1.0,
+      "recall": 0.9479768786127167,
+      "fpr": 0.0,
+      "fnr": 0.05202312138728324,
+      "frames": 173,
+      "visible_frames": 173,
+      "hidden_non_hand_frames": 0,
+      "hand_interaction_frames": 0,
+      "visible_recall": 0.9479768786127167,
+      "hidden_fpr_non_hand": null,
+      "hand_interaction_fpr": null,
+      "final_pose_output_count": 164,
+      "candidate_recall_visible": 0.9479768786127167,
+      "no_ism_candidate_count": 0,
+      "temporal_jump_reject_count": 0,
+      "skip_reason_counts": {
+        "": 164,
+        "ism_failed": 9
+      },
+      "continuity": {
+        "valid_pose_count": 164,
+        "valid_pose_rate": 0.9479768786127167,
+        "longest_pose_gap_frames": 5,
+        "rotation_metrics_available": false,
+        "position_std_x_mm": 696.2498800660652,
+        "position_std_y_mm": 567.7693104823496,
+        "position_std_z_mm": 833.8574237084637,
+        "position_std_norm_mm": 1225.7422602208546,
+        "frame_to_frame_delta_mean_mm": 1156.374235369238,
+        "frame_to_frame_delta_median_mm": 1014.6459778362876,
+        "frame_to_frame_delta_max_mm": 3565.6131326770364,
+        "jitter_score_mm": 2382.1164955900927
+      },
+      "false_negative_reasons": {
+        "ism_failed": 9
+      },
+      "false_positive_count": 0
+    },
+    "improved": {
+      "tp": 3,
+      "fp": 0,
+      "tn": 0,
+      "fn": 170,
+      "precision": 1.0,
+      "recall": 0.017341040462427744,
+      "fpr": 0.0,
+      "fnr": 0.9826589595375722,
+      "frames": 173,
+      "visible_frames": 173,
+      "hidden_non_hand_frames": 0,
+      "hand_interaction_frames": 0,
+      "visible_recall": 0.017341040462427744,
+      "hidden_fpr_non_hand": null,
+      "hand_interaction_fpr": null,
+      "final_pose_output_count": 3,
+      "candidate_recall_visible": 0.5028901734104047,
+      "no_ism_candidate_count": 86,
+      "temporal_jump_reject_count": 78,
+      "skip_reason_counts": {
+        "no_ism_candidate": 86,
+        "temporal_jump_reject": 78,
+        "pose_confidence_score_below_min": 6,
+        "": 3
+      },
+      "continuity": {
+        "valid_pose_count": 3,
+        "valid_pose_rate": 0.017341040462427744,
+        "longest_pose_gap_frames": 153,
+        "rotation_metrics_available": false,
+        "position_std_x_mm": 0.0,
+        "position_std_y_mm": 0.0,
+        "position_std_z_mm": 0.0,
+        "position_std_norm_mm": 0.0,
+        "frame_to_frame_delta_mean_mm": 0.0,
+        "frame_to_frame_delta_median_mm": 0.0,
+        "frame_to_frame_delta_max_mm": 0.0,
+        "jitter_score_mm": 0.0
+      },
+      "false_negative_reasons": {
+        "no_ism_candidate": 86,
+        "temporal_jump_reject": 78,
+        "pose_confidence_score_below_min": 6
+      },
+      "false_positive_count": 0
+    },
+    "improved_recall_recovery": {
+      "tp": 172,
+      "fp": 0,
+      "tn": 0,
+      "fn": 1,
+      "precision": 1.0,
+      "recall": 0.9942196531791907,
+      "fpr": 0.0,
+      "fnr": 0.005780346820809248,
+      "frames": 173,
+      "visible_frames": 173,
+      "hidden_non_hand_frames": 0,
+      "hand_interaction_frames": 0,
+      "visible_recall": 0.9942196531791907,
+      "hidden_fpr_non_hand": null,
+      "hand_interaction_fpr": null,
+      "final_pose_output_count": 172,
+      "candidate_recall_visible": 0.9942196531791907,
+      "no_ism_candidate_count": 1,
+      "temporal_jump_reject_count": 0,
+      "skip_reason_counts": {
+        "": 172,
+        "no_ism_candidate": 1
+      },
+      "continuity": {
+        "valid_pose_count": 172,
+        "valid_pose_rate": 0.9942196531791907,
+        "longest_pose_gap_frames": 1,
+        "rotation_metrics_available": false,
+        "position_std_x_mm": 77.97378138536568,
+        "position_std_y_mm": 32.30249880303612,
+        "position_std_z_mm": 61.09827896224461,
+        "position_std_norm_mm": 104.19386596437053,
+        "frame_to_frame_delta_mean_mm": 18.931691116087926,
+        "frame_to_frame_delta_median_mm": 18.182405922200594,
+        "frame_to_frame_delta_max_mm": 68.99509643245445,
+        "jitter_score_mm": 123.12555708045846
+      },
+      "false_negative_reasons": {
+        "no_ism_candidate": 1
+      },
+      "false_positive_count": 0,
+      "false_negative_montage": "_bmad-output/implementation-artifacts/qa-performance/2026-06-09/ism_recall_recovery/failure_montages/only_Milk_after_false_negative_montage.jpg",
+      "false_positive_montage": null
+    }
+  },
+  "artifacts": {
+    "threshold_sweep_csv": "_bmad-output/implementation-artifacts/qa-performance/2026-06-09/ism_recall_recovery/threshold_sweep_bbox_mask_score.csv",
+    "pareto_csv": "_bmad-output/implementation-artifacts/qa-performance/2026-06-09/ism_recall_recovery/threshold_sweep_pareto_candidates.csv",
+    "candidate_failure_classification_csv": "_bmad-output/implementation-artifacts/qa-performance/2026-06-09/ism_recall_recovery/only_Milk_no_ism_candidate_classification.csv",
+    "before_after_recall_fpr_plot": "_bmad-output/implementation-artifacts/qa-performance/2026-06-09/ism_recall_recovery/before_after_recall_fpr.png",
+    "before_after_rejection_counts_plot": "_bmad-output/implementation-artifacts/qa-performance/2026-06-09/ism_recall_recovery/before_after_rejection_counts.png"
+  }
+}

@@ -1,0 +1,4 @@
+cad_load_s,device,ism_model_load_s,ism_template_load_s,pem_model_template_load_s,template
+0.016,cuda,4.875,0.716,4.178,milk_reference
+2.924,cuda,0.663,4.233,2.977,sauce_vertex_160000
+11.845,cuda,0.562,16.421,2.69,sauce_vertex_630000

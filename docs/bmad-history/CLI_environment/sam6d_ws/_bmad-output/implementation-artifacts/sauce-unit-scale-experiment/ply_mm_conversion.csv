@@ -1,0 +1,3 @@
+bbox_after,bbox_before,color_preserved,faces,input_ply,output_ply,status,variant,vertices
+"[73.11724, 62.99992, 185.65023]","[0.073117, 0.063, 0.18565]",True,316800,/home/etri/CLI_environment/sam6d_ws/data/cad/sauce/vertex_160000/Sauce_with_normal_vertexcolor.ply,/home/etri/CLI_environment/sam6d_ws/data/cad/sauce_mm/vertex_160000/Sauce_with_normal_vertexcolor_mm.ply,ok,vertex_160000,950400
+"[73.1204, 62.99991, 185.66158]","[0.07312, 0.063, 0.185662]",True,1267200,/home/etri/CLI_environment/sam6d_ws/data/cad/sauce/vertex_630000/Sauce_with_normal_vertexcolor.ply,/home/etri/CLI_environment/sam6d_ws/data/cad/sauce_mm/vertex_630000/Sauce_with_normal_vertexcolor_mm.ply,ok,vertex_630000,3801600

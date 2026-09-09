@@ -1,0 +1,12 @@
+[
+  {
+    "name": "sauce_vertex_160000_ply_mm",
+    "cad_path": "data/cad/sauce_mm/vertex_160000/Sauce_with_normal_vertexcolor_mm.ply",
+    "template_dir": "template/sauce_mm/vertex_160000/Sauce_with_normal_vertexcolor_mm/templates"
+  },
+  {
+    "name": "sauce_vertex_630000_ply_mm",
+    "cad_path": "data/cad/sauce_mm/vertex_630000/Sauce_with_normal_vertexcolor_mm.ply",
+    "template_dir": "template/sauce_mm/vertex_630000/Sauce_with_normal_vertexcolor_mm/templates"
+  }
+]

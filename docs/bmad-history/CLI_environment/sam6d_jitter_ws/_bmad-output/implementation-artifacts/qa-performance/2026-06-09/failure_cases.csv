@@ -1,0 +1,13 @@
+bag,mode,frame,title
+SLAM_with_milk_nomilk,baseline,000348,Baseline hidden FP 000348
+SLAM_with_milk_nomilk,baseline,000352,Baseline hidden FP 000352
+SLAM_with_milk_nomilk,baseline,000357,Baseline hidden FP 000357
+SLAM_with_milk_nomilk,baseline,000362,Baseline hidden FP 000362
+SLAM_with_milk_nomilk,improved,000000,Improved visible FN 000000
+SLAM_with_milk_nomilk,improved,000013,Improved visible FN 000013
+SLAM_with_milk_nomilk,improved,000017,Improved visible FN 000017
+SLAM_with_milk_nomilk,improved,000022,Improved visible FN 000022
+only_Milk,baseline,000370,Baseline ISM fail 000370
+only_Milk,baseline,000375,Baseline ISM fail 000375
+only_Milk,improved,000000,Improved visible FN 000000
+only_Milk,improved,000005,Improved visible FN 000005

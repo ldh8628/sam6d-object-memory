@@ -1,0 +1,4 @@
+first_frame_latency_s,fps_estimate,frames,mean_ism_score,mean_pose_score,mean_time_s,median_time_s,outliers,p95_time_s,peak_gpu_allocated_mb,publish_rate,r_delta_mean_deg,t_delta_mean_mm,template
+0.364,4.738,30,0.0543,0.5151,0.211,0.193,0,0.344,1563.1,0.033,,,milk_reference
+0.112,9.443,30,0.0,,0.106,0.101,0,0.134,2202.9,0.0,,,sauce_vertex_160000
+0.112,9.574,30,0.0,,0.104,0.098,0,0.132,2663.2,0.0,,,sauce_vertex_630000

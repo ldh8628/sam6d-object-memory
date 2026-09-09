@@ -1,0 +1,268 @@
+diff --git a/tools/run_sam6d_reliability_eval.py b/tools/run_sam6d_reliability_eval.py
+new file mode 100644
+index 0000000..0c55838
+--- /dev/null
++++ b/tools/run_sam6d_reliability_eval.py
+@@ -0,0 +1,262 @@
++#!/usr/bin/env python3
++"""Run SAM-6D baseline or reliability-gated inference on extracted RGB-D frames."""
++
++from __future__ import annotations
++
++import argparse
++import csv
++import json
++import math
++import os
++import sys
++from pathlib import Path
++
++import numpy as np
++import torch
++
++
++def add_sam6d_path(workspace: Path) -> None:
++    root = workspace / "sam6d_master" / "SAM-6D"
++    if str(root) not in sys.path:
++        sys.path.insert(0, str(root))
++
++
++def rotation_angle_deg(a: np.ndarray, b: np.ndarray) -> float:
++    value = (np.trace(a.T @ b) - 1.0) / 2.0
++    return math.degrees(math.acos(max(-1.0, min(1.0, float(value)))))
++
++
++def quat_from_matrix(R: np.ndarray) -> np.ndarray:
++    tr = float(np.trace(R))
++    if tr > 0:
++        s = math.sqrt(tr + 1.0) * 2.0
++        q = np.array([(R[2, 1] - R[1, 2]) / s, (R[0, 2] - R[2, 0]) / s, (R[1, 0] - R[0, 1]) / s, 0.25 * s])
++    else:
++        idx = int(np.argmax(np.diag(R)))
++        if idx == 0:
++            s = math.sqrt(max(1e-12, 1.0 + R[0, 0] - R[1, 1] - R[2, 2])) * 2.0
++            q = np.array([0.25 * s, (R[0, 1] + R[1, 0]) / s, (R[0, 2] + R[2, 0]) / s, (R[2, 1] - R[1, 2]) / s])
++        elif idx == 1:
++            s = math.sqrt(max(1e-12, 1.0 + R[1, 1] - R[0, 0] - R[2, 2])) * 2.0
++            q = np.array([(R[0, 1] + R[1, 0]) / s, 0.25 * s, (R[1, 2] + R[2, 1]) / s, (R[0, 2] - R[2, 0]) / s])
++        else:
++            s = math.sqrt(max(1e-12, 1.0 + R[2, 2] - R[0, 0] - R[1, 1])) * 2.0
++            q = np.array([(R[0, 2] + R[2, 0]) / s, (R[1, 2] + R[2, 1]) / s, 0.25 * s, (R[1, 0] - R[0, 1]) / s])
++    return q / (np.linalg.norm(q) + 1e-12)
++
++
++def matrix_from_quat(q: np.ndarray) -> np.ndarray:
++    q = q / (np.linalg.norm(q) + 1e-12)
++    x, y, z, w = q
++    return np.array([
++        [1 - 2 * (y * y + z * z), 2 * (x * y - z * w), 2 * (x * z + y * w)],
++        [2 * (x * y + z * w), 1 - 2 * (x * x + z * z), 2 * (y * z - x * w)],
++        [2 * (x * z - y * w), 2 * (y * z + x * w), 1 - 2 * (x * x + y * y)],
++    ])
++
++
++def blend_rotation(prev_R: np.ndarray, cur_R: np.ndarray, alpha: float) -> np.ndarray:
++    q0 = quat_from_matrix(prev_R)
++    q1 = quat_from_matrix(cur_R)
++    if float(np.dot(q0, q1)) < 0:
++        q1 = -q1
++    return matrix_from_quat((1.0 - alpha) * q0 + alpha * q1)
++
++
++def best_pose(poses: list[dict]) -> dict | None:
++    valid = [p for p in poses if "R" in p]
++    return max(valid, key=lambda p: float(p.get("final_score", p.get("score", 0.0)))) if valid else None
++
++
++def pose_from_ret(p: dict) -> tuple[np.ndarray, np.ndarray]:
++    return np.array(p["R"], dtype=np.float64), np.array(p["t_mm"], dtype=np.float64)
++
++
++def main() -> None:
++    parser = argparse.ArgumentParser()
++    parser.add_argument("--workspace", default=".")
++    parser.add_argument("--rgb-dir", required=True)
++    parser.add_argument("--depth-dir", required=True)
++    parser.add_argument("--camera-json", default="src/sam6d_ros/config/d455f_camera.json")
++    parser.add_argument("--cad-path", default="data/cad/Milk.ply")
++    parser.add_argument("--template-dir", default="sam6d_master/SAM-6D/Data/custom/Milk_scaled_195mm/templates")
++    parser.add_argument("--output-dir", required=True)
++    parser.add_argument("--mode", choices=["baseline", "improved"], required=True)
++    parser.add_argument("--max-frames", type=int, default=0)
++    parser.add_argument("--no-vis", action="store_true")
++    parser.add_argument("--min-final-score", type=float, default=0.50)
++    parser.add_argument("--min-mask-area", type=int, default=3000)
++    parser.add_argument("--min-bbox-area", type=int, default=3000)
++    parser.add_argument("--min-depth-valid-ratio", type=float, default=0.80)
++    parser.add_argument("--object-min-score", type=float, default=None)
++    parser.add_argument("--pose-min-score", type=float, default=0.50)
++    parser.add_argument("--disable-temporal", action="store_true")
++    parser.add_argument("--temporal-translation-alpha", type=float, default=0.35)
++    parser.add_argument("--temporal-rotation-alpha", type=float, default=0.35)
++    parser.add_argument("--temporal-max-translation-jump-mm", type=float, default=0.0)
++    parser.add_argument("--temporal-max-rotation-jump-deg", type=float, default=0.0)
++    parser.add_argument("--temporal-hold-last-good-frames", type=int, default=0)
++    args = parser.parse_args()
++
++    workspace = Path(args.workspace).resolve()
++    add_sam6d_path(workspace)
++    import run_batch_inference_fast as rb
++
++    rgb_files = sorted(Path(args.rgb_dir).glob("*.png"))
++    if args.max_frames:
++        rgb_files = rgb_files[: args.max_frames]
++    out = Path(args.output_dir)
++    out.mkdir(parents=True, exist_ok=True)
++    vis_ism = out / "vis_ism"
++    vis_pem = out / "vis_pem"
++    vis_ism.mkdir(exist_ok=True)
++    vis_pem.mkdir(exist_ok=True)
++
++    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
++    print(f"mode={args.mode} device={device} frames={len(rgb_files)}")
++    ism_model = rb.load_ism_model("fastsam", 0.97, device, dinov2_chunk_size=32)
++    ism_model = rb.load_ism_templates(ism_model, str(workspace / args.template_dir), str(workspace / args.cad_path), device)
++    pem_model, all_tem_pts, all_tem_feat, pem_cfg = rb.load_pem_model_and_templates(str(workspace / args.template_dir), device)
++    model_points, radius = rb.preload_pem_mesh(str(workspace / args.cad_path), pem_cfg.test_dataset.n_sample_model_point)
++
++    if args.mode == "improved":
++        filter_config = {
++            "enabled": True,
++            "min_final_score": args.min_final_score,
++            "min_semantic_score": 0.0,
++            "min_appearance_score": 0.0,
++            "min_geometric_score": 0.0,
++            "min_visible_ratio": 0.0,
++            "min_score_margin": 0.0,
++            "min_mask_area": args.min_mask_area,
++            "max_mask_area": 0,
++            "min_bbox_area": args.min_bbox_area,
++            "min_depth_valid_ratio": args.min_depth_valid_ratio,
++        }
++        object_min = args.min_final_score if args.object_min_score is None else args.object_min_score
++        pose_min = args.pose_min_score
++        temporal = not args.disable_temporal
++    else:
++        filter_config = {"enabled": False}
++        object_min = 0.0
++        pose_min = 0.0
++        temporal = False
++
++    prev_t = None
++    prev_R = None
++    hold_count = 0
++    rows = []
++    for i, rgb_path in enumerate(rgb_files, start=1):
++        stem = rgb_path.stem
++        depth_path = Path(args.depth_dir) / f"{stem}.png"
++        frame_out = out / stem
++        frame_out.mkdir(exist_ok=True)
++        print(f"[{i}/{len(rgb_files)}] {stem}", flush=True)
++        ism_ret = rb.run_ism_single(
++            ism_model, str(rgb_path), str(depth_path), str(workspace / args.camera_json), str(frame_out), device,
++            top_k_for_pem=5, max_proposals=50, no_vis=args.no_vis, vis_ism_dir=str(vis_ism),
++            filter_config=filter_config,
++        )
++        scores = ism_ret.get("scores", []) if ism_ret.get("ok") else []
++        best_ism = max((float(s.get("final", 0.0)) for s in scores), default=0.0)
++        skip_reason = ""
++        raw_pose = None
++        output_pose = None
++        if not ism_ret.get("ok"):
++            skip_reason = "ism_failed"
++        elif not scores:
++            skip_reason = "no_ism_candidate"
++            prev_t = None
++            prev_R = None
++            hold_count = 0
++            (frame_out / "detection_pem.json").write_text("[]")
++        elif best_ism < object_min:
++            skip_reason = "object_existence_score_below_min"
++            prev_t = None
++            prev_R = None
++            hold_count = 0
++            (frame_out / "detection_pem.json").write_text("[]")
++        else:
++            pem_ret = rb.run_pem_single(
++                pem_model, all_tem_pts, all_tem_feat, pem_cfg,
++                str(rgb_path), str(depth_path), str(workspace / args.camera_json),
++                str(frame_out / "detection_ism.json"), str(frame_out), 0.2,
++                model_points, radius, device=device, no_vis=args.no_vis, vis_pem_dir=str(vis_pem),
++                deterministic_sampling=(args.mode == "improved"),
++                deterministic_seed=(1 if args.mode == "improved" else None),
++            )
++            if not pem_ret.get("ok"):
++                skip_reason = pem_ret.get("error", "pem_failed")
++            else:
++                raw_pose = best_pose(pem_ret["poses"])
++                if raw_pose and float(raw_pose.get("final_score", 0.0)) < pose_min:
++                    skip_reason = "pose_confidence_score_below_min"
++                    raw_pose = None
++
++        if raw_pose:
++            R, t = pose_from_ret(raw_pose)
++            output_R, output_t = R, t
++            if temporal and prev_t is not None:
++                trans_delta = float(np.linalg.norm(t - prev_t))
++                rot_delta = rotation_angle_deg(prev_R, R)
++                jump_t = (
++                    args.temporal_max_translation_jump_mm > 0
++                    and trans_delta > args.temporal_max_translation_jump_mm
++                )
++                jump_r = (
++                    args.temporal_max_rotation_jump_deg > 0
++                    and rot_delta > args.temporal_max_rotation_jump_deg
++                )
++                if jump_t or jump_r:
++                    if hold_count < args.temporal_hold_last_good_frames:
++                        output_R, output_t = prev_R, prev_t
++                        hold_count += 1
++                    else:
++                        output_R, output_t = None, None
++                        skip_reason = "temporal_jump_reject"
++                else:
++                    alpha_t = min(1.0, max(0.0, args.temporal_translation_alpha))
++                    alpha_r = min(1.0, max(0.0, args.temporal_rotation_alpha))
++                    output_t = (1.0 - alpha_t) * prev_t + alpha_t * t
++                    output_R = blend_rotation(prev_R, R, alpha_r)
++                    hold_count = 0
++            if output_t is not None:
++                prev_t, prev_R = output_t, output_R
++                q = quat_from_matrix(output_R)
++                output_pose = {
++                    "R": output_R.tolist(),
++                    "t_mm": output_t.tolist(),
++                    "raw_t_mm": t.tolist(),
++                    "q_xyzw": q.tolist(),
++                    "score": float(raw_pose.get("final_score", 0.0)),
++                    "bbox": raw_pose.get("bbox"),
++                }
++                with (frame_out / "pose_output.json").open("w") as f:
++                    json.dump(output_pose, f)
++        rows.append({
++            "frame": stem,
++            "ism_ok": bool(ism_ret.get("ok")),
++            "ism_candidates": len(scores),
++            "best_ism_score": best_ism,
++            "pose_output": output_pose is not None,
++            "skip_reason": skip_reason,
++            "confidence_score": output_pose["score"] if output_pose else "",
++            "score": output_pose["score"] if output_pose else "",
++            "tx": output_pose["t_mm"][0] if output_pose else "",
++            "ty": output_pose["t_mm"][1] if output_pose else "",
++            "tz": output_pose["t_mm"][2] if output_pose else "",
++            "qx": output_pose["q_xyzw"][0] if output_pose else "",
++            "qy": output_pose["q_xyzw"][1] if output_pose else "",
++            "qz": output_pose["q_xyzw"][2] if output_pose else "",
++            "qw": output_pose["q_xyzw"][3] if output_pose else "",
++        })
++
++    with (out / "pose_outputs.csv").open("w", newline="") as f:
++        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()) if rows else ["frame"])
++        writer.writeheader()
++        writer.writerows(rows)
++    print(f"wrote={out / 'pose_outputs.csv'}")
++
++
++if __name__ == "__main__":
++    main()

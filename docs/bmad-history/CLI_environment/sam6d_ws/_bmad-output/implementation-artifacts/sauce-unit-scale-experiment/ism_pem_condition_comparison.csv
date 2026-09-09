@@ -1,0 +1,7 @@
+condition,dominant_failure,frames,ism_success_rate,mean_appearance_score,mean_geometric_score,mean_ism_score,mean_pem_score,mean_semantic_score,mean_time_s,median_time_s,p95_time_s,pem_success_rate,publish_rate,template
+existing_meter_template,ism_failed:'float' object has no attribute 'detach',30,0.0,,,0.0,,,0.106,0.101,0.134,0.0,0.0,sauce_vertex_160000
+existing_meter_template,ism_failed:'float' object has no attribute 'detach',30,0.0,,,0.0,,,0.104,0.098,0.132,0.0,0.0,sauce_vertex_630000
+npy_only_xyz_mm,ism_failed:'float' object has no attribute 'detach',30,0.0,,,0.0,,,0.112,0.102,0.15,0.0,0.0,sauce_vertex_160000_npy_mm
+npy_only_xyz_mm,ism_failed:'float' object has no attribute 'detach',30,0.0,,,0.0,,,0.108,0.105,0.137,0.0,0.0,sauce_vertex_630000_npy_mm
+ply_mm_rerender,no_accepted_ism_candidate,30,1.0,0.5103,0.3068,0.0167,,0.4011,0.136,0.125,0.219,0.033,0.0,sauce_vertex_160000_ply_mm
+ply_mm_rerender,no_accepted_ism_candidate,30,1.0,0.517,0.3251,0.017,,0.4068,0.131,0.13,0.144,0.033,0.0,sauce_vertex_630000_ply_mm

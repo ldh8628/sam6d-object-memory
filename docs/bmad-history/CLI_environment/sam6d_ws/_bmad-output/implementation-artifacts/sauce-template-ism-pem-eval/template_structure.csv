@@ -1,0 +1,4 @@
+bbox_height_mean,bbox_width_mean,empty_rgb,mask_count,object_area_ratio_max,object_area_ratio_mean,object_area_ratio_min,resolution,rgb_count,template,template_dir,unique_colors_max,unique_colors_mean,unique_colors_min,verdict,xyz_count
+117.6,149.0,0,42,0.061436,0.046204,0.015625,512x512,42,milk_reference,/home/etri/CLI_environment/sam6d_ws/sam6d_master/SAM-6D/Data/custom/Milk_scaled_195mm/templates,3740,2134.4,21,ok,42
+298.4,123.8,0,42,0.140656,0.115506,0.047440,512x512,42,sauce_vertex_160000,/home/etri/CLI_environment/sam6d_ws/template/sauce/vertex_160000/Sauce_with_normal_vertexcolor/templates,12648,8783.2,262,ok,42
+298.4,123.6,0,42,0.140404,0.115367,0.047394,512x512,42,sauce_vertex_630000,/home/etri/CLI_environment/sam6d_ws/template/sauce/vertex_630000/Sauce_with_normal_vertexcolor/templates,12037,8390.9,275,ok,42

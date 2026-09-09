@@ -1,0 +1,17 @@
+diff --git a/sam6d_ws/sam6d_master/SAM-6D/Render/render_custom_templates.py b/sam6d_ws/sam6d_master/SAM-6D/Render/render_custom_templates.py
+index ede82d2..422b2b2 100644
+--- a/sam6d_ws/sam6d_master/SAM-6D/Render/render_custom_templates.py
++++ b/sam6d_ws/sam6d_master/SAM-6D/Render/render_custom_templates.py
+@@ -13,7 +13,11 @@ parser = argparse.ArgumentParser()
+ parser.add_argument('--cad_path', help="The path of CAD model")
+ parser.add_argument('--output_dir', help="The path to save CAD templates")
+ parser.add_argument('--normalize', default=True, help="Whether to normalize CAD model or not")
+-parser.add_argument('--colorize', default=False, help="Whether to colorize CAD model or not")
++parser.add_argument(
++    '--colorize',
++    action='store_true',
++    help="Override the CAD material with a uniform base color. Omit to keep vertex colors/textures.",
++)
+ parser.add_argument('--base_color', default=0.05, help="The base color used in CAD model")
+ parser.add_argument(
+     '--clean_each_view',

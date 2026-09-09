@@ -1,0 +1,8 @@
+{
+  "total_no_ism_candidate": 86,
+  "cause_counts": {
+    "bbox_and_mask_area_below_min": 78,
+    "mask_area_below_min": 7,
+    "depth_problem": 1
+  }
+}

@@ -1,0 +1,1419 @@
+--- /dev/null
++++ _bmad-output/implementation-artifacts/spec-sam6d-slam-fusion-shadow-eval.md
+@@ -0,0 +1,70 @@
++---
++title: 'SAM-6D SLAM Fusion Shadow Evaluation MVP'
++type: 'feature'
++created: '2026-06-10'
++status: 'in-review'
++baseline_commit: '503e871dc4ff6dd4b4d4b03b21dd3f939ea4bbf3'
++context:
++  - '{project-root}/_bmad-output/planning-artifacts/research/technical-slam-based-camera-pose-stabilization-for-sam-6d-pose-jitter-reduction-research-2026-06-10.md'
++  - '{project-root}/_bmad-output/planning-artifacts/research/technical-static-object-6d-pose-jitter-reduction-for-sam-6d-research-2026-06-10.md'
++---
++
++<frozen-after-approval reason="human-owned intent — do not modify unless human renegotiates">
++
++## Intent
++
++**Problem:** SAM-6D camera-frame object pose jitter may be reducible by composing it with SLAM camera/base localization, but this must be validated quickly as a product decision experiment rather than a new pose-estimation algorithm.
++
++**Approach:** Add a separate ROS2 shadow-evaluation node that subscribes to SAM-6D object poses, ORB-SLAM3 / hdl_graph_slam / RTAB-Map pose outputs, and TF, then publishes fused/debug topics and writes CSV plus a markdown verdict report.
++
++## Boundaries & Constraints
++
++**Always:** Keep production SAM-6D outputs intact. Publish fused/debug outputs under separate topics. Continue evaluating other SLAM branches when one branch is missing or not evaluable. Mark base/LiDAR SLAM branches without `T_BC` as `not_evaluable` rather than crashing. Use configurable topics and frames discovered from local code where available.
++
++**Ask First:** Any change to SAM-6D core model/ISM/PEM, existing recall/FP logic, existing production topic names, or files outside `/home/etri/CLI_environment/sam6d_jitter_ws`.
++
++**Never:** Implement a new factor graph or modify ORB-SLAM3, hdl_graph_slam, RTAB-Map, or `../sam6d_ws`. Do not replace production PoseArray/TF output. Do not make a failed SLAM branch fail the whole MVP.
++
++## I/O & Edge-Case Matrix
++
++| Scenario | Input / State | Expected Output / Behavior | Error Handling |
++|----------|--------------|---------------------------|----------------|
++| RGB-D SLAM fusion | SAM-6D `T_CO` and SLAM camera pose `T_WC` are available | Publish `T_WO = T_WC * T_CO`, append CSV row, update metrics | If stale/missing pose, row has `fusion_valid=false` and reason |
++| Base/LiDAR SLAM fusion | SAM-6D `T_CO`, SLAM base pose `T_WB`, and TF `T_BC` are available | Publish `T_WO = T_WB * T_BC * T_CO` | If `T_BC` is missing, mark branch `not_evaluable` only |
++| Missing SAM pose | No current SAM-6D pose | Still emit branch status in metrics/report as invalid | Do not publish fused pose |
++| Simple hold shadow | Fused pose jump exceeds configured thresholds | Keep/report held world pose on hold debug topic/metrics only | Do not replace production SAM-6D output |
++
++</frozen-after-approval>
++
++## Code Map
++
++- `src/sam6d_ros/sam6d_ros/sam6d_inference_node.py` -- local SAM-6D node publishes `/sam6d_inference/poses` PoseArray and configurable `pose_6dof_topic` TransformStamped with `camera_color_optical_frame` parent.
++- `/home/etri/CLI_environment/orbslam_ws/src/orbslam3_ros2/src/rgbd_node.cpp` -- ORB-SLAM3 publishes `/orbslam3/pose`, `/orbslam3/odom`, `/orbslam3/tracking_state`, and TF `world_frame -> camera_frame`.
++- `/home/etri/CLI_environment/hdlgraphslam_ws/src/hdl_graph_slam/src/hdl_graph_slam_ros2/scan_matching_odometry_node.cpp` -- hdl scan matcher publishes `/odom`, `/scan_matching_odometry/transform`, `/scan_matching_odometry/status`, and odom TF to input cloud/base frame.
++- `src/sam6d_slam_fusion_eval/` -- new isolated shadow-evaluation ROS2 package.
++
++## Tasks & Acceptance
++
++**Execution:**
++- [x] `src/sam6d_slam_fusion_eval/package.xml`, `setup.py`, package files -- create a ROS2 Python package with a `sam6d_slam_fusion_shadow_eval` console script.
++- [x] `src/sam6d_slam_fusion_eval/config/sam6d_slam_fusion_shadow_eval.yaml` -- add default topics/frames for SAM-6D, ORB-SLAM3, hdl_graph_slam, and RTAB-Map, including discovered topic notes.
++- [x] `src/sam6d_slam_fusion_eval/sam6d_slam_fusion_eval/shadow_eval_node.py` -- implement subscribers, transform composition, TF lookup for `T_BC`, branch validity, publishers, CSV writer, rolling metrics, simple hold shadow, and markdown report writer.
++- [x] `src/sam6d_slam_fusion_eval/README.md` -- document topic discovery, run commands, CSV/report outputs, verdict rules, and final decision questions.
++
++**Acceptance Criteria:**
++- Given SAM-6D TransformStamped and ORB-SLAM3 PoseStamped are received, when the node spins, then `/sam6d/slam_fused/orbslam3/object_pose_world` publishes composed world poses and CSV rows include raw/world deltas.
++- Given hdl_graph_slam odometry is received but camera extrinsic TF is missing, when SAM poses arrive, then the hdl branch is marked `not_evaluable` without stopping ORB/RTAB evaluation.
++- Given no RTAB-Map source is running, when SAM/other SLAM inputs arrive, then report valid frame count for RTAB is zero and other branches continue.
++- Given enough samples are logged, when the node shuts down or report timer fires, then the markdown report contains the required condition table and GO/WEAK GO/NO-GO verdict rule outputs.
++
++## Spec Change Log
++
++## Design Notes
++
++Use pure Python quaternion/transform math in the evaluator to avoid pulling SAM-6D or SLAM libraries into the shadow path. Treat SAM raw jitter in camera frame as its own condition; fused world jitter is calculated per branch. `sam6d_score` remains blank/NaN unless a future SAM debug topic provides score, because current local SAM-6D production topics do not publish score.
++
++## Verification
++
++**Commands:**
++- `colcon build --packages-select sam6d_slam_fusion_eval --symlink-install` -- expected: package builds without touching `../sam6d_ws`.
++- `python3 -m py_compile src/sam6d_slam_fusion_eval/sam6d_slam_fusion_eval/shadow_eval_node.py` -- expected: syntax succeeds.
+--- /dev/null
++++ src/sam6d_slam_fusion_eval/package.xml
+@@ -0,0 +1,21 @@
++<?xml version="1.0"?>
++<?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
++<package format="3">
++  <name>sam6d_slam_fusion_eval</name>
++  <version>0.1.0</version>
++  <description>Shadow evaluator for SAM-6D object pose jitter with SLAM world/base pose fusion.</description>
++  <maintainer email="etri@etri.re.kr">etri</maintainer>
++  <license>Apache-2.0</license>
++
++  <depend>rclpy</depend>
++  <depend>geometry_msgs</depend>
++  <depend>nav_msgs</depend>
++  <depend>std_msgs</depend>
++  <depend>tf2_ros</depend>
++
++  <exec_depend>python3-numpy</exec_depend>
++
++  <export>
++    <build_type>ament_python</build_type>
++  </export>
++</package>
+--- /dev/null
++++ src/sam6d_slam_fusion_eval/setup.py
+@@ -0,0 +1,29 @@
++from glob import glob
++import os
++
++from setuptools import find_packages, setup
++
++
++package_name = "sam6d_slam_fusion_eval"
++
++setup(
++    name=package_name,
++    version="0.1.0",
++    packages=find_packages(exclude=["test"]),
++    data_files=[
++        ("share/ament_index/resource_index/packages", ["resource/" + package_name]),
++        ("share/" + package_name, ["package.xml", "README.md"]),
++        (os.path.join("share", package_name, "config"), glob("config/*.yaml")),
++    ],
++    install_requires=["setuptools"],
++    zip_safe=True,
++    maintainer="etri",
++    maintainer_email="etri@etri.re.kr",
++    description="Shadow evaluator for SAM-6D object pose jitter with SLAM fusion.",
++    license="Apache-2.0",
++    entry_points={
++        "console_scripts": [
++            "sam6d_slam_fusion_shadow_eval = sam6d_slam_fusion_eval.shadow_eval_node:main",
++        ],
++    },
++)
+--- /dev/null
++++ src/sam6d_slam_fusion_eval/setup.cfg
+@@ -0,0 +1,4 @@
++[develop]
++script_dir=$base/lib/sam6d_slam_fusion_eval
++[install]
++install_scripts=$base/lib/sam6d_slam_fusion_eval
+--- /dev/null
++++ src/sam6d_slam_fusion_eval/resource/sam6d_slam_fusion_eval
+@@ -0,0 +1 @@
++sam6d_slam_fusion_eval
+--- /dev/null
++++ src/sam6d_slam_fusion_eval/sam6d_slam_fusion_eval/__init__.py
+@@ -0,0 +1 @@
++"""Shadow evaluation tools for SAM-6D and SLAM pose fusion."""
+--- /dev/null
++++ src/sam6d_slam_fusion_eval/sam6d_slam_fusion_eval/shadow_eval_node.py
+@@ -0,0 +1,1105 @@
++#!/usr/bin/env python3
++"""Shadow evaluator for SAM-6D pose jitter with SLAM pose fusion."""
++
++from __future__ import annotations
++
++import csv
++from dataclasses import dataclass, field
++import json
++import math
++from pathlib import Path
++import signal
++import time
++from typing import Callable
++
++from geometry_msgs.msg import Pose, PoseArray, PoseStamped, PoseWithCovarianceStamped, TransformStamped
++from nav_msgs.msg import Odometry
++import rclpy
++from rclpy.node import Node
++from rclpy.time import Time
++from std_msgs.msg import Float32, String
++import tf2_ros
++
++
++CSV_COLUMNS = [
++    "timestamp",
++    "frame_id",
++    "sam6d_has_pose",
++    "sam6d_score",
++    "slam_source",
++    "slam_has_pose",
++    "tf_chain_valid",
++    "raw_tx",
++    "raw_ty",
++    "raw_tz",
++    "raw_qx",
++    "raw_qy",
++    "raw_qz",
++    "raw_qw",
++    "world_tx",
++    "world_ty",
++    "world_tz",
++    "world_qx",
++    "world_qy",
++    "world_qz",
++    "world_qw",
++    "raw_delta_t_mm",
++    "raw_delta_r_deg",
++    "world_delta_t_mm",
++    "world_delta_r_deg",
++    "fusion_valid",
++    "failure_reason",
++]
++
++
++def stamp_to_sec(stamp) -> float:
++    return float(stamp.sec) + float(stamp.nanosec) * 1e-9
++
++
++def q_normalize(q: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
++    if not all(math.isfinite(v) for v in q):
++        raise ValueError("nonfinite_quaternion")
++    n = math.sqrt(sum(v * v for v in q))
++    if n <= 1e-12:
++        raise ValueError("invalid_quaternion_norm")
++    return tuple(v / n for v in q)  # type: ignore[return-value]
++
++
++def q_conjugate(q: tuple[float, float, float, float]) -> tuple[float, float, float, float]:
++    return (-q[0], -q[1], -q[2], q[3])
++
++
++def q_multiply(
++    a: tuple[float, float, float, float],
++    b: tuple[float, float, float, float],
++) -> tuple[float, float, float, float]:
++    ax, ay, az, aw = a
++    bx, by, bz, bw = b
++    return q_normalize(
++        (
++            aw * bx + ax * bw + ay * bz - az * by,
++            aw * by - ax * bz + ay * bw + az * bx,
++            aw * bz + ax * by - ay * bx + az * bw,
++            aw * bw - ax * bx - ay * by - az * bz,
++        )
++    )
++
++
++def q_rotate(q: tuple[float, float, float, float], v: tuple[float, float, float]) -> tuple[float, float, float]:
++    # Quaternion vector rotation using the expanded cross-product form.
++    qx, qy, qz, qw = q
++    vx, vy, vz = v
++    tx = 2.0 * (qy * vz - qz * vy)
++    ty = 2.0 * (qz * vx - qx * vz)
++    tz = 2.0 * (qx * vy - qy * vx)
++    return (
++        vx + qw * tx + (qy * tz - qz * ty),
++        vy + qw * ty + (qz * tx - qx * tz),
++        vz + qw * tz + (qx * ty - qy * tx),
++    )
++
++
++def q_angle_deg(
++    a: tuple[float, float, float, float],
++    b: tuple[float, float, float, float],
++) -> float:
++    dq = q_multiply(q_conjugate(a), b)
++    xyz_norm = math.sqrt(dq[0] * dq[0] + dq[1] * dq[1] + dq[2] * dq[2])
++    angle = 2.0 * math.atan2(xyz_norm, abs(dq[3]))
++    return math.degrees(angle)
++
++
++def pose_delta_t_mm(a: "TfPose", b: "TfPose") -> float:
++    dx = b.t[0] - a.t[0]
++    dy = b.t[1] - a.t[1]
++    dz = b.t[2] - a.t[2]
++    return math.sqrt(dx * dx + dy * dy + dz * dz) * 1000.0
++
++
++@dataclass
++class TfPose:
++    t: tuple[float, float, float]
++    q: tuple[float, float, float, float]
++
++    @staticmethod
++    def identity() -> "TfPose":
++        return TfPose((0.0, 0.0, 0.0), (0.0, 0.0, 0.0, 1.0))
++
++    def compose(self, other: "TfPose") -> "TfPose":
++        rt = q_rotate(self.q, other.t)
++        return TfPose(
++            (self.t[0] + rt[0], self.t[1] + rt[1], self.t[2] + rt[2]),
++            q_multiply(self.q, other.q),
++        )
++
++
++def pose_from_msg(pose: Pose) -> TfPose:
++    t = (float(pose.position.x), float(pose.position.y), float(pose.position.z))
++    if not all(math.isfinite(v) for v in t):
++        raise ValueError("nonfinite_translation")
++    return TfPose(
++        t,
++        q_normalize(
++            (
++                float(pose.orientation.x),
++                float(pose.orientation.y),
++                float(pose.orientation.z),
++                float(pose.orientation.w),
++            )
++        ),
++    )
++
++
++def pose_from_transform_msg(msg: TransformStamped) -> TfPose:
++    t = msg.transform.translation
++    q = msg.transform.rotation
++    trans = (float(t.x), float(t.y), float(t.z))
++    if not all(math.isfinite(v) for v in trans):
++        raise ValueError("nonfinite_translation")
++    return TfPose(
++        trans,
++        q_normalize((float(q.x), float(q.y), float(q.z), float(q.w))),
++    )
++
++
++def pose_to_pose_stamped(pose: TfPose, frame_id: str, stamp) -> PoseStamped:
++    msg = PoseStamped()
++    msg.header.stamp = stamp
++    msg.header.frame_id = frame_id
++    msg.pose.position.x = pose.t[0]
++    msg.pose.position.y = pose.t[1]
++    msg.pose.position.z = pose.t[2]
++    msg.pose.orientation.x = pose.q[0]
++    msg.pose.orientation.y = pose.q[1]
++    msg.pose.orientation.z = pose.q[2]
++    msg.pose.orientation.w = pose.q[3]
++    return msg
++
++
++def pose_to_transform_stamped(
++    pose: TfPose,
++    frame_id: str,
++    child_frame_id: str,
++    stamp,
++) -> TransformStamped:
++    msg = TransformStamped()
++    msg.header.stamp = stamp
++    msg.header.frame_id = frame_id
++    msg.child_frame_id = child_frame_id
++    msg.transform.translation.x = pose.t[0]
++    msg.transform.translation.y = pose.t[1]
++    msg.transform.translation.z = pose.t[2]
++    msg.transform.rotation.x = pose.q[0]
++    msg.transform.rotation.y = pose.q[1]
++    msg.transform.rotation.z = pose.q[2]
++    msg.transform.rotation.w = pose.q[3]
++    return msg
++
++
++@dataclass
++class PoseSample:
++    pose: TfPose
++    stamp_sec: float
++    stamp_msg: object
++    frame_id: str
++    child_frame_id: str = ""
++    score: float = math.nan
++    valid_stamp: bool = True
++
++
++@dataclass
++class BranchConfig:
++    name: str
++    enabled: bool
++    source_kind: str
++    pose_topic: str
++    pose_msg_type: str
++    output_topic: str
++    world_frame: str
++    camera_frame: str
++    base_frame: str = ""
++
++
++@dataclass
++class BranchState:
++    config: BranchConfig
++    latest_pose: PoseSample | None = None
++    latest_status: str = ""
++    publisher: object | None = None
++    hold_publisher: object | None = None
++    previous_world: TfPose | None = None
++    previous_hold: TfPose | None = None
++    hold_count: int = 0
++    valid_frames: int = 0
++    invalid_frames: int = 0
++
++
++@dataclass
++class Metrics:
++    samples: list[TfPose] = field(default_factory=list)
++    delta_t_mm: list[float] = field(default_factory=list)
++    delta_r_deg: list[float] = field(default_factory=list)
++    previous: TfPose | None = None
++
++    def add(self, pose: TfPose) -> tuple[float, float]:
++        dt = math.nan
++        dr = math.nan
++        if self.previous is not None:
++            dt = pose_delta_t_mm(self.previous, pose)
++            dr = q_angle_deg(self.previous.q, pose.q)
++            self.delta_t_mm.append(dt)
++            self.delta_r_deg.append(dr)
++        self.previous = pose
++        self.samples.append(pose)
++        return dt, dr
++
++    def translation_std_mm(self) -> float:
++        n = len(self.samples)
++        if n < 2:
++            return math.nan
++        mx = sum(p.t[0] for p in self.samples) / n
++        my = sum(p.t[1] for p in self.samples) / n
++        mz = sum(p.t[2] for p in self.samples) / n
++        var = (
++            sum((p.t[0] - mx) ** 2 for p in self.samples) / n
++            + sum((p.t[1] - my) ** 2 for p in self.samples) / n
++            + sum((p.t[2] - mz) ** 2 for p in self.samples) / n
++        )
++        return math.sqrt(var) * 1000.0
++
++    def rotation_std_deg(self) -> float:
++        if len(self.samples) < 2:
++            return math.nan
++        mean_q = self.samples[0].q
++        acc = [0.0, 0.0, 0.0, 0.0]
++        for sample in self.samples:
++            q = sample.q
++            if sum(q[i] * mean_q[i] for i in range(4)) < 0.0:
++                q = tuple(-v for v in q)  # type: ignore[assignment]
++            for i in range(4):
++                acc[i] += q[i]
++        mean_q = q_normalize(tuple(acc))  # type: ignore[arg-type]
++        angles = [q_angle_deg(mean_q, sample.q) for sample in self.samples]
++        mean_angle = sum(angles) / len(angles)
++        return math.sqrt(sum((a - mean_angle) ** 2 for a in angles) / len(angles))
++
++    def delta_t_mean_mm(self) -> float:
++        return sum(self.delta_t_mm) / len(self.delta_t_mm) if self.delta_t_mm else math.nan
++
++    def delta_t_max_mm(self) -> float:
++        return max(self.delta_t_mm) if self.delta_t_mm else math.nan
++
++    def delta_r_mean_deg(self) -> float:
++        return sum(self.delta_r_deg) / len(self.delta_r_deg) if self.delta_r_deg else math.nan
++
++    def delta_r_max_deg(self) -> float:
++        return max(self.delta_r_deg) if self.delta_r_deg else math.nan
++
++
++class Sam6dSlamFusionShadowEval(Node):
++    def __init__(self) -> None:
++        super().__init__("sam6d_slam_fusion_shadow_eval")
++        self._declare_parameters()
++        self.output_dir = Path(str(self.get_parameter("output_dir").value)).expanduser()
++        self.output_dir.mkdir(parents=True, exist_ok=True)
++        self.csv_path = self.output_dir / str(self.get_parameter("csv_filename").value)
++        self.report_path = self.output_dir / str(self.get_parameter("report_filename").value)
++        self.discovery_path = self.output_dir / str(self.get_parameter("topic_discovery_filename").value)
++
++        self.pose_stale_sec = float(self.get_parameter("pose_stale_sec").value)
++        self.target_fps_baseline = float(self.get_parameter("target_fps_baseline").value)
++        self.simple_hold_enabled = bool(self.get_parameter("simple_hold.enabled").value)
++        self.simple_hold_max_delta_t_mm = float(self.get_parameter("simple_hold.max_delta_t_mm").value)
++        self.simple_hold_max_delta_r_deg = float(self.get_parameter("simple_hold.max_delta_r_deg").value)
++        self.simple_hold_frames = int(self.get_parameter("simple_hold.hold_frames").value)
++        self.sam_camera_frame = str(self.get_parameter("sam6d.camera_frame").value)
++        self.sam_score = math.nan
++        self.latest_sam: PoseSample | None = None
++        self.raw_metrics = Metrics()
++        self.branch_metrics: dict[str, Metrics] = {}
++        self.hold_metrics: dict[str, Metrics] = {}
++        self.processing_ms: list[float] = []
++
++        self.tf_buffer = tf2_ros.Buffer()
++        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer, self)
++        self.raw_debug_pub = self.create_publisher(TransformStamped, "/sam6d/raw_pose_debug", 10)
++        self.debug_metrics_pub = self.create_publisher(String, "/sam6d/slam_fused/debug_metrics", 10)
++
++        self.csv_file = self.csv_path.open("w", newline="", encoding="utf-8")
++        self.csv_writer = csv.DictWriter(self.csv_file, fieldnames=CSV_COLUMNS)
++        self.csv_writer.writeheader()
++        self.csv_file.flush()
++
++        self.branches: dict[str, BranchState] = {}
++        self._setup_branches()
++        self._setup_sam_subscription()
++        self._setup_optional_score_subscription()
++
++        self.create_timer(float(self.get_parameter("report_period_sec").value), self.write_report)
++        self.create_timer(2.0, self.write_topic_discovery)
++        self.write_report()
++        self.get_logger().info(
++            f"shadow eval ready, csv={self.csv_path}, report={self.report_path}"
++        )
++
++    def _declare_parameters(self) -> None:
++        defaults = {
++            "output_dir": "output/sam6d_slam_fusion_shadow_eval",
++            "csv_filename": "sam6d_slam_fusion_shadow_eval.csv",
++            "report_filename": "sam6d_slam_fusion_shadow_eval_report.md",
++            "topic_discovery_filename": "topic_discovery.json",
++            "report_period_sec": 10.0,
++            "pose_stale_sec": 0.75,
++            "target_fps_baseline": 0.0,
++            "sam6d.pose_topic": "/sam6d_milk_verify/pose_6dof",
++            "sam6d.pose_msg_type": "transform_stamped",
++            "sam6d.pose_array_topic": "/sam6d_inference/poses",
++            "sam6d.pose_array_index": 0,
++            "sam6d.camera_frame": "camera_color_optical_frame",
++            "sam6d.score_topic": "",
++            "simple_hold.enabled": True,
++            "simple_hold.max_delta_t_mm": 20.0,
++            "simple_hold.max_delta_r_deg": 5.0,
++            "simple_hold.hold_frames": 5,
++        }
++        for name, value in defaults.items():
++            self.declare_parameter(name, value)
++
++        branch_defaults = {
++            "orbslam3": {
++                "enabled": True,
++                "source_kind": "camera",
++                "pose_topic": "/orbslam3/pose",
++                "pose_msg_type": "pose_stamped",
++                "output_topic": "/sam6d/slam_fused/orbslam3/object_pose_world",
++                "world_frame": "map",
++                "camera_frame": "camera_color_optical_frame",
++                "base_frame": "",
++                "tracking_state_topic": "/orbslam3/tracking_state",
++            },
++            "hdl_graph_slam": {
++                "enabled": True,
++                "source_kind": "base",
++                "pose_topic": "/odom",
++                "pose_msg_type": "odometry",
++                "output_topic": "/sam6d/slam_fused/hdl_graph_slam/object_pose_world",
++                "world_frame": "odom",
++                "camera_frame": "camera_color_optical_frame",
++                "base_frame": "base_link",
++                "tracking_state_topic": "",
++            },
++            "rtabmap": {
++                "enabled": True,
++                "source_kind": "camera",
++                "pose_topic": "/rtabmap/pose",
++                "pose_msg_type": "pose_stamped",
++                "output_topic": "/sam6d/slam_fused/rtabmap/object_pose_world",
++                "world_frame": "map",
++                "camera_frame": "camera_color_optical_frame",
++                "base_frame": "",
++                "tracking_state_topic": "",
++            },
++        }
++        for prefix, values in branch_defaults.items():
++            for key, value in values.items():
++                self.declare_parameter(f"{prefix}.{key}", value)
++
++    def _setup_sam_subscription(self) -> None:
++        msg_type = str(self.get_parameter("sam6d.pose_msg_type").value)
++        if msg_type == "pose_array":
++            topic = str(self.get_parameter("sam6d.pose_array_topic").value)
++            self.create_subscription(PoseArray, topic, self._on_sam_pose_array, 10)
++        else:
++            topic = str(self.get_parameter("sam6d.pose_topic").value)
++            self.create_subscription(TransformStamped, topic, self._on_sam_transform, 10)
++        self.get_logger().info(f"subscribing SAM-6D raw pose: {topic} ({msg_type})")
++
++    def _setup_optional_score_subscription(self) -> None:
++        topic = str(self.get_parameter("sam6d.score_topic").value)
++        if topic:
++            self.create_subscription(Float32, topic, self._on_score, 10)
++
++    def _setup_branches(self) -> None:
++        for name in ("orbslam3", "hdl_graph_slam", "rtabmap"):
++            cfg = BranchConfig(
++                name=name,
++                enabled=bool(self.get_parameter(f"{name}.enabled").value),
++                source_kind=str(self.get_parameter(f"{name}.source_kind").value),
++                pose_topic=str(self.get_parameter(f"{name}.pose_topic").value),
++                pose_msg_type=str(self.get_parameter(f"{name}.pose_msg_type").value),
++                output_topic=str(self.get_parameter(f"{name}.output_topic").value),
++                world_frame=str(self.get_parameter(f"{name}.world_frame").value),
++                camera_frame=str(self.get_parameter(f"{name}.camera_frame").value),
++                base_frame=str(self.get_parameter(f"{name}.base_frame").value),
++            )
++            state = BranchState(cfg)
++            state.publisher = self.create_publisher(PoseStamped, cfg.output_topic, 10)
++            hold_topic = cfg.output_topic.rstrip("/") + "_simple_hold_debug"
++            state.hold_publisher = self.create_publisher(PoseStamped, hold_topic, 10)
++            self.branches[name] = state
++            self.branch_metrics[name] = Metrics()
++            self.hold_metrics[name] = Metrics()
++            if not cfg.enabled:
++                continue
++            self._subscribe_branch_pose(state)
++            status_topic = str(self.get_parameter(f"{name}.tracking_state_topic").value)
++            if status_topic:
++                self.create_subscription(
++                    String,
++                    status_topic,
++                    lambda msg, branch=name: self._on_branch_status(branch, msg),
++                    10,
++                )
++
++    def _subscribe_branch_pose(self, state: BranchState) -> None:
++        cfg = state.config
++        callback: Callable
++        if cfg.pose_msg_type == "odometry":
++            callback = lambda msg, branch=cfg.name: self._on_slam_odometry(branch, msg)
++            self.create_subscription(Odometry, cfg.pose_topic, callback, 10)
++        elif cfg.pose_msg_type == "pose_with_covariance_stamped":
++            callback = lambda msg, branch=cfg.name: self._on_slam_pose_with_covariance(branch, msg)
++            self.create_subscription(PoseWithCovarianceStamped, cfg.pose_topic, callback, 10)
++        elif cfg.pose_msg_type == "transform_stamped":
++            callback = lambda msg, branch=cfg.name: self._on_slam_transform(branch, msg)
++            self.create_subscription(TransformStamped, cfg.pose_topic, callback, 10)
++        else:
++            callback = lambda msg, branch=cfg.name: self._on_slam_pose_stamped(branch, msg)
++            self.create_subscription(PoseStamped, cfg.pose_topic, callback, 10)
++        self.get_logger().info(
++            f"subscribing {cfg.name}: {cfg.pose_topic} ({cfg.pose_msg_type}, {cfg.source_kind})"
++        )
++
++    def _on_score(self, msg: Float32) -> None:
++        self.sam_score = float(msg.data)
++
++    def _on_branch_status(self, branch: str, msg: String) -> None:
++        self.branches[branch].latest_status = msg.data
++
++    def _on_slam_pose_stamped(self, branch: str, msg: PoseStamped) -> None:
++        stamp_sec, valid_stamp = self._stamp_info(msg.header.stamp)
++        frame_id = msg.header.frame_id or self.branches[branch].config.world_frame
++        try:
++            pose = pose_from_msg(msg.pose)
++        except ValueError as exc:
++            self.branches[branch].latest_pose = None
++            self.branches[branch].latest_status = str(exc)
++            return
++        self.branches[branch].latest_pose = PoseSample(pose, stamp_sec, msg.header.stamp, frame_id, valid_stamp=valid_stamp)
++
++    def _on_slam_odometry(self, branch: str, msg: Odometry) -> None:
++        stamp_sec, valid_stamp = self._stamp_info(msg.header.stamp)
++        try:
++            pose = pose_from_msg(msg.pose.pose)
++        except ValueError as exc:
++            self.branches[branch].latest_pose = None
++            self.branches[branch].latest_status = str(exc)
++            return
++        self.branches[branch].latest_pose = PoseSample(
++            pose,
++            stamp_sec,
++            msg.header.stamp,
++            msg.header.frame_id or self.branches[branch].config.world_frame,
++            msg.child_frame_id,
++            valid_stamp=valid_stamp,
++        )
++
++    def _on_slam_pose_with_covariance(self, branch: str, msg: PoseWithCovarianceStamped) -> None:
++        stamp_sec, valid_stamp = self._stamp_info(msg.header.stamp)
++        frame_id = msg.header.frame_id or self.branches[branch].config.world_frame
++        try:
++            pose = pose_from_msg(msg.pose.pose)
++        except ValueError as exc:
++            self.branches[branch].latest_pose = None
++            self.branches[branch].latest_status = str(exc)
++            return
++        self.branches[branch].latest_pose = PoseSample(pose, stamp_sec, msg.header.stamp, frame_id, valid_stamp=valid_stamp)
++
++    def _on_slam_transform(self, branch: str, msg: TransformStamped) -> None:
++        stamp_sec, valid_stamp = self._stamp_info(msg.header.stamp)
++        try:
++            pose = pose_from_transform_msg(msg)
++        except ValueError as exc:
++            self.branches[branch].latest_pose = None
++            self.branches[branch].latest_status = str(exc)
++            return
++        self.branches[branch].latest_pose = PoseSample(
++            pose,
++            stamp_sec,
++            msg.header.stamp,
++            msg.header.frame_id,
++            msg.child_frame_id,
++            valid_stamp=valid_stamp,
++        )
++
++    def _on_sam_transform(self, msg: TransformStamped) -> None:
++        stamp_sec, valid_stamp = self._stamp_info(msg.header.stamp)
++        try:
++            pose = pose_from_transform_msg(msg)
++        except ValueError as exc:
++            self._process_missing_sam(msg.header.stamp, msg.header.frame_id or self.sam_camera_frame, str(exc))
++            return
++        self.latest_sam = PoseSample(
++            pose,
++            stamp_sec,
++            msg.header.stamp,
++            msg.header.frame_id or self.sam_camera_frame,
++            msg.child_frame_id,
++            self.sam_score,
++            valid_stamp,
++        )
++        self._process_sam_sample()
++
++    def _on_sam_pose_array(self, msg: PoseArray) -> None:
++        index = int(self.get_parameter("sam6d.pose_array_index").value)
++        if index < 0 or index >= len(msg.poses):
++            self.latest_sam = None
++            self._process_missing_sam(
++                msg.header.stamp,
++                msg.header.frame_id or self.sam_camera_frame,
++                "missing_sam_pose",
++            )
++            return
++        stamp_sec, valid_stamp = self._stamp_info(msg.header.stamp)
++        try:
++            pose = pose_from_msg(msg.poses[index])
++        except ValueError as exc:
++            self._process_missing_sam(msg.header.stamp, msg.header.frame_id or self.sam_camera_frame, str(exc))
++            return
++        self.latest_sam = PoseSample(
++            pose,
++            stamp_sec,
++            msg.header.stamp,
++            msg.header.frame_id or self.sam_camera_frame,
++            f"sam6d_object_{index}",
++            self.sam_score,
++            valid_stamp,
++        )
++        self._process_sam_sample()
++
++    def _stamp_info(self, stamp) -> tuple[float, bool]:
++        stamp_sec = stamp_to_sec(stamp)
++        if stamp_sec <= 0.0:
++            return self._now_sec(), False
++        return stamp_sec, True
++
++    def _process_missing_sam(self, stamp, frame_id: str, reason: str) -> None:
++        stamp_sec, _ = self._stamp_info(stamp)
++        base_row = {
++            "timestamp": f"{stamp_sec:.9f}",
++            "frame_id": frame_id,
++            "sam6d_has_pose": False,
++            "sam6d_score": self._fmt(self.sam_score),
++            "slam_source": "raw",
++            "slam_has_pose": False,
++            "tf_chain_valid": False,
++            "raw_tx": "",
++            "raw_ty": "",
++            "raw_tz": "",
++            "raw_qx": "",
++            "raw_qy": "",
++            "raw_qz": "",
++            "raw_qw": "",
++            "world_tx": "",
++            "world_ty": "",
++            "world_tz": "",
++            "world_qx": "",
++            "world_qy": "",
++            "world_qz": "",
++            "world_qw": "",
++            "raw_delta_t_mm": "",
++            "raw_delta_r_deg": "",
++            "world_delta_t_mm": "",
++            "world_delta_r_deg": "",
++            "fusion_valid": False,
++            "failure_reason": reason,
++        }
++        self.csv_writer.writerow(base_row)
++        for name, state in self.branches.items():
++            row = dict(base_row)
++            row["slam_source"] = name
++            row["slam_has_pose"] = state.latest_pose is not None
++            row["failure_reason"] = reason
++            self.csv_writer.writerow(row)
++            state.invalid_frames += 1
++        self.csv_file.flush()
++        self._publish_debug_metrics()
++
++    def _process_sam_sample(self) -> None:
++        start = time.perf_counter()
++        sam = self.latest_sam
++        if sam is None:
++            return
++        raw_dt, raw_dr = self.raw_metrics.add(sam.pose)
++        self.raw_debug_pub.publish(
++            pose_to_transform_stamped(
++                sam.pose,
++                sam.frame_id,
++                sam.child_frame_id or "sam6d_object",
++                sam.stamp_msg,
++            )
++        )
++        self._write_csv_row(
++            sam=sam,
++            slam_source="raw",
++            slam_has_pose=False,
++            tf_chain_valid=False,
++            raw_delta_t_mm=raw_dt,
++            raw_delta_r_deg=raw_dr,
++            world_pose=None,
++            world_delta_t_mm=math.nan,
++            world_delta_r_deg=math.nan,
++            fusion_valid=False,
++            failure_reason="raw_camera_frame_only",
++        )
++        for state in self.branches.values():
++            self._process_branch(state, sam, raw_dt, raw_dr)
++        self.csv_file.flush()
++        self.processing_ms.append((time.perf_counter() - start) * 1000.0)
++        if len(self.processing_ms) > 1000:
++            self.processing_ms = self.processing_ms[-1000:]
++        self._publish_debug_metrics()
++
++    def _process_branch(
++        self,
++        state: BranchState,
++        sam: PoseSample,
++        raw_dt: float,
++        raw_dr: float,
++    ) -> None:
++        cfg = state.config
++        if not cfg.enabled:
++            return
++        world_pose, valid, tf_valid, reason = self._compute_fusion(state, sam)
++        if not valid or world_pose is None:
++            state.invalid_frames += 1
++            self._write_csv_row(
++                sam,
++                cfg.name,
++                state.latest_pose is not None,
++                tf_valid,
++                raw_dt,
++                raw_dr,
++                None,
++                math.nan,
++                math.nan,
++                False,
++                reason,
++            )
++            return
++        state.valid_frames += 1
++        world_dt, world_dr = self.branch_metrics[cfg.name].add(world_pose)
++        state.previous_world = world_pose
++        if state.publisher is not None:
++            state.publisher.publish(pose_to_pose_stamped(world_pose, cfg.world_frame, sam.stamp_msg))
++        self._write_csv_row(
++            sam,
++            cfg.name,
++            True,
++            tf_valid,
++            raw_dt,
++            raw_dr,
++            world_pose,
++            world_dt,
++            world_dr,
++            True,
++            "",
++        )
++        hold_pose = self._simple_hold_pose(state, world_pose, world_dt, world_dr)
++        hold_dt, hold_dr = self.hold_metrics[cfg.name].add(hold_pose)
++        if state.hold_publisher is not None:
++            state.hold_publisher.publish(pose_to_pose_stamped(hold_pose, cfg.world_frame, sam.stamp_msg))
++        self._write_csv_row(
++            sam,
++            f"{cfg.name}_simple_hold",
++            True,
++            tf_valid,
++            raw_dt,
++            raw_dr,
++            hold_pose,
++            hold_dt,
++            hold_dr,
++            True,
++            "shadow_hold_only" if hold_pose is not world_pose else "",
++        )
++
++    def _compute_fusion(
++        self,
++        state: BranchState,
++        sam: PoseSample,
++    ) -> tuple[TfPose | None, bool, bool, str]:
++        cfg = state.config
++        slam = state.latest_pose
++        if slam is None:
++            return None, False, False, "missing_slam_pose"
++        if not sam.valid_stamp:
++            return None, False, False, "invalid_sam_timestamp"
++        if not slam.valid_stamp:
++            return None, False, False, "invalid_slam_timestamp"
++        if cfg.world_frame and slam.frame_id and slam.frame_id != cfg.world_frame:
++            return None, False, False, f"slam_world_frame_mismatch:{slam.frame_id}!={cfg.world_frame}"
++        age = abs(sam.stamp_sec - slam.stamp_sec)
++        if age > self.pose_stale_sec:
++            return None, False, False, f"stale_slam_pose:{age:.3f}s"
++        if cfg.source_kind == "camera":
++            world_t_camera = slam.pose
++            if cfg.camera_frame and cfg.camera_frame != sam.frame_id:
++                extra, ok, reason = self._lookup_tf_pose(cfg.camera_frame, sam.frame_id, sam)
++                if not ok or extra is None:
++                    return None, False, False, reason
++                world_t_camera = world_t_camera.compose(extra)
++            return world_t_camera.compose(sam.pose), True, True, ""
++        if cfg.source_kind == "base":
++            base_frame = slam.child_frame_id or cfg.base_frame
++            if not base_frame:
++                return None, False, False, "base_frame_unknown"
++            base_t_camera, ok, reason = self._lookup_tf_pose(base_frame, sam.frame_id, sam)
++            if not ok or base_t_camera is None:
++                return None, False, False, f"not_evaluable_missing_T_BC:{reason}"
++            return slam.pose.compose(base_t_camera).compose(sam.pose), True, True, ""
++        return None, False, False, f"unsupported_source_kind:{cfg.source_kind}"
++
++    def _lookup_tf_pose(
++        self,
++        target_frame: str,
++        source_frame: str,
++        sam: PoseSample,
++    ) -> tuple[TfPose | None, bool, str]:
++        if target_frame == source_frame:
++            return TfPose.identity(), True, ""
++        try:
++            lookup_time = Time.from_msg(sam.stamp_msg) if sam.stamp_sec > 0.0 else Time()
++            tf_msg = self.tf_buffer.lookup_transform(target_frame, source_frame, lookup_time)
++            return pose_from_transform_msg(tf_msg), True, ""
++        except Exception as exc:  # tf2 exception classes vary by distro.
++            return None, False, str(exc).replace("\n", " ")
++
++    def _simple_hold_pose(
++        self,
++        state: BranchState,
++        world_pose: TfPose,
++        world_dt: float,
++        world_dr: float,
++    ) -> TfPose:
++        if not self.simple_hold_enabled:
++            state.previous_hold = world_pose
++            return world_pose
++        previous = state.previous_hold
++        if previous is None:
++            state.previous_hold = world_pose
++            return world_pose
++        jump = (
++            (not math.isnan(world_dt) and world_dt > self.simple_hold_max_delta_t_mm)
++            or (not math.isnan(world_dr) and world_dr > self.simple_hold_max_delta_r_deg)
++        )
++        if jump and state.hold_count < self.simple_hold_frames:
++            state.hold_count += 1
++            return previous
++        state.hold_count = 0
++        state.previous_hold = world_pose
++        return world_pose
++
++    def _write_csv_row(
++        self,
++        sam: PoseSample,
++        slam_source: str,
++        slam_has_pose: bool,
++        tf_chain_valid: bool,
++        raw_delta_t_mm: float,
++        raw_delta_r_deg: float,
++        world_pose: TfPose | None,
++        world_delta_t_mm: float,
++        world_delta_r_deg: float,
++        fusion_valid: bool,
++        failure_reason: str,
++    ) -> None:
++        raw = sam.pose
++        row = {
++            "timestamp": f"{sam.stamp_sec:.9f}",
++            "frame_id": sam.frame_id,
++            "sam6d_has_pose": True,
++            "sam6d_score": self._fmt(sam.score),
++            "slam_source": slam_source,
++            "slam_has_pose": slam_has_pose,
++            "tf_chain_valid": tf_chain_valid,
++            "raw_tx": self._fmt(raw.t[0]),
++            "raw_ty": self._fmt(raw.t[1]),
++            "raw_tz": self._fmt(raw.t[2]),
++            "raw_qx": self._fmt(raw.q[0]),
++            "raw_qy": self._fmt(raw.q[1]),
++            "raw_qz": self._fmt(raw.q[2]),
++            "raw_qw": self._fmt(raw.q[3]),
++            "world_tx": "",
++            "world_ty": "",
++            "world_tz": "",
++            "world_qx": "",
++            "world_qy": "",
++            "world_qz": "",
++            "world_qw": "",
++            "raw_delta_t_mm": self._fmt(raw_delta_t_mm),
++            "raw_delta_r_deg": self._fmt(raw_delta_r_deg),
++            "world_delta_t_mm": self._fmt(world_delta_t_mm),
++            "world_delta_r_deg": self._fmt(world_delta_r_deg),
++            "fusion_valid": fusion_valid,
++            "failure_reason": failure_reason,
++        }
++        if world_pose is not None:
++            row.update(
++                {
++                    "world_tx": self._fmt(world_pose.t[0]),
++                    "world_ty": self._fmt(world_pose.t[1]),
++                    "world_tz": self._fmt(world_pose.t[2]),
++                    "world_qx": self._fmt(world_pose.q[0]),
++                    "world_qy": self._fmt(world_pose.q[1]),
++                    "world_qz": self._fmt(world_pose.q[2]),
++                    "world_qw": self._fmt(world_pose.q[3]),
++                }
++            )
++        self.csv_writer.writerow(row)
++
++    def _publish_debug_metrics(self) -> None:
++        payload = {
++            "raw_frames": len(self.raw_metrics.samples),
++            "csv_path": str(self.csv_path),
++            "report_path": str(self.report_path),
++            "branches": {
++                name: {
++                    "valid_frames": state.valid_frames,
++                    "invalid_frames": state.invalid_frames,
++                    "latest_status": state.latest_status,
++                    "latest_pose_age_sec": self._latest_pose_age(state),
++                }
++                for name, state in self.branches.items()
++            },
++        }
++        msg = String()
++        msg.data = json.dumps(payload, sort_keys=True)
++        self.debug_metrics_pub.publish(msg)
++
++    def _latest_pose_age(self, state: BranchState) -> float | None:
++        if state.latest_pose is None or self.latest_sam is None:
++            return None
++        return abs(self.latest_sam.stamp_sec - state.latest_pose.stamp_sec)
++
++    def write_topic_discovery(self) -> None:
++        topics = dict(self.get_topic_names_and_types())
++        candidates = {
++            "sam6d": [
++                str(self.get_parameter("sam6d.pose_topic").value),
++                str(self.get_parameter("sam6d.pose_array_topic").value),
++            ],
++            "orbslam3": ["/orbslam3/pose", "/orbslam3/odom", "/tf", "/orbslam3/tracking_state"],
++            "hdl_graph_slam": [
++                "/odom",
++                "/scan_matching_odometry/transform",
++                "/tf",
++                "/scan_matching_odometry/status",
++            ],
++            "rtabmap": ["/rtabmap/pose", "/odom", "/tf", "/rtabmap/localization_pose"],
++        }
++        result = {}
++        for system, names in candidates.items():
++            result[system] = {
++                name: {
++                    "present": name in topics,
++                    "types": topics.get(name, []),
++                }
++                for name in names
++            }
++        self.discovery_path.write_text(json.dumps(result, indent=2, sort_keys=True), encoding="utf-8")
++
++    def write_report(self) -> None:
++        raw_count = len(self.raw_metrics.samples)
++        mean_processing_ms = (
++            sum(self.processing_ms) / len(self.processing_ms) if self.processing_ms else math.nan
++        )
++        raw_std = self.raw_metrics.translation_std_mm()
++        rows = [self._report_row("SAM-6D raw T_CO", raw_count, self.raw_metrics, raw_std, raw_count)]
++        for name, state in self.branches.items():
++            label = self._display_name(name)
++            rows.append(
++                self._report_row(
++                    f"SAM-6D + {label} T_WO",
++                    state.valid_frames,
++                    self.branch_metrics[name],
++                    raw_std,
++                    raw_count,
++                )
++            )
++        for name, state in self.branches.items():
++            label = self._display_name(name)
++            rows.append(
++                self._report_row(
++                    f"SAM-6D + {label} + simple hold",
++                    len(self.hold_metrics[name].samples),
++                    self.hold_metrics[name],
++                    raw_std,
++                    raw_count,
++                )
++            )
++        fps_impact = self._fps_impact(mean_processing_ms)
++        text = [
++            "# SAM-6D SLAM Fusion Shadow Evaluation Report",
++            "",
++            f"- CSV: `{self.csv_path}`",
++            f"- Topic discovery: `{self.discovery_path}`",
++            f"- Raw frames: {raw_count}",
++            f"- Mean evaluator callback cost: {self._fmt(mean_processing_ms)} ms",
++            f"- FPS impact estimate: {fps_impact}",
++            "",
++            "| Condition | Valid Frames | Translation Std mm | Rotation Std deg | Delta T Mean mm | Delta R Mean deg | FPS Impact | Verdict |",
++            "|---|---:|---:|---:|---:|---:|---|---|",
++        ]
++        for row in rows:
++            text.append(
++                "| {condition} | {valid_frames} | {translation_std_mm} | {rotation_std_deg} | "
++                "{delta_t_mean_mm} | {delta_r_mean_deg} | {fps_impact} | {verdict} |".format(
++                    fps_impact=fps_impact,
++                    **row,
++                )
++            )
++        text.extend(self._decision_section(rows))
++        self.report_path.write_text("\n".join(text) + "\n", encoding="utf-8")
++
++    def _report_row(
++        self,
++        condition: str,
++        valid_frames: int,
++        metrics: Metrics,
++        raw_std: float,
++        raw_count: int,
++    ) -> dict[str, str]:
++        return {
++            "condition": condition,
++            "valid_frames": str(valid_frames),
++            "translation_std_mm": self._fmt(metrics.translation_std_mm()),
++            "rotation_std_deg": self._fmt(metrics.rotation_std_deg()),
++            "delta_t_mean_mm": self._fmt(metrics.delta_t_mean_mm()),
++            "delta_r_mean_deg": self._fmt(metrics.delta_r_mean_deg()),
++            "verdict": self._verdict(condition, valid_frames, metrics, raw_std, raw_count),
++        }
++
++    def _verdict(
++        self,
++        condition: str,
++        valid_frames: int,
++        metrics: Metrics,
++        raw_std: float,
++        raw_count: int,
++    ) -> str:
++        if condition == "SAM-6D raw T_CO":
++            return "BASELINE" if valid_frames >= 2 else "INSUFFICIENT_DATA"
++        cond_std = metrics.translation_std_mm()
++        if raw_count < 2 or valid_frames < 2 or math.isnan(raw_std) or raw_std <= 0.0:
++            return "INSUFFICIENT_DATA"
++        if math.isnan(cond_std):
++            return "INSUFFICIENT_DATA"
++        reduction = (raw_std - cond_std) / raw_std * 100.0
++        valid_ratio = valid_frames / max(raw_count, 1) * 100.0
++        fps_known = self.target_fps_baseline > 0.0
++        fps_ok = self._fps_impact_percent() <= 5.0 if fps_known else False
++        if reduction >= 30.0 and valid_ratio >= 90.0 and fps_ok:
++            return f"GO ({reduction:.1f}% reduction)"
++        if reduction >= 10.0 and valid_ratio >= 70.0:
++            suffix = ", fps unknown" if not fps_known else ""
++            return f"WEAK GO ({reduction:.1f}% reduction{suffix})"
++        return f"NO-GO ({reduction:.1f}% reduction)"
++
++    def _decision_section(self, rows: list[dict[str, str]]) -> list[str]:
++        lookup = {row["condition"]: row["verdict"] for row in rows}
++        return [
++            "",
++            "## Required Final Decision Questions",
++            "",
++            f"Q1. ORB-SLAM3 pose fusion reduced jitter? `{lookup.get('SAM-6D + ORB-SLAM3 T_WO', 'INSUFFICIENT_DATA')}`",
++            f"Q2. hdl_graph_slam pose fusion reduced jitter? `{lookup.get('SAM-6D + hdl_graph_slam T_WO', 'INSUFFICIENT_DATA')}`",
++            f"Q3. RTAB-Map pose fusion reduced jitter? `{lookup.get('SAM-6D + RTAB-Map T_WO', 'INSUFFICIENT_DATA')}`",
++            f"Q4. Highest product applicability? `{self._best_branch(rows)}`",
++            "Q5. Is SLAM fusion worth applying before One Euro Filter/EKF? `Only if this report shows GO/WEAK GO with valid TF/time sync; otherwise start with One Euro Filter/EKF.`",
++            "Q6. Next step? `Run the same static-object bag with SAM-6D plus one SLAM source active, then compare this report against the verdict thresholds.`",
++        ]
++
++    def _best_branch(self, rows: list[dict[str, str]]) -> str:
++        priority = ["RTAB-Map", "ORB-SLAM3", "hdl_graph_slam"]
++        candidates = [row for row in rows if "T_WO" in row["condition"] and "simple hold" not in row["condition"]]
++        go = [row for row in candidates if row["verdict"].startswith("GO")]
++        weak = [row for row in candidates if row["verdict"].startswith("WEAK GO")]
++        selected = go or weak
++        for name in priority:
++            if any(name in row["condition"] for row in selected):
++                return name
++        return "INSUFFICIENT_DATA"
++
++    def _fps_impact(self, mean_processing_ms: float) -> str:
++        if self.target_fps_baseline <= 0.0 or math.isnan(mean_processing_ms):
++            return "unknown"
++        return f"{self._fps_impact_percent():.2f}%"
++
++    def _fps_impact_percent(self) -> float:
++        if not self.processing_ms or self.target_fps_baseline <= 0.0:
++            return 0.0
++        mean_processing_ms = sum(self.processing_ms) / len(self.processing_ms)
++        frame_budget_ms = 1000.0 / self.target_fps_baseline
++        return mean_processing_ms / frame_budget_ms * 100.0
++
++    @staticmethod
++    def _display_name(name: str) -> str:
++        if name == "orbslam3":
++            return "ORB-SLAM3"
++        if name == "rtabmap":
++            return "RTAB-Map"
++        return "hdl_graph_slam"
++
++    @staticmethod
++    def _fmt(value: float) -> str:
++        if isinstance(value, bool):
++            return str(value)
++        if value is None or math.isnan(float(value)):
++            return ""
++        return f"{float(value):.6f}"
++
++    def _now_sec(self) -> float:
++        return self.get_clock().now().nanoseconds * 1e-9
++
++    def close(self) -> None:
++        try:
++            self.write_report()
++        except Exception as exc:
++            self._warn_if_context_ok(f"failed to write report during shutdown: {exc}")
++        if rclpy.ok():
++            try:
++                self.write_topic_discovery()
++            except Exception as exc:
++                self._warn_if_context_ok(f"failed to write topic discovery during shutdown: {exc}")
++        try:
++            self.csv_file.flush()
++            self.csv_file.close()
++        except Exception as exc:
++            self._warn_if_context_ok(f"failed to close csv during shutdown: {exc}")
++
++    def _warn_if_context_ok(self, message: str) -> None:
++        if rclpy.ok():
++            self.get_logger().warn(message)
++
++
++def main(args: list[str] | None = None) -> None:
++    rclpy.init(args=args)
++    node = Sam6dSlamFusionShadowEval()
++
++    def _raise_keyboard_interrupt(signum, frame) -> None:
++        raise KeyboardInterrupt
++
++    signal.signal(signal.SIGTERM, _raise_keyboard_interrupt)
++    try:
++        rclpy.spin(node)
++    except (KeyboardInterrupt, rclpy.executors.ExternalShutdownException):
++        pass
++    finally:
++        node.close()
++        node.destroy_node()
++        if rclpy.ok():
++            rclpy.shutdown()
++
++
++if __name__ == "__main__":
++    main()
+--- /dev/null
++++ src/sam6d_slam_fusion_eval/config/sam6d_slam_fusion_shadow_eval.yaml
+@@ -0,0 +1,57 @@
++sam6d_slam_fusion_shadow_eval:
++  ros__parameters:
++    output_dir: "output/sam6d_slam_fusion_shadow_eval"
++    csv_filename: "sam6d_slam_fusion_shadow_eval.csv"
++    report_filename: "sam6d_slam_fusion_shadow_eval_report.md"
++    topic_discovery_filename: "topic_discovery.json"
++    report_period_sec: 10.0
++    pose_stale_sec: 0.75
++    target_fps_baseline: 0.0
++
++    sam6d:
++      pose_topic: "/sam6d_milk_verify/pose_6dof"
++      pose_msg_type: "transform_stamped"
++      pose_array_topic: "/sam6d_inference/poses"
++      pose_array_index: 0
++      camera_frame: "camera_color_optical_frame"
++      score_topic: ""
++
++    simple_hold:
++      enabled: true
++      max_delta_t_mm: 20.0
++      max_delta_r_deg: 5.0
++      hold_frames: 5
++
++    orbslam3:
++      enabled: true
++      source_kind: "camera"
++      pose_topic: "/orbslam3/pose"
++      pose_msg_type: "pose_stamped"
++      odom_topic: "/orbslam3/odom"
++      tracking_state_topic: "/orbslam3/tracking_state"
++      world_frame: "map"
++      camera_frame: "camera_color_optical_frame"
++      output_topic: "/sam6d/slam_fused/orbslam3/object_pose_world"
++
++    hdl_graph_slam:
++      enabled: true
++      source_kind: "base"
++      pose_topic: "/odom"
++      pose_msg_type: "odometry"
++      transform_topic: "/scan_matching_odometry/transform"
++      status_topic: "/scan_matching_odometry/status"
++      world_frame: "odom"
++      base_frame: "base_link"
++      camera_frame: "camera_color_optical_frame"
++      output_topic: "/sam6d/slam_fused/hdl_graph_slam/object_pose_world"
++
++    rtabmap:
++      enabled: true
++      source_kind: "camera"
++      pose_topic: "/rtabmap/pose"
++      pose_msg_type: "pose_stamped"
++      odom_topic: "/odom"
++      localization_pose_topic: "/rtabmap/localization_pose"
++      world_frame: "map"
++      camera_frame: "camera_color_optical_frame"
++      output_topic: "/sam6d/slam_fused/rtabmap/object_pose_world"
+--- /dev/null
++++ src/sam6d_slam_fusion_eval/README.md
+@@ -0,0 +1,104 @@
++# SAM-6D SLAM Fusion Shadow Evaluation MVP
++
++This package evaluates whether composing SAM-6D object poses with SLAM localization reduces static-object pose jitter. It does not replace SAM-6D production output.
++
++## Local Topic Discovery Basis
++
++- SAM-6D local node: `src/sam6d_ros/sam6d_ros/sam6d_inference_node.py`
++  - PoseArray: `/sam6d_inference/poses`
++  - Configurable 6DoF TransformStamped: default config uses `/sam6d_milk_verify/pose_6dof`
++  - Raw frame: `camera_color_optical_frame`
++  - Current production topics do not publish object score or object id as a separate field. `TransformStamped.child_frame_id` contains `sam6d_object_<id>_<idx>`.
++- ORB-SLAM3 local wrapper: `/home/etri/CLI_environment/orbslam_ws/src/orbslam3_ros2/src/rgbd_node.cpp`
++  - `/orbslam3/pose`, `/orbslam3/odom`, `/orbslam3/tracking_state`, `/tf`
++  - Publishes world to camera TF and camera pose.
++- hdl_graph_slam local ROS2 code: `/home/etri/CLI_environment/hdlgraphslam_ws/src/hdl_graph_slam/src/hdl_graph_slam_ros2/scan_matching_odometry_node.cpp`
++  - `/odom`, `/scan_matching_odometry/transform`, `/scan_matching_odometry/status`, `/tf`
++  - Base/LiDAR branch requires TF from base frame to SAM camera frame.
++- RTAB-Map:
++  - `/home/etri/rtabmap_ws/src/rtabmap_ros` and `/home/etri/rtabmap_ws/config/tiers_indoor02_sauna_rtabmap.yaml` exist outside `CLI_environment`.
++  - Relevant candidates: `/rtabmap/pose`, `/odom`, `/tf`, `/rtabmap/localization_pose`.
++  - `CoreWrapper.cpp` publishes `localization_pose` as `PoseWithCovarianceStamped`; set `rtabmap.pose_topic` to `/rtabmap/localization_pose` and `rtabmap.pose_msg_type` to `pose_with_covariance_stamped` to evaluate that stream.
++
++The node also writes runtime topic presence to `output/sam6d_slam_fusion_shadow_eval/topic_discovery.json`.
++
++## Transform Chains
++
++RGB-D camera SLAM:
++
++```text
++T_WO = T_WC * T_CO
++```
++
++Base/LiDAR SLAM:
++
++```text
++T_WO = T_WB * T_BC * T_CO
++```
++
++If `T_BC` is missing, that branch is marked `not_evaluable_missing_T_BC` and other branches continue.
++
++## Run
++
++Build only the shadow evaluator package:
++
++```bash
++cd /home/etri/CLI_environment/sam6d_jitter_ws
++colcon build --packages-select sam6d_slam_fusion_eval --symlink-install
++source install/setup.bash
++ros2 run sam6d_slam_fusion_eval sam6d_slam_fusion_shadow_eval \
++  --ros-args --params-file src/sam6d_slam_fusion_eval/config/sam6d_slam_fusion_shadow_eval.yaml
++```
++
++Expected outputs:
++
++- `/sam6d/raw_pose_debug`
++- `/sam6d/slam_fused/orbslam3/object_pose_world`
++- `/sam6d/slam_fused/hdl_graph_slam/object_pose_world`
++- `/sam6d/slam_fused/rtabmap/object_pose_world`
++- `/sam6d/slam_fused/orbslam3/object_pose_world_simple_hold_debug`
++- `/sam6d/slam_fused/hdl_graph_slam/object_pose_world_simple_hold_debug`
++- `/sam6d/slam_fused/rtabmap/object_pose_world_simple_hold_debug`
++- `/sam6d/slam_fused/debug_metrics`
++- `output/sam6d_slam_fusion_shadow_eval/sam6d_slam_fusion_shadow_eval.csv`
++- `output/sam6d_slam_fusion_shadow_eval/sam6d_slam_fusion_shadow_eval_report.md`
++
++The default CSV/report filenames are overwritten on each run. Change `output_dir`, `csv_filename`, or `report_filename` when preserving multiple runs.
++
++## CSV Columns
++
++The CSV includes:
++
++```text
++timestamp, frame_id, sam6d_has_pose, sam6d_score, slam_source, slam_has_pose,
++tf_chain_valid, raw_tx, raw_ty, raw_tz, raw_qx, raw_qy, raw_qz, raw_qw,
++world_tx, world_ty, world_tz, world_qx, world_qy, world_qz, world_qw,
++raw_delta_t_mm, raw_delta_r_deg, world_delta_t_mm, world_delta_r_deg,
++fusion_valid, failure_reason
++```
++
++Rows are written for raw SAM-6D, each fused SLAM source, and each simple-hold shadow condition.
++
++## Verdict Rule
++
++- GO: translation jitter is reduced by at least 30%, valid frames are at least 90%, FPS impact is at most 5%, and TF/time sync is usable.
++- WEAK GO: translation jitter is reduced by 10-30% and valid frames are at least 70%.
++- NO-GO: reduction is below 10%, jitter increases, or TF/extrinsic/time sync makes product use risky.
++- INSUFFICIENT_DATA: fewer than two usable samples or no raw baseline.
++
++## Final Decision Questions
++
++The generated report answers:
++
++- Q1. Did ORB-SLAM3 pose fusion reduce jitter?
++- Q2. Did hdl_graph_slam pose fusion reduce jitter?
++- Q3. Did RTAB-Map pose fusion reduce jitter?
++- Q4. Which source has the highest product applicability?
++- Q5. Is SLAM fusion worth applying before One Euro Filter/EKF?
++- Q6. What is the next development step?
++
++## Notes
++
++- This MVP intentionally does not modify SAM-6D ISM/PEM, recall/FP logic, ORB-SLAM3, hdl_graph_slam, or RTAB-Map.
++- `simple_hold` is evaluated only in shadow CSV/report rows. It does not replace SAM-6D output.
++- Set `target_fps_baseline` to estimate FPS impact. If it remains `0.0`, FPS impact is reported as `unknown`.

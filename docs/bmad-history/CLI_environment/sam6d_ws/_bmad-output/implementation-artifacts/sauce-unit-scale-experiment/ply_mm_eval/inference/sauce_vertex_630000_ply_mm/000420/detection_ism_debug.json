@@ -1,0 +1,471 @@
+{
+  "filter_config": {
+    "enabled": true,
+    "min_final_score": 0.5,
+    "min_semantic_score": 0.0,
+    "min_appearance_score": 0.0,
+    "min_geometric_score": 0.0,
+    "min_visible_ratio": 0.0,
+    "min_score_margin": 0.0,
+    "min_mask_area": 3000,
+    "max_mask_area": 0,
+    "min_bbox_area": 3000,
+    "min_depth_valid_ratio": 0.8,
+    "debug": true
+  },
+  "raw_count": 18,
+  "accepted_count": 0,
+  "rejected_count": 18,
+  "top_k_for_pem": 5,
+  "accepted": [],
+  "rejected": [
+    {
+      "source_index": 11,
+      "bbox_xywh": [
+        276.0,
+        232.0,
+        46.0,
+        77.0
+      ],
+      "bbox_area": 3542.0,
+      "mask_area": 2942,
+      "depth_valid_pixels": 2794,
+      "depth_valid_ratio": 0.9496940856560163,
+      "semantic": 0.4798057973384857,
+      "appearance": 0.5568507313728333,
+      "geometric": 0.28430265188217163,
+      "visible_ratio": 0.8765432238578796,
+      "original_final": 0.4470157325267792,
+      "rank": 0,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min",
+        "mask_area_below_min"
+      ]
+    },
+    {
+      "source_index": 10,
+      "bbox_xywh": [
+        83.0,
+        56.0,
+        66.0,
+        55.0
+      ],
+      "bbox_area": 3630.0,
+      "mask_area": 1682,
+      "depth_valid_pixels": 1682,
+      "depth_valid_ratio": 1.0,
+      "semantic": 0.3383966386318207,
+      "appearance": 0.38360944390296936,
+      "geometric": 0.11019283533096313,
+      "visible_ratio": 0.054794520139694214,
+      "original_final": 0.35431474447250366,
+      "rank": 1,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min",
+        "mask_area_below_min"
+      ]
+    },
+    {
+      "source_index": 9,
+      "bbox_xywh": [
+        57.0,
+        306.0,
+        50.0,
+        77.0
+      ],
+      "bbox_area": 3850.0,
+      "mask_area": 3417,
+      "depth_valid_pixels": 3417,
+      "depth_valid_ratio": 1.0,
+      "semantic": 0.28925856947898865,
+      "appearance": 0.415096253156662,
+      "geometric": 0.18519480526447296,
+      "visible_ratio": 0.08080808073282242,
+      "original_final": 0.34569263458251953,
+      "rank": 2,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min"
+      ]
+    },
+    {
+      "source_index": 15,
+      "bbox_xywh": [
+        507.0,
+        0.0,
+        85.0,
+        31.0
+      ],
+      "bbox_area": 2635.0,
+      "mask_area": 2074,
+      "depth_valid_pixels": 1046,
+      "depth_valid_ratio": 0.5043394406943105,
+      "semantic": 0.28154730796813965,
+      "appearance": 0.4137588143348694,
+      "geometric": 0.2344983071088791,
+      "visible_ratio": 0.05421686917543411,
+      "original_final": 0.34466660022735596,
+      "rank": 3,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min",
+        "mask_area_below_min",
+        "bbox_area_below_min",
+        "depth_valid_ratio_below_min"
+      ]
+    },
+    {
+      "source_index": 17,
+      "bbox_xywh": [
+        149.0,
+        309.0,
+        36.0,
+        62.0
+      ],
+      "bbox_area": 2232.0,
+      "mask_area": 1095,
+      "depth_valid_pixels": 1095,
+      "depth_valid_ratio": 1.0,
+      "semantic": 0.3133533298969269,
+      "appearance": 0.4138679504394531,
+      "geometric": 0.13978494703769684,
+      "visible_ratio": 0.2222222238779068,
+      "original_final": 0.34122803807258606,
+      "rank": 4,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min",
+        "mask_area_below_min",
+        "bbox_area_below_min"
+      ]
+    },
+    {
+      "source_index": 16,
+      "bbox_xywh": [
+        45.0,
+        240.0,
+        37.0,
+        68.0
+      ],
+      "bbox_area": 2516.0,
+      "mask_area": 1627,
+      "depth_valid_pixels": 1624,
+      "depth_valid_ratio": 0.9981561155500922,
+      "semantic": 0.2986490726470947,
+      "appearance": 0.3829839825630188,
+      "geometric": 0.19674086570739746,
+      "visible_ratio": 0.025316456332802773,
+      "original_final": 0.3390156030654907,
+      "rank": 5,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min",
+        "mask_area_below_min",
+        "bbox_area_below_min"
+      ]
+    },
+    {
+      "source_index": 7,
+      "bbox_xywh": [
+        57.0,
+        306.0,
+        49.0,
+        91.0
+      ],
+      "bbox_area": 4459.0,
+      "mask_area": 3827,
+      "depth_valid_pixels": 3827,
+      "depth_valid_ratio": 1.0,
+      "semantic": 0.2722856104373932,
+      "appearance": 0.40864986181259155,
+      "geometric": 0.18501906096935272,
+      "visible_ratio": 0.10989011079072952,
+      "original_final": 0.33237144351005554,
+      "rank": 6,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min"
+      ]
+    },
+    {
+      "source_index": 8,
+      "bbox_xywh": [
+        260.0,
+        447.0,
+        132.0,
+        32.0
+      ],
+      "bbox_area": 4224.0,
+      "mask_area": 2876,
+      "depth_valid_pixels": 2871,
+      "depth_valid_ratio": 0.9982614742698191,
+      "semantic": 0.2522173821926117,
+      "appearance": 0.4548102617263794,
+      "geometric": 0.13210226595401764,
+      "visible_ratio": 0.28313252329826355,
+      "original_final": 0.32605645060539246,
+      "rank": 7,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min",
+        "mask_area_below_min"
+      ]
+    },
+    {
+      "source_index": 13,
+      "bbox_xywh": [
+        57.0,
+        306.0,
+        50.0,
+        68.0
+      ],
+      "bbox_area": 3400.0,
+      "mask_area": 2624,
+      "depth_valid_pixels": 2624,
+      "depth_valid_ratio": 1.0,
+      "semantic": 0.2568068206310272,
+      "appearance": 0.40345603227615356,
+      "geometric": 0.2097058892250061,
+      "visible_ratio": 0.09090909361839294,
+      "original_final": 0.3248955309391022,
+      "rank": 8,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min",
+        "mask_area_below_min"
+      ]
+    },
+    {
+      "source_index": 1,
+      "bbox_xywh": [
+        44.0,
+        239.0,
+        89.0,
+        163.0
+      ],
+      "bbox_area": 14507.0,
+      "mask_area": 6018,
+      "depth_valid_pixels": 6015,
+      "depth_valid_ratio": 0.9995014955134596,
+      "semantic": 0.2791496217250824,
+      "appearance": 0.39311715960502625,
+      "geometric": 0.029571929946541786,
+      "visible_ratio": 0.11940298229455948,
+      "original_final": 0.31886234879493713,
+      "rank": 9,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min"
+      ]
+    },
+    {
+      "source_index": 14,
+      "bbox_xywh": [
+        0.0,
+        220.0,
+        47.0,
+        62.0
+      ],
+      "bbox_area": 2914.0,
+      "mask_area": 1879,
+      "depth_valid_pixels": 1659,
+      "depth_valid_ratio": 0.8829164449175093,
+      "semantic": 0.2500544488430023,
+      "appearance": 0.3838041424751282,
+      "geometric": 0.20418667793273926,
+      "visible_ratio": 0.08860759437084198,
+      "original_final": 0.31214627623558044,
+      "rank": 10,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min",
+        "mask_area_below_min",
+        "bbox_area_below_min"
+      ]
+    },
+    {
+      "source_index": 2,
+      "bbox_xywh": [
+        475.0,
+        256.0,
+        106.0,
+        130.0
+      ],
+      "bbox_area": 13780.0,
+      "mask_area": 12192,
+      "depth_valid_pixels": 12152,
+      "depth_valid_ratio": 0.9967191601049868,
+      "semantic": 0.2643847167491913,
+      "appearance": 0.38758060336112976,
+      "geometric": 0.05355587974190712,
+      "visible_ratio": 0.16049382090568542,
+      "original_final": 0.3057452440261841,
+      "rank": 11,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min"
+      ]
+    },
+    {
+      "source_index": 5,
+      "bbox_xywh": [
+        49.0,
+        41.0,
+        97.0,
+        83.0
+      ],
+      "bbox_area": 8051.0,
+      "mask_area": 3228,
+      "depth_valid_pixels": 3228,
+      "depth_valid_ratio": 1.0,
+      "semantic": 0.2341044396162033,
+      "appearance": 0.36186346411705017,
+      "geometric": 0.05701155215501785,
+      "visible_ratio": 0.054794520139694214,
+      "original_final": 0.29155802726745605,
+      "rank": 12,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min"
+      ]
+    },
+    {
+      "source_index": 6,
+      "bbox_xywh": [
+        49.0,
+        41.0,
+        101.0,
+        75.0
+      ],
+      "bbox_area": 7575.0,
+      "mask_area": 3311,
+      "depth_valid_pixels": 3311,
+      "depth_valid_ratio": 1.0,
+      "semantic": 0.23509550094604492,
+      "appearance": 0.3435744047164917,
+      "geometric": 0.06059405952692032,
+      "visible_ratio": 0.04109589010477066,
+      "original_final": 0.2847294211387634,
+      "rank": 13,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min"
+      ]
+    },
+    {
+      "source_index": 3,
+      "bbox_xywh": [
+        0.0,
+        1.0,
+        49.0,
+        279.0
+      ],
+      "bbox_area": 13671.0,
+      "mask_area": 11326,
+      "depth_valid_pixels": 8690,
+      "depth_valid_ratio": 0.7672611689917005,
+      "semantic": 0.2350071221590042,
+      "appearance": 0.3563704192638397,
+      "geometric": 0.047253310680389404,
+      "visible_ratio": 0.1139240488409996,
+      "original_final": 0.28230005502700806,
+      "rank": 14,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min",
+        "depth_valid_ratio_below_min"
+      ]
+    },
+    {
+      "source_index": 0,
+      "bbox_xywh": [
+        9.0,
+        354.0,
+        629.0,
+        125.0
+      ],
+      "bbox_area": 78625.0,
+      "mask_area": 34879,
+      "depth_valid_pixels": 34129,
+      "depth_valid_ratio": 0.9784970899395051,
+      "semantic": 0.21429617702960968,
+      "appearance": 0.3316202163696289,
+      "geometric": 0.005341812502592802,
+      "visible_ratio": 0.0,
+      "original_final": 0.2729581892490387,
+      "rank": 15,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min"
+      ]
+    },
+    {
+      "source_index": 12,
+      "bbox_xywh": [
+        0.0,
+        365.0,
+        30.0,
+        114.0
+      ],
+      "bbox_area": 3420.0,
+      "mask_area": 3076,
+      "depth_valid_pixels": 1447,
+      "depth_valid_ratio": 0.4704161248374512,
+      "semantic": 0.20172356069087982,
+      "appearance": 0.3003714084625244,
+      "geometric": 0.18932874500751495,
+      "visible_ratio": 0.0,
+      "original_final": 0.2510474920272827,
+      "rank": 16,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min",
+        "depth_valid_ratio_below_min"
+      ]
+    },
+    {
+      "source_index": 4,
+      "bbox_xywh": [
+        47.0,
+        0.0,
+        124.0,
+        89.0
+      ],
+      "bbox_area": 11036.0,
+      "mask_area": 1915,
+      "depth_valid_pixels": 1662,
+      "depth_valid_ratio": 0.8678851174934726,
+      "semantic": 0.2130105048418045,
+      "appearance": 0.25324466824531555,
+      "geometric": 0.05001812428236008,
+      "visible_ratio": 0.0,
+      "original_final": 0.23312759399414062,
+      "rank": 17,
+      "score_margin": 0.09270098805427551,
+      "accepted": false,
+      "reject_reasons": [
+        "final_score_below_min",
+        "mask_area_below_min"
+      ]
+    }
+  ]
+}

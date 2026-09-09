@@ -1,0 +1,18 @@
+{
+  "total_combinations": 180,
+  "pareto_count": 20,
+  "recommended": {
+    "min_bbox_area": 1000,
+    "min_mask_area": 3000,
+    "min_final_score": 0.5,
+    "slam_visible_recall": 0.8074866310160428,
+    "slam_hidden_fpr": 0.013761467889908258,
+    "slam_hand_fpr": 0.0,
+    "slam_precision": 0.9805194805194806,
+    "slam_candidate_output_count": 154,
+    "slam_revisible_recovery_rate": 1.0,
+    "only_Milk_candidate_recall": 0.9942196531791907,
+    "only_Milk_candidate_output_count": 172
+  },
+  "note": "final pose recall requires full rerun; this sweep is candidate-level using raw ISM debug"
+}

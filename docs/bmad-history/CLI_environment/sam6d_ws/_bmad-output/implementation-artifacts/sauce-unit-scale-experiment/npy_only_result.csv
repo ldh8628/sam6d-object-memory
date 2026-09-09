@@ -1,0 +1,3 @@
+ism_success,pem_success,template,verdict,xyz_scale_after,xyz_scale_before
+0/30,0/30,sauce_vertex_160000_npy_mm,failed; ISM still uses meter CAD pointcloud and hits float detach exception,"mm-like, xyz multiplied by 1000","meter-like, see npy_only_xyz_scale.csv"
+0/30,0/30,sauce_vertex_630000_npy_mm,failed; ISM still uses meter CAD pointcloud and hits float detach exception,"mm-like, xyz multiplied by 1000","meter-like, see npy_only_xyz_scale.csv"

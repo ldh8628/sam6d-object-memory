@@ -1,0 +1,65 @@
+{
+  "workspace": "/home/etri/CLI_environment/sam6d_ws",
+  "rgb_dir": "/home/etri/CLI_environment/sam6d_ws/_bmad-output/implementation-artifacts/sauce-template-ism-pem-eval/input_frames/rgb",
+  "depth_dir": "/home/etri/CLI_environment/sam6d_ws/_bmad-output/implementation-artifacts/sauce-template-ism-pem-eval/input_frames/depth",
+  "camera_json": "/home/etri/CLI_environment/sam6d_ws/src/sam6d_ros/config/d455f_camera.json",
+  "targets": [
+    {
+      "name": "sauce_vertex_160000_ply_mm",
+      "cad_path": "data/cad/sauce_mm/vertex_160000/Sauce_with_normal_vertexcolor_mm.ply",
+      "template_dir": "template/sauce_mm/vertex_160000/Sauce_with_normal_vertexcolor_mm/templates"
+    },
+    {
+      "name": "sauce_vertex_630000_ply_mm",
+      "cad_path": "data/cad/sauce_mm/vertex_630000/Sauce_with_normal_vertexcolor_mm.ply",
+      "template_dir": "template/sauce_mm/vertex_630000/Sauce_with_normal_vertexcolor_mm/templates"
+    }
+  ],
+  "max_frames": 30,
+  "thresholds": {
+    "min_final_score": 0.5,
+    "object_min_score": 0.5,
+    "pose_min_score": 0.5,
+    "min_mask_area": 3000,
+    "min_bbox_area": 3000,
+    "min_depth_valid_ratio": 0.8
+  },
+  "template_verdicts": [
+    {
+      "template": "sauce_vertex_160000_ply_mm",
+      "template_dir": "/home/etri/CLI_environment/sam6d_ws/template/sauce_mm/vertex_160000/Sauce_with_normal_vertexcolor_mm/templates",
+      "rgb_count": 42,
+      "mask_count": 42,
+      "xyz_count": 42,
+      "resolution": "512x512",
+      "empty_rgb": 0,
+      "unique_colors_mean": "8774.7",
+      "unique_colors_min": 264,
+      "unique_colors_max": 12654,
+      "object_area_ratio_mean": "0.115339",
+      "object_area_ratio_min": "0.047394",
+      "object_area_ratio_max": "0.140343",
+      "bbox_width_mean": "123.6",
+      "bbox_height_mean": "298.3",
+      "verdict": "ok"
+    },
+    {
+      "template": "sauce_vertex_630000_ply_mm",
+      "template_dir": "/home/etri/CLI_environment/sam6d_ws/template/sauce_mm/vertex_630000/Sauce_with_normal_vertexcolor_mm/templates",
+      "rgb_count": 42,
+      "mask_count": 42,
+      "xyz_count": 42,
+      "resolution": "512x512",
+      "empty_rgb": 0,
+      "unique_colors_mean": "8393.7",
+      "unique_colors_min": 263,
+      "unique_colors_max": 12059,
+      "object_area_ratio_mean": "0.115313",
+      "object_area_ratio_min": "0.047386",
+      "object_area_ratio_max": "0.140297",
+      "bbox_width_mean": "123.6",
+      "bbox_height_mean": "298.2",
+      "verdict": "ok"
+    }
+  ]
+}

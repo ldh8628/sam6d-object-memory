@@ -1,0 +1,6 @@
+cad_extent_z,reason,sam6d_compatible,target,unit_guess,xyz_extent_z_mean
+194.9999958872795,SAM-6D divides CAD/xyz by 1000; raw extents must be mm-like,yes,milk_reference,mm,186.0
+0.18565022945404053,SAM-6D divides CAD/xyz by 1000; raw extents must be mm-like,no,sauce_vertex_160000,meter,0.1756591796875
+0.18566158413887024,SAM-6D divides CAD/xyz by 1000; raw extents must be mm-like,no,sauce_vertex_630000,meter,0.1756591796875
+185.65023,CAD and rendered xyz are both mm-like before SAM-6D /1000 conversion,yes,sauce_vertex_160000_ply_mm,mm,~175-185 from rendered mm template
+185.66158,CAD and rendered xyz are both mm-like before SAM-6D /1000 conversion,yes,sauce_vertex_630000_ply_mm,mm,~175-185 from rendered mm template

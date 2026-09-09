@@ -1,0 +1,80 @@
+{
+  "SLAM_with_milk_nomilk": {
+    "visible_should_output_frames": 187,
+    "stage_counts": {
+      "no_ism_candidate": 181,
+      "pose_output": 3,
+      "temporal_jump_reject": 3
+    },
+    "stage_percent": {
+      "no_ism_candidate": 0.9679144385026738,
+      "pose_output": 0.016042780748663103,
+      "temporal_jump_reject": 0.016042780748663103
+    },
+    "rank0_reject_reasons": {
+      "mask_area_below_min": 165,
+      "bbox_area_below_min": 152,
+      "final_score_below_min": 53,
+      "depth_valid_ratio_below_min": 27
+    },
+    "rank0_area_or_score": {
+      "rank0_area_reject": 165,
+      "rank0_score_reject": 53
+    },
+    "rank0_score_stats": {
+      "min": 0.4139831066131592,
+      "median": 0.57697993516922,
+      "max": 0.6315011382102966
+    },
+    "rank0_bbox_area_stats": {
+      "min": 261.0,
+      "median": 6678.0,
+      "max": 30866.0
+    },
+    "rank0_mask_area_stats": {
+      "min": 191.0,
+      "median": 4736.0,
+      "max": 19035.0
+    }
+  },
+  "only_Milk": {
+    "visible_should_output_frames": 173,
+    "stage_counts": {
+      "no_ism_candidate": 86,
+      "pose_output": 3,
+      "temporal_jump_reject": 78,
+      "pose_confidence_score_below_min": 6
+    },
+    "stage_percent": {
+      "no_ism_candidate": 0.49710982658959535,
+      "pose_output": 0.017341040462427744,
+      "temporal_jump_reject": 0.4508670520231214,
+      "pose_confidence_score_below_min": 0.03468208092485549
+    },
+    "rank0_reject_reasons": {
+      "mask_area_below_min": 139,
+      "bbox_area_below_min": 114,
+      "depth_valid_ratio_below_min": 1,
+      "final_score_below_min": 2
+    },
+    "rank0_area_or_score": {
+      "rank0_area_reject": 139,
+      "rank0_score_reject": 2
+    },
+    "rank0_score_stats": {
+      "min": 0.5353841781616211,
+      "median": 0.620255708694458,
+      "max": 0.6616339087486267
+    },
+    "rank0_bbox_area_stats": {
+      "min": 2332.0,
+      "median": 7436.0,
+      "max": 13248.0
+    },
+    "rank0_mask_area_stats": {
+      "min": 1585.0,
+      "median": 6873.0,
+      "max": 11907.0
+    }
+  }
+}

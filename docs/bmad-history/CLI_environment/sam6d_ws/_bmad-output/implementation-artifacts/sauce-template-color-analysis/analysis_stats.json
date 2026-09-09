@@ -1,0 +1,690 @@
+{
+  "ply_stats": {
+    "vertex_160000": {
+      "vertex_count": 950400,
+      "face_count": 316800,
+      "vertex_props": [
+        "x",
+        "y",
+        "z",
+        "nx",
+        "ny",
+        "nz",
+        "s",
+        "t",
+        "red",
+        "green",
+        "blue"
+      ],
+      "face_props": [
+        "vertex_indices"
+      ],
+      "color_keys": [
+        "red",
+        "green",
+        "blue"
+      ],
+      "uv_keys": [
+        "s",
+        "t"
+      ],
+      "unique_colors": 24916,
+      "color_min": [
+        0,
+        0,
+        0
+      ],
+      "color_max": [
+        255,
+        255,
+        255
+      ],
+      "color_mean": [
+        195.5701893939394,
+        161.74035984848484,
+        135.19047664141414
+      ],
+      "color_var": [
+        4447.1135477755815,
+        7036.539272597784,
+        11693.46813468443
+      ],
+      "all_same_color": false,
+      "first_color": [
+        181,
+        87,
+        17
+      ],
+      "path": "data/cad/sauce/vertex_160000/Sauce_with_normal_vertexcolor.ply",
+      "format": "ascii",
+      "comments": [
+        "Exported from Blender with normals, uv and vertex colors"
+      ],
+      "header_lines": [
+        "ply",
+        "format ascii 1.0",
+        "comment Exported from Blender with normals, uv and vertex colors",
+        "element vertex 950400",
+        "property float x",
+        "property float y",
+        "property float z",
+        "property float nx",
+        "property float ny",
+        "property float nz",
+        "property float s",
+        "property float t",
+        "property uchar red",
+        "property uchar green",
+        "property uchar blue",
+        "element face 316800",
+        "property list uchar int vertex_indices",
+        "end_header"
+      ],
+      "has_texture_file_comment": false,
+      "adjacent_png": [
+        "data/cad/sauce/vertex_160000/Sauce_color.png"
+      ],
+      "adjacent_mtl": [],
+      "swatch": "_bmad-output/implementation-artifacts/sauce-template-color-analysis/vertex_160000_ply_color_swatch.png",
+      "xy_preview": "_bmad-output/implementation-artifacts/sauce-template-color-analysis/vertex_160000_ply_xy_color_preview.png"
+    },
+    "vertex_630000": {
+      "vertex_count": 3801600,
+      "face_count": 1267200,
+      "vertex_props": [
+        "x",
+        "y",
+        "z",
+        "nx",
+        "ny",
+        "nz",
+        "s",
+        "t",
+        "red",
+        "green",
+        "blue"
+      ],
+      "face_props": [
+        "vertex_indices"
+      ],
+      "color_keys": [
+        "red",
+        "green",
+        "blue"
+      ],
+      "uv_keys": [
+        "s",
+        "t"
+      ],
+      "unique_colors": 70108,
+      "color_min": [
+        0,
+        0,
+        0
+      ],
+      "color_max": [
+        255,
+        255,
+        255
+      ],
+      "color_mean": [
+        195.52619633838384,
+        161.5249992108586,
+        134.90080808080808
+      ],
+      "color_var": [
+        4424.417101525425,
+        7033.335688170766,
+        11709.527698841954
+      ],
+      "all_same_color": false,
+      "first_color": [
+        181,
+        87,
+        17
+      ],
+      "path": "data/cad/sauce/vertex_630000/Sauce_with_normal_vertexcolor.ply",
+      "format": "ascii",
+      "comments": [
+        "Exported from Blender with normals, uv and vertex colors"
+      ],
+      "header_lines": [
+        "ply",
+        "format ascii 1.0",
+        "comment Exported from Blender with normals, uv and vertex colors",
+        "element vertex 3801600",
+        "property float x",
+        "property float y",
+        "property float z",
+        "property float nx",
+        "property float ny",
+        "property float nz",
+        "property float s",
+        "property float t",
+        "property uchar red",
+        "property uchar green",
+        "property uchar blue",
+        "element face 1267200",
+        "property list uchar int vertex_indices",
+        "end_header"
+      ],
+      "has_texture_file_comment": false,
+      "adjacent_png": [
+        "data/cad/sauce/vertex_630000/Sauce_color.png"
+      ],
+      "adjacent_mtl": [],
+      "swatch": "_bmad-output/implementation-artifacts/sauce-template-color-analysis/vertex_630000_ply_color_swatch.png",
+      "xy_preview": "_bmad-output/implementation-artifacts/sauce-template-color-analysis/vertex_630000_ply_xy_color_preview.png"
+    },
+    "milk_current": {
+      "vertex_count": 16302,
+      "face_count": 17494,
+      "vertex_props": [
+        "x",
+        "y",
+        "z",
+        "red",
+        "green",
+        "blue",
+        "alpha"
+      ],
+      "face_props": [
+        "vertex_indices"
+      ],
+      "color_keys": [
+        "red",
+        "green",
+        "blue",
+        "alpha"
+      ],
+      "uv_keys": [],
+      "unique_colors": 2322,
+      "color_min": [
+        0,
+        28,
+        85
+      ],
+      "color_max": [
+        255,
+        255,
+        255
+      ],
+      "color_mean": [
+        31.472518709360816,
+        106.20052754263281,
+        184.0138019874862
+      ],
+      "color_var": [
+        4179.788074370126,
+        2076.5850494088536,
+        515.0323821956044
+      ],
+      "all_same_color": false,
+      "first_color": [
+        253,
+        253,
+        253
+      ],
+      "path": "data/cad/Milk.ply",
+      "format": "binary_little_endian",
+      "comments": [
+        "https://github.com/mikedh/trimesh"
+      ],
+      "header_lines": [
+        "ply",
+        "format binary_little_endian 1.0",
+        "comment https://github.com/mikedh/trimesh",
+        "element vertex 16302",
+        "property float x",
+        "property float y",
+        "property float z",
+        "property uchar red",
+        "property uchar green",
+        "property uchar blue",
+        "property uchar alpha",
+        "element face 17494",
+        "property list uchar int vertex_indices",
+        "end_header"
+      ],
+      "has_texture_file_comment": false,
+      "adjacent_png": [],
+      "adjacent_mtl": [],
+      "swatch": "_bmad-output/implementation-artifacts/sauce-template-color-analysis/milk_current_ply_color_swatch.png",
+      "xy_preview": "_bmad-output/implementation-artifacts/sauce-template-color-analysis/milk_current_ply_xy_color_preview.png"
+    }
+  },
+  "image_stats": {
+    "milk": {
+      "label": "milk",
+      "dir": "sam6d_master/SAM-6D/Data/custom/Milk_scaled_195mm/templates",
+      "rgb_count": 42,
+      "mask_count": 42,
+      "per_file": [
+        {
+          "file": "sam6d_master/SAM-6D/Data/custom/Milk_scaled_195mm/templates/rgb_0.png",
+          "unique_all": 4232,
+          "unique_obj": 3276,
+          "mean_obj": [
+            174.80552189717847,
+            230.38376319889215,
+            245.57927990306388
+          ],
+          "var_obj": [
+            9339.560672296568,
+            930.5839011577169,
+            464.937673499107
+          ],
+          "std_obj": [
+            96.6414024748015,
+            30.50547329837249,
+            21.562413443283823
+          ],
+          "mask_pixels": 11554
+        },
+        {
+          "file": "sam6d_master/SAM-6D/Data/custom/Milk_scaled_195mm/templates/rgb_1.png",
+          "unique_all": 4725,
+          "unique_obj": 3740,
+          "mean_obj": [
+            189.14369643350844,
+            231.78117224218965,
+            244.850912358308
+          ],
+          "var_obj": [
+            8832.257136792468,
+            1217.1666568508629,
+            700.0892602954126
+          ],
+          "std_obj": [
+            93.9800890443953,
+            34.88791562777666,
+            26.45919991790025
+          ],
+          "mask_pixels": 14468
+        },
+        {
+          "file": "sam6d_master/SAM-6D/Data/custom/Milk_scaled_195mm/templates/rgb_10.png",
+          "unique_all": 3152,
+          "unique_obj": 2420,
+          "mean_obj": [
+            221.3280091272105,
+            243.1628636622932,
+            249.9345407872219
+          ],
+          "var_obj": [
+            4789.172643897145,
+            371.48930543322416,
+            118.28222393345274
+          ],
+          "std_obj": [
+            69.20384847605763,
+            19.274057835163415,
+            10.875763142577753
+          ],
+          "mask_pixels": 14024
+        },
+        {
+          "file": "sam6d_master/SAM-6D/Data/custom/Milk_scaled_195mm/templates/rgb_11.png",
+          "unique_all": 4021,
+          "unique_obj": 3125,
+          "mean_obj": [
+            209.59190708130387,
+            236.99213188460098,
+            246.50168602472837
+          ],
+          "var_obj": [
+            6995.8743743695995,
+            1085.005932847245,
+            617.7557296414001
+          ],
+          "std_obj": [
+            83.64134369060315,
+            32.939428241049434,
+            24.854692306311097
+          ],
+          "mask_pixels": 13345
+        },
+        {
+          "file": "sam6d_master/SAM-6D/Data/custom/Milk_scaled_195mm/templates/rgb_12.png",
+          "unique_all": 1903,
+          "unique_obj": 1181,
+          "mean_obj": [
+            225.16312981624185,
+            246.4004742145821,
+            251.55981031416715
+          ],
+          "var_obj": [
+            4538.498344205121,
+            266.00488418532484,
+            59.21785129774841
+          ],
+          "std_obj": [
+            67.36837792469936,
+            16.309656163920955,
+            7.69531359320388
+          ],
+          "mask_pixels": 8435
+        }
+      ],
+      "aggregate_unique_all": 45150,
+      "aggregate_unique_obj": 30075,
+      "aggregate_mean_obj": [
+        216.59963672676662,
+        241.8096176981687,
+        249.28725712982694
+      ],
+      "aggregate_var_obj": [
+        5713.109250897088,
+        558.4459506536765,
+        236.12452549584503
+      ],
+      "aggregate_std_obj": [
+        75.58511262740228,
+        23.631461035104802,
+        15.366343920915119
+      ],
+      "object_pixels_total": 508708
+    },
+    "sauce_160000": {
+      "label": "sauce_160000",
+      "dir": "template/sauce/vertex_160000/Sauce_with_normal_vertexcolor/templates",
+      "rgb_count": 42,
+      "mask_count": 42,
+      "per_file": [
+        {
+          "file": "template/sauce/vertex_160000/Sauce_with_normal_vertexcolor/templates/rgb_0.png",
+          "unique_all": 384,
+          "unique_obj": 336,
+          "mean_obj": [
+            127.54234422798261,
+            127.5745451618097,
+            127.52076960231847
+          ],
+          "var_obj": [
+            840.0984726240831,
+            839.3262333908042,
+            839.7312945936817
+          ],
+          "std_obj": [
+            28.984452256754537,
+            28.97112758231554,
+            28.97811751293865
+          ],
+          "mask_pixels": 12422
+        },
+        {
+          "file": "template/sauce/vertex_160000/Sauce_with_normal_vertexcolor/templates/rgb_1.png",
+          "unique_all": 355,
+          "unique_obj": 312,
+          "mean_obj": [
+            64.05872272363762,
+            64.09920408240984,
+            64.05167752008835
+          ],
+          "var_obj": [
+            142.66108570623214,
+            142.67963644331385,
+            142.45877122530177
+          ],
+          "std_obj": [
+            11.944081618367823,
+            11.944858159196109,
+            11.93560937804609
+          ],
+          "mask_pixels": 26259
+        },
+        {
+          "file": "template/sauce/vertex_160000/Sauce_with_normal_vertexcolor/templates/rgb_10.png",
+          "unique_all": 389,
+          "unique_obj": 338,
+          "mean_obj": [
+            67.88038063829056,
+            67.92957504551856,
+            67.88938129100966
+          ],
+          "var_obj": [
+            149.6548656904365,
+            149.655008033355,
+            149.59675041248835
+          ],
+          "std_obj": [
+            12.233350550459859,
+            12.233356368280742,
+            12.230975039320796
+          ],
+          "mask_pixels": 29109
+        },
+        {
+          "file": "template/sauce/vertex_160000/Sauce_with_normal_vertexcolor/templates/rgb_11.png",
+          "unique_all": 341,
+          "unique_obj": 297,
+          "mean_obj": [
+            70.17906256333053,
+            70.21475927159028,
+            70.17112996149504
+          ],
+          "var_obj": [
+            126.93805906157472,
+            126.8556473675538,
+            126.79584988267699
+          ],
+          "std_obj": [
+            11.26667914966849,
+            11.263021236220492,
+            11.26036632986143
+          ],
+          "mask_pixels": 34541
+        },
+        {
+          "file": "template/sauce/vertex_160000/Sauce_with_normal_vertexcolor/templates/rgb_12.png",
+          "unique_all": 347,
+          "unique_obj": 302,
+          "mean_obj": [
+            70.08679649915956,
+            70.13626615661045,
+            70.09140439343882
+          ],
+          "var_obj": [
+            126.52301178012101,
+            126.51073078685891,
+            126.3809688327578
+          ],
+          "std_obj": [
+            11.248244831089027,
+            11.247698910748763,
+            11.241929053003217
+          ],
+          "mask_pixels": 34506
+        }
+      ],
+      "aggregate_unique_all": 643,
+      "aggregate_unique_obj": 601,
+      "aggregate_mean_obj": [
+        72.2334772927233,
+        72.2779387682926,
+        72.23370886701099
+      ],
+      "aggregate_var_obj": [
+        341.39980796328933,
+        341.25829803264156,
+        341.10162900722696
+      ],
+      "aggregate_std_obj": [
+        18.47700754893198,
+        18.473177800060324,
+        18.468936867270596
+      ],
+      "object_pixels_total": 1269571
+    },
+    "sauce_630000": {
+      "label": "sauce_630000",
+      "dir": "template/sauce/vertex_630000/Sauce_with_normal_vertexcolor/templates",
+      "rgb_count": 42,
+      "mask_count": 42,
+      "per_file": [
+        {
+          "file": "template/sauce/vertex_630000/Sauce_with_normal_vertexcolor/templates/rgb_0.png",
+          "unique_all": 377,
+          "unique_obj": 329,
+          "mean_obj": [
+            127.5668543845535,
+            127.59911504424778,
+            127.54481094127112
+          ],
+          "var_obj": [
+            838.5644363641571,
+            837.6778270526987,
+            838.2460611670019
+          ],
+          "std_obj": [
+            28.95797707651826,
+            28.942664477423268,
+            28.952479361308626
+          ],
+          "mask_pixels": 12430
+        },
+        {
+          "file": "template/sauce/vertex_630000/Sauce_with_normal_vertexcolor/templates/rgb_1.png",
+          "unique_all": 350,
+          "unique_obj": 308,
+          "mean_obj": [
+            64.06262841488471,
+            64.10345483600943,
+            64.05749181949624
+          ],
+          "var_obj": [
+            142.74137864808523,
+            142.69027114759035,
+            142.51511033636535
+          ],
+          "std_obj": [
+            11.947442347552267,
+            11.945303309150017,
+            11.937969271880597
+          ],
+          "mask_pixels": 26282
+        },
+        {
+          "file": "template/sauce/vertex_630000/Sauce_with_normal_vertexcolor/templates/rgb_10.png",
+          "unique_all": 391,
+          "unique_obj": 342,
+          "mean_obj": [
+            67.88088129311232,
+            67.93156937437799,
+            67.88918631387487
+          ],
+          "var_obj": [
+            149.72111393557182,
+            149.6890610292965,
+            149.6022232268435
+          ],
+          "std_obj": [
+            12.23605794100256,
+            12.234748098318024,
+            12.231198764914398
+          ],
+          "mask_pixels": 29139
+        },
+        {
+          "file": "template/sauce/vertex_630000/Sauce_with_normal_vertexcolor/templates/rgb_11.png",
+          "unique_all": 350,
+          "unique_obj": 305,
+          "mean_obj": [
+            70.18151843817787,
+            70.21703543022414,
+            70.17318872017354
+          ],
+          "var_obj": [
+            126.96482401394162,
+            126.8856505027128,
+            126.80991889930262
+          ],
+          "std_obj": [
+            11.267866879491505,
+            11.264353088513907,
+            11.260991026517276
+          ],
+          "mask_pixels": 34575
+        },
+        {
+          "file": "template/sauce/vertex_630000/Sauce_with_normal_vertexcolor/templates/rgb_12.png",
+          "unique_all": 347,
+          "unique_obj": 305,
+          "mean_obj": [
+            70.08955353523655,
+            70.13805084255023,
+            70.09407029938039
+          ],
+          "var_obj": [
+            126.55284066580332,
+            126.52121644515022,
+            126.44951547852506
+          ],
+          "std_obj": [
+            11.249570688066425,
+            11.248165025689756,
+            11.244977344509195
+          ],
+          "mask_pixels": 34538
+        }
+      ],
+      "aggregate_unique_all": 637,
+      "aggregate_unique_obj": 599,
+      "aggregate_mean_obj": [
+        72.23421532990291,
+        72.27870776880832,
+        72.23453634203528
+      ],
+      "aggregate_var_obj": [
+        341.4271845964206,
+        341.2807572027786,
+        341.1430941697182
+      ],
+      "aggregate_std_obj": [
+        18.47774836381372,
+        18.47378567599989,
+        18.47005939811018
+      ],
+      "object_pixels_total": 1270980
+    }
+  },
+  "texture_image_stats": {
+    "data/cad/sauce/vertex_160000/Sauce_color.png": {
+      "shape": [
+        2048,
+        2048,
+        3
+      ],
+      "unique_colors": 191516,
+      "mean": [
+        174.10063862800598,
+        155.1510934829712,
+        135.81842041015625
+      ],
+      "std": [
+        86.75418421223429,
+        87.97700368410558,
+        104.6517306107852
+      ]
+    },
+    "data/cad/sauce/vertex_630000/Sauce_color.png": {
+      "shape": [
+        2048,
+        2048,
+        3
+      ],
+      "unique_colors": 191516,
+      "mean": [
+        174.10063862800598,
+        155.1510934829712,
+        135.81842041015625
+      ],
+      "std": [
+        86.75418421223429,
+        87.97700368410558,
+        104.6517306107852
+      ]
+    }
+  },
+  "diagnostic_contact_sheet": "_bmad-output/implementation-artifacts/sauce-template-color-analysis/template_rgb_contact_sheet.png"
+}

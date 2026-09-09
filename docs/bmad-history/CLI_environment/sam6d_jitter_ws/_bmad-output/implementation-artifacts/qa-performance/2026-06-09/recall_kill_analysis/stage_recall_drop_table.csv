@@ -1,0 +1,9 @@
+bag,visible_frames,stage,removed_count,stage_removed_pct,cumulative_removed_count,cumulative_removed_pct,remaining_after_stage
+SLAM_with_milk_nomilk,187,no_ism_candidate,181,0.9679144385026738,181,0.9679144385026738,6
+SLAM_with_milk_nomilk,187,pose_confidence_score_below_min,0,0.0,181,0.9679144385026738,6
+SLAM_with_milk_nomilk,187,temporal_jump_reject,3,0.016042780748663103,184,0.983957219251337,3
+SLAM_with_milk_nomilk,187,pose_output_survived,0,0,184,0.983957219251337,3
+only_Milk,173,no_ism_candidate,86,0.49710982658959535,86,0.49710982658959535,87
+only_Milk,173,pose_confidence_score_below_min,6,0.03468208092485549,92,0.5317919075144508,81
+only_Milk,173,temporal_jump_reject,78,0.4508670520231214,170,0.9826589595375722,3
+only_Milk,173,pose_output_survived,0,0,170,0.9826589595375722,3

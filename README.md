@@ -43,3 +43,7 @@ cd orbslam_ws && colcon build --packages-select orbslam3_core orbslam3_ros2 \
 ```bash
 cd objectmemory_ws/object_memory && python3 -m pytest scripts_test -q
 ```
+
+## BMAD 개발 자료
+
+단일 노트북 작업의 설정·스킬·명세·연구 및 검증 첨부물은 [BMAD 자료 대조 목록](docs/bmad-history/README.md)을 참고한다. 원본별 보존 위치와 파일별 SHA-256을 포함한다.

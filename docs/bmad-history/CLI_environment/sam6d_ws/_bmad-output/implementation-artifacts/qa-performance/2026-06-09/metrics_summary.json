@@ -1,0 +1,185 @@
+{
+  "SLAM_with_milk_nomilk": {
+    "baseline": {
+      "frames": 512,
+      "detection": {
+        "tp": 187,
+        "fp": 324,
+        "tn": 1,
+        "fn": 0,
+        "precision": 0.3659491193737769,
+        "recall": 1.0,
+        "false_positive_rate": 0.9969230769230769,
+        "false_negative_rate": 0.0,
+        "hidden_fp": 218,
+        "hand_interaction_fp": 106,
+        "visible_fn": 0
+      },
+      "skip_counts": {
+        "pose_output": 511,
+        "no valid detection": 1
+      },
+      "temporal": {
+        "count": 511,
+        "position_std_mm": [
+          718.7260392270332,
+          856.6732187812836,
+          955.2192202993141
+        ],
+        "rotation_std_deg": 41.15596179089321,
+        "frame_to_frame_translation_delta_mean_mm": 1328.5279233712392,
+        "frame_to_frame_translation_delta_max_mm": 4300.954212365014,
+        "frame_to_frame_rotation_delta_mean_deg": 108.8082676494575,
+        "frame_to_frame_rotation_delta_max_deg": 179.76834993589176,
+        "jitter_score": 1579.4883423323552
+      },
+      "ism_score_area": {
+        "count": 512,
+        "score_min": 0.23926420509815216,
+        "score_median": 0.3244718462228775,
+        "score_max": 0.463348388671875,
+        "bbox_area_min": 6992.0,
+        "bbox_area_median": 68000.5,
+        "bbox_area_max": 245225.0,
+        "simple_score_area_pass": 0
+      }
+    },
+    "improved": {
+      "frames": 512,
+      "detection": {
+        "tp": 3,
+        "fp": 0,
+        "tn": 325,
+        "fn": 184,
+        "precision": 1.0,
+        "recall": 0.016042780748663103,
+        "false_positive_rate": 0.0,
+        "false_negative_rate": 0.983957219251337,
+        "hidden_fp": 0,
+        "hand_interaction_fp": 0,
+        "visible_fn": 184
+      },
+      "skip_counts": {
+        "no_ism_candidate": 506,
+        "pose_output": 3,
+        "temporal_jump_reject": 3
+      },
+      "temporal": {
+        "count": 3,
+        "position_std_mm": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_std_deg": 0.0,
+        "frame_to_frame_translation_delta_mean_mm": 0.0,
+        "frame_to_frame_translation_delta_max_mm": 0.0,
+        "frame_to_frame_rotation_delta_mean_deg": 0.06268768853957969,
+        "frame_to_frame_rotation_delta_max_deg": 0.06268768853957969,
+        "jitter_score": 0.06268768853957969
+      },
+      "ism_score_area": {
+        "count": 6,
+        "score_min": 0.5563861131668091,
+        "score_median": 0.5589047372341156,
+        "score_max": 0.560552716255188,
+        "bbox_area_min": 12636.0,
+        "bbox_area_median": 16900.0,
+        "bbox_area_max": 17271.0,
+        "simple_score_area_pass": 6
+      }
+    }
+  },
+  "only_Milk": {
+    "baseline": {
+      "frames": 173,
+      "detection": {
+        "tp": 164,
+        "fp": 0,
+        "tn": 0,
+        "fn": 9,
+        "precision": 1.0,
+        "recall": 0.9479768786127167,
+        "false_positive_rate": null,
+        "false_negative_rate": 0.05202312138728324,
+        "hidden_fp": 0,
+        "hand_interaction_fp": 0,
+        "visible_fn": 9
+      },
+      "skip_counts": {
+        "pose_output": 164,
+        "ism_failed": 9
+      },
+      "temporal": {
+        "count": 164,
+        "position_std_mm": [
+          696.2498800660653,
+          567.7693104823496,
+          833.8574237084633
+        ],
+        "rotation_std_deg": 45.001488830823796,
+        "frame_to_frame_translation_delta_mean_mm": 1156.374235369238,
+        "frame_to_frame_translation_delta_max_mm": 3565.6131326770364,
+        "frame_to_frame_rotation_delta_mean_deg": 104.8593573188685,
+        "frame_to_frame_rotation_delta_max_deg": 179.78499171998888,
+        "jitter_score": 1330.6016175397228
+      },
+      "ism_score_area": {
+        "count": 164,
+        "score_min": 0.24299082159996033,
+        "score_median": 0.3020181506872177,
+        "score_max": 0.49076780676841736,
+        "bbox_area_min": 38266.0,
+        "bbox_area_median": 97030.0,
+        "bbox_area_max": 251856.0,
+        "simple_score_area_pass": 0
+      }
+    },
+    "improved": {
+      "frames": 173,
+      "detection": {
+        "tp": 3,
+        "fp": 0,
+        "tn": 0,
+        "fn": 170,
+        "precision": 1.0,
+        "recall": 0.017341040462427744,
+        "false_positive_rate": null,
+        "false_negative_rate": 0.9826589595375722,
+        "hidden_fp": 0,
+        "hand_interaction_fp": 0,
+        "visible_fn": 170
+      },
+      "skip_counts": {
+        "no_ism_candidate": 86,
+        "pose_output": 3,
+        "temporal_jump_reject": 78,
+        "pose_confidence_score_below_min": 6
+      },
+      "temporal": {
+        "count": 3,
+        "position_std_mm": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "rotation_std_deg": 0.0,
+        "frame_to_frame_translation_delta_mean_mm": 0.0,
+        "frame_to_frame_translation_delta_max_mm": 0.0,
+        "frame_to_frame_rotation_delta_mean_deg": 0.0,
+        "frame_to_frame_rotation_delta_max_deg": 0.0,
+        "jitter_score": 0.0
+      },
+      "ism_score_area": {
+        "count": 87,
+        "score_min": 0.5500819087028503,
+        "score_median": 0.610072135925293,
+        "score_max": 0.6383340954780579,
+        "bbox_area_min": 9185.0,
+        "bbox_area_median": 10620.0,
+        "bbox_area_max": 13248.0,
+        "simple_score_area_pass": 87
+      }
+    }
+  }
+}

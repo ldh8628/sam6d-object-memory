@@ -1,0 +1,88 @@
+{
+  "workspace": "/home/etri/CLI_environment/sam6d_ws",
+  "rgb_dir": "/home/etri/CLI_environment/sam6d_ws/_bmad-output/implementation-artifacts/sauce-template-ism-pem-eval/input_frames/rgb",
+  "depth_dir": "/home/etri/CLI_environment/sam6d_ws/_bmad-output/implementation-artifacts/sauce-template-ism-pem-eval/input_frames/depth",
+  "camera_json": "/home/etri/CLI_environment/sam6d_ws/src/sam6d_ros/config/d455f_camera.json",
+  "targets": [
+    {
+      "name": "milk_reference",
+      "cad_path": "data/cad/Milk.ply",
+      "template_dir": "sam6d_master/SAM-6D/Data/custom/Milk_scaled_195mm/templates"
+    },
+    {
+      "name": "sauce_vertex_160000",
+      "cad_path": "data/cad/sauce/vertex_160000/Sauce_with_normal_vertexcolor.ply",
+      "template_dir": "template/sauce/vertex_160000/Sauce_with_normal_vertexcolor/templates"
+    },
+    {
+      "name": "sauce_vertex_630000",
+      "cad_path": "data/cad/sauce/vertex_630000/Sauce_with_normal_vertexcolor.ply",
+      "template_dir": "template/sauce/vertex_630000/Sauce_with_normal_vertexcolor/templates"
+    }
+  ],
+  "max_frames": 30,
+  "thresholds": {
+    "min_final_score": 0.5,
+    "object_min_score": 0.5,
+    "pose_min_score": 0.5,
+    "min_mask_area": 3000,
+    "min_bbox_area": 3000,
+    "min_depth_valid_ratio": 0.8
+  },
+  "template_verdicts": [
+    {
+      "template": "milk_reference",
+      "template_dir": "/home/etri/CLI_environment/sam6d_ws/sam6d_master/SAM-6D/Data/custom/Milk_scaled_195mm/templates",
+      "rgb_count": 42,
+      "mask_count": 42,
+      "xyz_count": 42,
+      "resolution": "512x512",
+      "empty_rgb": 0,
+      "unique_colors_mean": "2134.4",
+      "unique_colors_min": 21,
+      "unique_colors_max": 3740,
+      "object_area_ratio_mean": "0.046204",
+      "object_area_ratio_min": "0.015625",
+      "object_area_ratio_max": "0.061436",
+      "bbox_width_mean": "149.0",
+      "bbox_height_mean": "117.6",
+      "verdict": "ok"
+    },
+    {
+      "template": "sauce_vertex_160000",
+      "template_dir": "/home/etri/CLI_environment/sam6d_ws/template/sauce/vertex_160000/Sauce_with_normal_vertexcolor/templates",
+      "rgb_count": 42,
+      "mask_count": 42,
+      "xyz_count": 42,
+      "resolution": "512x512",
+      "empty_rgb": 0,
+      "unique_colors_mean": "8783.2",
+      "unique_colors_min": 262,
+      "unique_colors_max": 12648,
+      "object_area_ratio_mean": "0.115506",
+      "object_area_ratio_min": "0.047440",
+      "object_area_ratio_max": "0.140656",
+      "bbox_width_mean": "123.8",
+      "bbox_height_mean": "298.4",
+      "verdict": "ok"
+    },
+    {
+      "template": "sauce_vertex_630000",
+      "template_dir": "/home/etri/CLI_environment/sam6d_ws/template/sauce/vertex_630000/Sauce_with_normal_vertexcolor/templates",
+      "rgb_count": 42,
+      "mask_count": 42,
+      "xyz_count": 42,
+      "resolution": "512x512",
+      "empty_rgb": 0,
+      "unique_colors_mean": "8390.9",
+      "unique_colors_min": 275,
+      "unique_colors_max": 12037,
+      "object_area_ratio_mean": "0.115367",
+      "object_area_ratio_min": "0.047394",
+      "object_area_ratio_max": "0.140404",
+      "bbox_width_mean": "123.6",
+      "bbox_height_mean": "298.4",
+      "verdict": "ok"
+    }
+  ]
+}

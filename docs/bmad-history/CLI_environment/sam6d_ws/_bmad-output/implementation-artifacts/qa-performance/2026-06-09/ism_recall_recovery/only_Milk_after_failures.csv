@@ -1,0 +1,2 @@
+frame,milk_visible,hand_interaction,should_output_pose,ism_ok,ism_candidates,best_ism_score,pose_output,skip_reason,score,tx,ty,tz
+000510,True,False,True,True,0,0.0,False,no_ism_candidate,,,,

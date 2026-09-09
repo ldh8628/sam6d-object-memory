@@ -1,0 +1,3 @@
+mask_count,rgb_color_ok,rgb_count,status,template,xyz_count,xyz_unit_ok
+42,yes,42,ok,sauce_vertex_160000_ply_mm,42,yes
+42,yes,42,ok,sauce_vertex_630000_ply_mm,42,yes

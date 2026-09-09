@@ -1,0 +1,139 @@
+{
+  "inputs": {
+    "output_dir": "output/sam6d_milk_verify",
+    "labels_csv": null,
+    "thresholds": {
+      "min_ism_score": 0.55,
+      "min_bbox_area": 9000.0,
+      "min_pose_score": 0.55,
+      "translation_alpha": 0.35,
+      "rotation_alpha": 0.35
+    }
+  },
+  "dataset_availability": {
+    "frames_with_outputs": 28,
+    "labels_available": false,
+    "ground_truth_pose_available": false,
+    "milk_absent_bag_available": false,
+    "dynamic_bag_available": false
+  },
+  "detection": {
+    "baseline": {
+      "precision": null,
+      "recall": null,
+      "false_positive_rate": null,
+      "false_negative_rate": null,
+      "missing_reason": "frame labels were not provided"
+    },
+    "improved": {
+      "precision": null,
+      "recall": null,
+      "false_positive_rate": null,
+      "false_negative_rate": null,
+      "missing_reason": "frame labels were not provided"
+    }
+  },
+  "pose": {
+    "ADD": null,
+    "ADD-S": null,
+    "rotation_error": null,
+    "translation_error": null,
+    "missing_reason": "ground-truth poses were not provided"
+  },
+  "temporal_stability": {
+    "baseline": {
+      "count": 25,
+      "position_std_mm": [
+        0.7594074246771425,
+        4.47133570260071,
+        1.0405821288072883
+      ],
+      "rotation_std_deg": 50.65850572630581,
+      "frame_to_frame_position_delta_mean_mm": 5.261276790763939,
+      "frame_to_frame_position_delta_max_mm": 16.17960493291575,
+      "frame_to_frame_rotation_delta_mean_deg": 30.958894599387175,
+      "frame_to_frame_rotation_delta_max_deg": 179.3731025704313,
+      "jitter_score": 35.61210357479325
+    },
+    "improved_before_smoothing": {
+      "count": 25,
+      "position_std_mm": [
+        0.7557313019869687,
+        4.175699393167459,
+        1.0294881345147686
+      ],
+      "rotation_std_deg": 58.08663441547141,
+      "frame_to_frame_position_delta_mean_mm": 4.951264475370981,
+      "frame_to_frame_position_delta_max_mm": 14.528159839034767,
+      "frame_to_frame_rotation_delta_mean_deg": 38.283817596002926,
+      "frame_to_frame_rotation_delta_max_deg": 179.9901489873947,
+      "jitter_score": 42.65044570496855
+    },
+    "improved_after_smoothing": {
+      "count": 25,
+      "position_std_mm": [
+        0.28222543683716284,
+        1.9876941588242547,
+        0.4824849667566851
+      ],
+      "rotation_std_deg": 42.17821295524035,
+      "frame_to_frame_position_delta_mean_mm": 1.3859776144230642,
+      "frame_to_frame_position_delta_max_mm": 3.9715133679701515,
+      "frame_to_frame_rotation_delta_mean_deg": 16.273774368817204,
+      "frame_to_frame_rotation_delta_max_deg": 56.41605568884353,
+      "jitter_score": 18.33856758107072
+    }
+  },
+  "problem_1_milk_absent_analysis": {
+    "ism_candidate_count": 130,
+    "filter_pass_count": 48,
+    "final_pose_output_count_baseline": 25,
+    "final_pose_output_count_improved": 25,
+    "false_positive_reduction": 0.0,
+    "missing_reason": "Milk-absent frame labels/bag were not provided; counts are over available output frames only."
+  },
+  "problem_2_static_scene_analysis": {
+    "baseline": {
+      "count": 25,
+      "position_std_mm": [
+        0.7594074246771425,
+        4.47133570260071,
+        1.0405821288072883
+      ],
+      "rotation_std_deg": 50.65850572630581,
+      "frame_to_frame_position_delta_mean_mm": 5.261276790763939,
+      "frame_to_frame_position_delta_max_mm": 16.17960493291575,
+      "frame_to_frame_rotation_delta_mean_deg": 30.958894599387175,
+      "frame_to_frame_rotation_delta_max_deg": 179.3731025704313,
+      "jitter_score": 35.61210357479325
+    },
+    "improved_after_filtering": {
+      "count": 25,
+      "position_std_mm": [
+        0.7557313019869687,
+        4.175699393167459,
+        1.0294881345147686
+      ],
+      "rotation_std_deg": 58.08663441547141,
+      "frame_to_frame_position_delta_mean_mm": 4.951264475370981,
+      "frame_to_frame_position_delta_max_mm": 14.528159839034767,
+      "frame_to_frame_rotation_delta_mean_deg": 38.283817596002926,
+      "frame_to_frame_rotation_delta_max_deg": 179.9901489873947,
+      "jitter_score": 42.65044570496855
+    },
+    "improved_after_filtering_and_smoothing": {
+      "count": 25,
+      "position_std_mm": [
+        0.28222543683716284,
+        1.9876941588242547,
+        0.4824849667566851
+      ],
+      "rotation_std_deg": 42.17821295524035,
+      "frame_to_frame_position_delta_mean_mm": 1.3859776144230642,
+      "frame_to_frame_position_delta_max_mm": 3.9715133679701515,
+      "frame_to_frame_rotation_delta_mean_deg": 16.273774368817204,
+      "frame_to_frame_rotation_delta_max_deg": 56.41605568884353,
+      "jitter_score": 18.33856758107072
+    }
+  }
+}

@@ -1,0 +1,19 @@
+{
+  "jump_events": 86,
+  "actual_temporal_jump_reject_rows": 78,
+  "translation_jump_mm": {
+    "min": 68.08016211214881,
+    "median": 161.11765044853368,
+    "max": 389.8029019596041
+  },
+  "rotation_jump_deg": {
+    "min": 1.1110805618109898,
+    "median": 13.88913837844398,
+    "max": 31.553742066425244
+  },
+  "pose_confidence_score": {
+    "min": 0.5514366626739502,
+    "median": 0.6066226959228516,
+    "max": 0.6383340954780579
+  }
+}
