@@ -319,20 +319,16 @@ void Atlas::PreSave()
             return elem1->GetId() < elem2->GetId();
         }
     };
-    std::copy(mspMaps.begin(), mspMaps.end(), std::back_inserter(mvpBackupMaps));
+    // Skip empty maps in the archive without invalidating the live current map.
+    // Shutdown still queries it for trajectory/map exports after this save.
+    mvpBackupMaps.clear();
+    std::copy_if(mspMaps.begin(), mspMaps.end(), std::back_inserter(mvpBackupMaps),
+                 [](Map* map) { return map && !map->IsBad() && map->KeyFramesInMap() > 0; });
     sort(mvpBackupMaps.begin(), mvpBackupMaps.end(), compFunctor());
 
     std::set<GeometricCamera*> spCams(mvpCameras.begin(), mvpCameras.end());
     for(Map* pMi : mvpBackupMaps)
     {
-        if(!pMi || pMi->IsBad())
-            continue;
-
-        if(pMi->GetAllKeyFrames().size() == 0) {
-            // Empty map, erase before of save it.
-            SetMapBad(pMi);
-            continue;
-        }
         pMi->PreSave(spCams);
     }
     RemoveBadMaps();

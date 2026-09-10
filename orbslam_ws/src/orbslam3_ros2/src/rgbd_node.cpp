@@ -325,7 +325,9 @@
         enable_viewer_
       );
 
-      updateMapIdentity(slam_->GetCurrentMapId());
+      // The constructor creates an empty temporary map even when an Atlas was loaded.
+      // Publish its identity only after localization establishes actual coordinates.
+      updateMapIdentity(-1);
 
       if (localization_mode_) {
         // Disable local mapping + loop closing; only relocalization + tracking
@@ -754,7 +756,9 @@
         track_times_ms_.push_back(
           std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - _t0).count());
         tracking_state = slam_->GetTrackingState();
-        updateMapIdentity(slam_->GetCurrentMapId());
+        if (tracking_state == ORB_SLAM3::Tracking::OK || current_atlas_id_ >= 0) {
+          updateMapIdentity(slam_->GetCurrentMapId());
+        }
       }
 
       std_msgs::msg::String state_msg;
@@ -1680,6 +1684,10 @@
     rclcpp::executors::MultiThreadedExecutor executor;
     executor.add_node(node);
     executor.spin();
+    // Keep ROS signal handlers installed while ORB saves its Atlas/trajectories:
+    // ros2 launch can forward a second SIGINT after a process-group stop.
+    executor.remove_node(node);
+    node.reset();
     rclcpp::shutdown();
     return 0;
   }

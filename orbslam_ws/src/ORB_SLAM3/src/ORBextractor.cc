@@ -60,6 +60,10 @@
 #include <iostream>
 
 #include "ORBextractor.h"
+#include <cstdlib>
+#include <cstring>
+#include <dlfcn.h>
+#include <stdexcept>
 
 
 using namespace cv;
@@ -1075,10 +1079,50 @@ namespace ORB_SLAM3
     }
 
     static void computeDescriptors(const Mat& image, vector<KeyPoint>& keypoints, Mat& descriptors,
-                                   const vector<Point>& pattern)
+                                   const vector<Point>& pattern, bool useCuda)
     {
         descriptors = Mat::zeros((int)keypoints.size(), 32, CV_8UC1);
 
+        if (useCuda && !keypoints.empty()) {
+            // CUDA changes only descriptor sampling. Detection, orientation, blur,
+            // matching, IMU integration and optimization retain their CPU algorithms.
+            using Compute = const char* (*)(const unsigned char*, int, int, size_t,
+                                            const float*, int, const int*, unsigned char*);
+            static Compute compute = []() -> Compute {
+                const char* path = std::getenv("ORB_SLAM3_CUDA_LIBRARY");
+                if (!path || !*path) throw std::runtime_error("ORB_SLAM3_CUDA_LIBRARY is required");
+                void* library = dlopen(path, RTLD_NOW | RTLD_LOCAL);
+                if (!library) throw std::runtime_error(dlerror());
+                auto fn = reinterpret_cast<Compute>(dlsym(library, "orb_cuda_descriptors"));
+                if (!fn) throw std::runtime_error("CUDA descriptor library has no compatible entrypoint");
+                return fn; // Keep loaded until process exit: thread-local CUDA buffers own code here.
+            }();
+            std::vector<float> points;
+            points.reserve(keypoints.size() * 4);
+            for (const auto& keypoint : keypoints) {
+                float angle = keypoint.angle * factorPI;
+                points.insert(points.end(), {float(cvRound(keypoint.pt.x)),
+                    float(cvRound(keypoint.pt.y)), float(cos(angle)), float(sin(angle))});
+            }
+            std::vector<int> offsets;
+            offsets.reserve(pattern.size() * 2);
+            for (const auto& point : pattern) offsets.insert(offsets.end(), {point.x, point.y});
+            const char* error = compute(image.data, image.rows, image.cols, image.step,
+                points.data(), int(keypoints.size()), offsets.data(), descriptors.data);
+            if (error) throw std::runtime_error(std::string("CUDA descriptor failure: ") + error);
+            static const bool logged = []() {
+                std::cerr << "ORB_DESCRIPTOR_BACKEND cuda: descriptor sampling GPU; remaining SLAM CPU" << std::endl;
+                return true;
+            }();
+            (void)logged;
+            return;
+        }
+
+        static const bool logged = []() {
+            std::cerr << "ORB_DESCRIPTOR_BACKEND cpu: original descriptor sampling" << std::endl;
+            return true;
+        }();
+        (void)logged;
         for (size_t i = 0; i < keypoints.size(); i++)
             computeOrbDescriptor(keypoints[i], image, &pattern[0], descriptors.ptr((int)i));
     }
@@ -1087,6 +1131,10 @@ namespace ORB_SLAM3
                                   OutputArray _descriptors, std::vector<int> &vLappingArea)
     {
         //cout << "[ORBextractor]: Max Features: " << nfeatures << endl;
+        const char* backend = std::getenv("ORB_SLAM3_DESCRIPTOR_BACKEND");
+        if (backend && std::strcmp(backend, "cpu") && std::strcmp(backend, "cuda"))
+            throw std::runtime_error("ORB_SLAM3_DESCRIPTOR_BACKEND must be cpu or cuda");
+        const bool useCuda = backend && !std::strcmp(backend, "cuda");
         if(_image.empty())
             return -1;
 
@@ -1117,6 +1165,35 @@ namespace ORB_SLAM3
         //_keypoints.reserve(nkeypoints);
         _keypoints = vector<cv::KeyPoint>(nkeypoints);
 
+        Mat batchedDescriptors;
+        if (useCuda && nkeypoints) {
+            int rows = 0, cols = 0;
+            for (int level = 0; level < nlevels; ++level) {
+                if (allKeypoints[level].empty()) continue;
+                rows += mvImagePyramid[level].rows;
+                cols = std::max(cols, mvImagePyramid[level].cols);
+            }
+            // ponytail: padded rows reuse the CUDA ABI; pack per-level strides if upload dominates.
+            Mat atlas(rows, cols, CV_8UC1);
+            vector<KeyPoint> packedKeypoints;
+            packedKeypoints.reserve(nkeypoints);
+            int rowOffset = 0;
+            for (int level = 0; level < nlevels; ++level) {
+                if (allKeypoints[level].empty()) continue;
+                Mat workingMat = mvImagePyramid[level].clone();
+                // Blur before packing: atlas ROI neighbours must not alter octave borders.
+                GaussianBlur(workingMat, workingMat, Size(7, 7), 2, 2, BORDER_REFLECT_101);
+                workingMat.copyTo(atlas(Rect(0, rowOffset, workingMat.cols, workingMat.rows)));
+                for (auto keypoint : allKeypoints[level]) {
+                    keypoint.pt.x = cvRound(keypoint.pt.x);
+                    keypoint.pt.y = cvRound(keypoint.pt.y) + rowOffset;
+                    packedKeypoints.push_back(keypoint);
+                }
+                rowOffset += workingMat.rows;
+            }
+            computeDescriptors(atlas, packedKeypoints, batchedDescriptors, pattern, true);
+        }
+
         int offset = 0;
         //Modified for speeding up stereo fisheye matching
         int monoIndex = 0, stereoIndex = nkeypoints-1;
@@ -1128,14 +1205,14 @@ namespace ORB_SLAM3
             if(nkeypointsLevel==0)
                 continue;
 
-            // preprocess the resized image
-            Mat workingMat = mvImagePyramid[level].clone();
-            GaussianBlur(workingMat, workingMat, Size(7, 7), 2, 2, BORDER_REFLECT_101);
-
-            // Compute the descriptors
-            //Mat desc = descriptors.rowRange(offset, offset + nkeypointsLevel);
-            Mat desc = cv::Mat(nkeypointsLevel, 32, CV_8U);
-            computeDescriptors(workingMat, keypoints, desc, pattern);
+            Mat desc;
+            if (useCuda) {
+                desc = batchedDescriptors.rowRange(offset, offset + nkeypointsLevel);
+            } else {
+                Mat workingMat = mvImagePyramid[level].clone();
+                GaussianBlur(workingMat, workingMat, Size(7, 7), 2, 2, BORDER_REFLECT_101);
+                computeDescriptors(workingMat, keypoints, desc, pattern, false);
+            }
 
             offset += nkeypointsLevel;
 

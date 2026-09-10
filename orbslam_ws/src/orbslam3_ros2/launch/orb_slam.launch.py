@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import signal
+import sys
 from pathlib import Path
 
 import yaml
@@ -74,6 +75,8 @@ def _default_config():
             "use_imu": False,
             "localization_mode": False,
             "enable_viewer": False,
+            "descriptor_backend": os.environ.get('ORB_SLAM3_DESCRIPTOR_BACKEND', 'cpu'),
+            "desktop_session": False,
             "sync_queue_size": 60,
             "input_queue_size": 60,
             "input_qos_depth": 120,
@@ -218,6 +221,10 @@ def _launch_setup(context, *args, **kwargs):
 
     # Optional debug wrapper (e.g. gdb backtrace) injected via env var.
     node_prefix = os.environ.get("ORBSLAM_NODE_PREFIX", "").strip()
+    sys.path.insert(0, str(workspace.parent / 'integration'))
+    from orb_runtime import orb_environment
+    node_environment = orb_environment(workspace, cfg['runtime']['descriptor_backend'],
+        view=_as_bool(cfg['runtime']['enable_viewer']), desktop=_as_bool(cfg['runtime']['desktop_session']))
 
     rgbd_node = Node(
         package="orbslam3_ros2",
@@ -226,6 +233,7 @@ def _launch_setup(context, *args, **kwargs):
         output="screen",
         cwd=str(output_dir),
         prefix=(node_prefix if node_prefix else None),
+        additional_env=node_environment,
         sigterm_timeout="30",
         parameters=[
             {
@@ -296,6 +304,9 @@ def _launch_setup(context, *args, **kwargs):
         ]
         if _as_bool(cfg["bag"]["clock"]):
             play_cmd.append("--clock")
+        if _as_bool(cfg['bag'].get('paced', False)):
+            play_cmd = [sys.executable, str(workspace.parent / 'integration/paced_orb_player.py'),
+                        '--config', LaunchConfiguration('config').perform(context)]
         bag_player = ExecuteProcess(cmd=play_cmd, output="screen")
         actions.append(TimerAction(period=float(cfg["bag"]["start_delay"]), actions=[bag_player]))
         actions.append(

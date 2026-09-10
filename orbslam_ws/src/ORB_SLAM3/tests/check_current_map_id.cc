@@ -33,4 +33,13 @@ int main()
     second->ChangeId(500);
     atlas.ChangeMap(second);
     assert(atlas.GetCurrentMapId() == 500);
+    // Saving an uninitialized Atlas must not invalidate its live current map:
+    // shutdown exports (map points / loop edges) still query it after PreSave.
+    atlas.PreSave();
+    assert(!second->IsBad());
+    assert(atlas.GetCurrentMap() == second);
+    assert(atlas.GetCurrentMapId() == 500);
+    assert(atlas.CountMaps() == 2);
+    atlas.PreSave();
+    assert(atlas.GetCurrentMap() == second);
 }

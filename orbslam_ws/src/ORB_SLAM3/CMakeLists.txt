@@ -125,6 +125,7 @@ add_subdirectory(Thirdparty/DBoW2)
 add_subdirectory(Thirdparty/g2o)
 
 target_link_libraries(${ORB_SLAM3_TARGET}
+${CMAKE_DL_LIBS}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
@@ -404,6 +405,9 @@ endif()
 install(FILES package.xml DESTINATION share/orbslam3_core)
 if(BUILD_TESTING)
     enable_testing()
+    add_executable(check_cuda_descriptors tests/check_cuda_descriptors.cc)
+    target_link_libraries(check_cuda_descriptors ${ORB_SLAM3_TARGET})
+    target_compile_options(check_cuda_descriptors PRIVATE -UNDEBUG)
     add_executable(check_current_map_id tests/check_current_map_id.cc)
     target_link_libraries(check_current_map_id ${ORB_SLAM3_TARGET})
     target_compile_options(check_current_map_id PRIVATE -UNDEBUG)
