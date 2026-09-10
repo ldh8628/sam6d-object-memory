@@ -1,0 +1,480 @@
+{
+  "snapshot_date": "2026-09-10",
+  "orb_source_commit": "f2f75950e5bafe5dba402fe2ff797860f0352e48",
+  "files": [
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/_config/bmad-help.csv",
+      "path": "CLI_environment/_bmad/_config/bmad-help.csv",
+      "bytes": 15125,
+      "sha256": "d6d4a3c3bd2ac1867efa044040ab9b744e890a512b3d3ffd9012349ea1f1f431"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/_config/files-manifest.csv",
+      "path": "CLI_environment/_bmad/_config/files-manifest.csv",
+      "bytes": 177725,
+      "sha256": "01e970a4b0f23bc280f7b1947cd5e16c861366bd7b0b6ea40ad115d444fcdd4e"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/_config/manifest.yaml",
+      "path": "CLI_environment/_bmad/_config/manifest.yaml",
+      "bytes": 1492,
+      "sha256": "687e0fe3c9c9d522e7ea070d7b31437cf591b9534392a0459bea6e18371ae375"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/_config/skill-manifest.csv",
+      "path": "CLI_environment/_bmad/_config/skill-manifest.csv",
+      "bytes": 18398,
+      "sha256": "be4a14e2abc93a0a215d184d5d57e2c9fb7a350638ebc519fb6077d3f4c22185"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/bmb/config.yaml",
+      "path": "CLI_environment/_bmad/bmb/config.yaml",
+      "bytes": 398,
+      "sha256": "2a58c4780f35e93d15fb9f729382fcc118a4af18ec0c5f3d92740eb32dc3a9a8"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/bmb/module-help.csv",
+      "path": "CLI_environment/_bmad/bmb/module-help.csv",
+      "bytes": 2986,
+      "sha256": "fe5c030134a6019d6a8c9e609ca6c196cd5f469aac8b9711145257a966f14b7e"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/bmm/config.yaml",
+      "path": "CLI_environment/_bmad/bmm/config.yaml",
+      "bytes": 532,
+      "sha256": "44f8b27056dae2eec924ec910b427de1a353e8d4e408a5c150d456554aeb9f72"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/bmm/module-help.csv",
+      "path": "CLI_environment/_bmad/bmm/module-help.csv",
+      "bytes": 6909,
+      "sha256": "44aeae5ba00ace308ebfba304548613b75c4ee4e9875e9a1afc9385689fbfe5f"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/cis/config.yaml",
+      "path": "CLI_environment/_bmad/cis/config.yaml",
+      "bytes": 319,
+      "sha256": "5d577f53c2570eb5e431b781a4f73acfe8abf4d742bfcb2462e91978ee98f4be"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/cis/module-help.csv",
+      "path": "CLI_environment/_bmad/cis/module-help.csv",
+      "bytes": 1190,
+      "sha256": "0c02169aee8d548ee7b190c16551dc681df217c55b8fffff5fc8ada017f2270f"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/config.toml",
+      "path": "CLI_environment/_bmad/config.toml",
+      "bytes": 7967,
+      "sha256": "91962a23ffb3fc271e80980703367903089295d3c7ceea7ca00f9bfb156596d5"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/config.user.toml",
+      "path": "CLI_environment/_bmad/config.user.toml",
+      "bytes": 958,
+      "sha256": "656f4451662c43066a2675d2786793ee894bd11c4e2f2b233e04071e54c1938c"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/core/config.yaml",
+      "path": "CLI_environment/_bmad/core/config.yaml",
+      "bytes": 264,
+      "sha256": "71dd51c6e40f11b500cfad6b7c2d308fcc00a5eab024c7fb286c79ca59ceca1e"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/core/module-help.csv",
+      "path": "CLI_environment/_bmad/core/module-help.csv",
+      "bytes": 2557,
+      "sha256": "ad3511e78826fc17447262fb585af19848e3002291715736308f9fff5b993bd5"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/custom/.gitignore",
+      "path": "CLI_environment/_bmad/custom/.gitignore",
+      "bytes": 12,
+      "sha256": "973b03a33f142c22cf9b65be285bebadd85790b6b55be04637d2f8c716f58fab"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/custom/config.toml",
+      "path": "CLI_environment/_bmad/custom/config.toml",
+      "bytes": 348,
+      "sha256": "d00d0bb7e0e03a7e32a9c7c935f2509e17107bb9949162450e408adef01878df"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/custom/config.user.toml",
+      "path": "CLI_environment/_bmad/custom/config.user.toml",
+      "bytes": 162,
+      "sha256": "92af88b1942ddfd6e9954f2591e160618bb3e74ca55c292b35ab4c411f79f0e0"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/scripts/resolve_config.py",
+      "path": "CLI_environment/_bmad/scripts/resolve_config.py",
+      "bytes": 5566,
+      "sha256": "8e326149d9170477ecc21aa2aa2389d8fbaa5d1cd95db2de2ad33029ce8ae528"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/scripts/resolve_customization.py",
+      "path": "CLI_environment/_bmad/scripts/resolve_customization.py",
+      "bytes": 8154,
+      "sha256": "a56abc64ffc8924f8ded95562c7ef3f6d7f1b18f0724289fd3b95fda3567dab4"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/scripts/tests/test_resolve_customization.py",
+      "path": "CLI_environment/_bmad/scripts/tests/test_resolve_customization.py",
+      "bytes": 1505,
+      "sha256": "3c93a68544b28e10c08fe4f8c24f296926e69bf142ace13d1c30867e3283c4cb"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/tea/config.yaml",
+      "path": "CLI_environment/_bmad/tea/config.yaml",
+      "bytes": 804,
+      "sha256": "1d37f4e060774457ef808068bcd2aa5bf9e513db17934058d5dd28bf2616daa3"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/tea/module-help.csv",
+      "path": "CLI_environment/_bmad/tea/module-help.csv",
+      "bytes": 1995,
+      "sha256": "0a718d289033627c467016f694801467c2a84347034e7ef27e4651d1715c17e4"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad/tea/workflows/testarch/README.md",
+      "path": "CLI_environment/_bmad/tea/workflows/testarch/README.md",
+      "bytes": 2982,
+      "sha256": "4a16e960f9cdfcdfcdb175d04fc463fb9a7f422246e3d0eea02b8e9fbb6f8b23"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad-output/research-artifacts/orbslam3-d455f-imu-feasibility-research.md",
+      "path": "CLI_environment/_bmad-output/research-artifacts/orbslam3-d455f-imu-feasibility-research.md",
+      "bytes": 21788,
+      "sha256": "2c8b683df98c47991f764374049ce158bea6843482f8940ca036d83dd551863f"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/implementation-artifacts/blueprint-sensor-sync-validation-jazzy.md",
+      "path": "CLI_environment/_bmad_output_for_slam/implementation-artifacts/blueprint-sensor-sync-validation-jazzy.md",
+      "bytes": 12651,
+      "sha256": "700df9cb1298806366110c438cc147c10b294e26a7735a08df17c90b06ecbe24"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/implementation-artifacts/deferred-work.md",
+      "path": "CLI_environment/_bmad_output_for_slam/implementation-artifacts/deferred-work.md",
+      "bytes": 2888,
+      "sha256": "e3b2989d7ff203bc69bfff1ae731ff7c6d3805eab60e8dd5f3ad3c7be454ef86"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/implementation-artifacts/spec-perf-bottleneck-probe.md",
+      "path": "CLI_environment/_bmad_output_for_slam/implementation-artifacts/spec-perf-bottleneck-probe.md",
+      "bytes": 2046,
+      "sha256": "230fa9a2c969b6d0f6799d6e7772769fb4bd0d0db7d56a6224aba6525a867c7e"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/implementation-artifacts/spec-rgbd-localization-eval.md",
+      "path": "CLI_environment/_bmad_output_for_slam/implementation-artifacts/spec-rgbd-localization-eval.md",
+      "bytes": 6226,
+      "sha256": "772f117447b7b7dd4109493938c3cd88c29961d4ff86fbb7978eb4df617c0eb6"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/implementation-artifacts/spec-slam-topview-comparison.md",
+      "path": "CLI_environment/_bmad_output_for_slam/implementation-artifacts/spec-slam-topview-comparison.md",
+      "bytes": 9212,
+      "sha256": "14f5999a89efd37287cf9f19a40d521e0b39ba5297b2ee988087ef972d7e8dd4"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/architecture-realtime-sam6d-bagplay-2026-08-13.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/architecture-realtime-sam6d-bagplay-2026-08-13.md",
+      "bytes": 15032,
+      "sha256": "6755a8e7a7bd98058144a6da87b1695fb0d3c2afc1ffbbee2a37c80b1d7c03ba"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/architecture-realtime-two-laptop-slam-sam6d-live-2026-08-12.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/architecture-realtime-two-laptop-slam-sam6d-live-2026-08-12.md",
+      "bytes": 59634,
+      "sha256": "21e325a7223afe50a4a963814a006bfe0a02d12c83d8da68e9f58e80ed7c06c3"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/figures/fig1-separation-before-after.png",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/figures/fig1-separation-before-after.png",
+      "bytes": 256428,
+      "sha256": "6fee65fc9d9c1d4f4e7ab1cbc4dcb4c6513fd197236c04a62b849538e4376cfc"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/figures/fig2-why-early-blocks-see-color.png",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/figures/fig2-why-early-blocks-see-color.png",
+      "bytes": 452000,
+      "sha256": "72aaca3cb7d8566d0282689732e822f7f5e0a3682792250368fb6088a46b8df0"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/figures/fig3-what-a-gate-would-cut.png",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/figures/fig3-what-a-gate-would-cut.png",
+      "bytes": 869867,
+      "sha256": "02392517e3d421abc7a12d3d1ec317d11c2c8061cb4077e4f36b91723b1c6f79"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/figures/fig4-lossless-fp-removal.png",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/figures/fig4-lossless-fp-removal.png",
+      "bytes": 56843,
+      "sha256": "ff210921a09f0351c0b8199679d4d57e0eccf294bdb0dbf4c57067bd26354a1e"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slam-data-collection-plan-2026-06-29.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slam-data-collection-plan-2026-06-29.md",
+      "bytes": 8128,
+      "sha256": "91a1bb25104db3d30d27d476e4b0c349e62518d0c395e166cd3e0f31779a63cb"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slam-selection-decision-2026-06-26.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slam-selection-decision-2026-06-26.md",
+      "bytes": 15438,
+      "sha256": "4f234151dc3a59f7ad83f4ac505243aadc4ba14e99e40d1accff9678d3f2cbd7"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide1-problem.png",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide1-problem.png",
+      "bytes": 443792,
+      "sha256": "83706f8c99364c3eab1130aa6f81406dd3897fa50d0ed88344ba46457b135e2d"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide2-cause.png",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide2-cause.png",
+      "bytes": 568972,
+      "sha256": "d064a926a6bde65e355cbcf4b3b0e0ed59105017a5db50f04fe772d8eb59b2c3"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide3-fix.png",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide3-fix.png",
+      "bytes": 137912,
+      "sha256": "3cc21f95cc135b940d3afe348253096335fbcf8c904fa2319124f4a438078038"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide4-result.png",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide4-result.png",
+      "bytes": 197739,
+      "sha256": "b34ceb943e9a1a3b758e2e61de74ab24ef1ae87032413424c1e28c2f826b7e8a"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide5-limits.png",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide5-limits.png",
+      "bytes": 195694,
+      "sha256": "de94defee3bf404180ec9ea80d1342a734ca710f6b09e9d94a065b374b21971f"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide6-ab-result.png",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide6-ab-result.png",
+      "bytes": 206942,
+      "sha256": "6a67187202b7ed5603c64e453fb8a7fb142634a7cff463c6b7a9b1539b3db0c2"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide7-real-frames-before-after.png",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide7-real-frames-before-after.png",
+      "bytes": 847328,
+      "sha256": "dac39ccf09163adf27e376a04ab3a64db4da90f356e02a519c72197fe627e127"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide8-final.png",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/slides/slide8-final.png",
+      "bytes": 211226,
+      "sha256": "754e33bea149758cb38dbdc5c60ef5b2c4f34c57089e57b6b85a6f47eb6e37d9"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-d435i-multiobject-data-collection-scenario-research-2026-07-07.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-d435i-multiobject-data-collection-scenario-research-2026-07-07.md",
+      "bytes": 9745,
+      "sha256": "d8950f532e04029eed890003dc7e68a32871328cc10733f82cea36f29a07821e"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-dinosaur-template-color-and-choco-texture-independent-research-2026-07-22.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-dinosaur-template-color-and-choco-texture-independent-research-2026-07-22.md",
+      "bytes": 13848,
+      "sha256": "6481126c0baac2bb5678c471753864a86ed7793d7017b1422d7039e6d135621b"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-hsv-domain-gap-global-calibration-augmentation-asset-correction-2026-07-22.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-hsv-domain-gap-global-calibration-augmentation-asset-correction-2026-07-22.md",
+      "bytes": 11000,
+      "sha256": "96550ec567cc4454cd84ee07e8c71904b425912b3311f0f3538503036ee7d42e"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-ism-score-calibration-tp-fp-fn-audit-2026-07-16.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-ism-score-calibration-tp-fp-fn-audit-2026-07-16.md",
+      "bytes": 17081,
+      "sha256": "ee5de6aae01bd0b2934b22f0389b7a31d6f4e91eb7069f854ce7f9f39a0fb8ed"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-object-tracking-landmark-confidence-research-2026-07-03.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-object-tracking-landmark-confidence-research-2026-07-03.md",
+      "bytes": 35714,
+      "sha256": "1eb0ce6437cb4a1bfcfd83c05cfc6ab516f24acfeb8f2f8fb68f116ea87595ea"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-orbslam3-dense-3d-mapping-research-2026-06-17.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-orbslam3-dense-3d-mapping-research-2026-06-17.md",
+      "bytes": 15476,
+      "sha256": "24c4f0487d27a44a288735cb63568ad5abb7bb3bb4f090dff7faea613f152048"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-orbslam3-sparse-loop-closure-map-degradation-research-2026-06-17.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-orbslam3-sparse-loop-closure-map-degradation-research-2026-06-17.md",
+      "bytes": 9571,
+      "sha256": "96cb94e4667673696b63c94b436b8b92349c59ca5d178708c051081a29c3e5d1"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-ros2-multilaptop-sensor-timestamp-sync-research-2026-07-07.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-ros2-multilaptop-sensor-timestamp-sync-research-2026-07-07.md",
+      "bytes": 46260,
+      "sha256": "c2a3ed245706b8a2ec21e857fdafe77fb9b4aaccf40ed7d70492cc65f3e811b9"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-dinov2-ism-recognition-failure-literature-research-2026-07-21.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-dinov2-ism-recognition-failure-literature-research-2026-07-21.md",
+      "bytes": 20596,
+      "sha256": "5d2ba9cc427eadac7bf86f8d820ec67182a0e12c1a076a01188e5fd0a3883ead"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-fn345-stage-and-noncolor-feature-research-2026-07-21.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-fn345-stage-and-noncolor-feature-research-2026-07-21.md",
+      "bytes": 29133,
+      "sha256": "be6ebe54194ae7216578e0e5e70ec6618515b0f01c30843275d20196ee806af5"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-ism-accuracy-fp-fn-color-discriminability-research-2026-07-20.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-ism-accuracy-fp-fn-color-discriminability-research-2026-07-20.md",
+      "bytes": 56198,
+      "sha256": "d6b467e392dd77cf057f85270bf191c47ef01aa206d454a1b0fa8defbe2786f6"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-ism-discriminability-latency-methodology-research-2026-07-20.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-ism-discriminability-latency-methodology-research-2026-07-20.md",
+      "bytes": 50075,
+      "sha256": "ceba193eabb84d9d47d1c7a0c0a28aaed7a6bdae28af54613cd12041fe59ba2d"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-ism-misdetection-remediation-research-2026-07-15.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-ism-misdetection-remediation-research-2026-07-15.md",
+      "bytes": 81392,
+      "sha256": "81e4c952142eb74dbe52f84b8c28bcf91d264db652f28bd62c3c9225dc2de167"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-ism-render-real-domain-gap-score-research-2026-07-20.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-ism-render-real-domain-gap-score-research-2026-07-20.md",
+      "bytes": 30184,
+      "sha256": "5a9b9669d8f7a30f9f0044a36ab0f74805f06fe7974af67816c142e4de727753"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-offline-hsv-fusion-minimal-review-2026-07-21.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-offline-hsv-fusion-minimal-review-2026-07-21.md",
+      "bytes": 29071,
+      "sha256": "43f486a4ea162d3a8fa92df1da14e3404408678bdff02282160c3661d774f2b6"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-pipeline-timing-bottleneck-research-2026-07-06.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-pipeline-timing-bottleneck-research-2026-07-06.md",
+      "bytes": 41734,
+      "sha256": "79d2cd037fc91926ec72c7273ee63091766e81cf46792012f245b46c9355b1ad"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-six-dataset-top3-hsv-yolo-proposal-observation-research-2026-07-20.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-sam6d-six-dataset-top3-hsv-yolo-proposal-observation-research-2026-07-20.md",
+      "bytes": 45535,
+      "sha256": "b2d3f5df974f84f2f980362f34a3d870534516aff043185b6a253b23e26593e7"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-semantic-aggregation-high-ply-hsv-minimum-gt-research-2026-07-21.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-semantic-aggregation-high-ply-hsv-minimum-gt-research-2026-07-21.md",
+      "bytes": 54672,
+      "sha256": "955f0ccf8b081448cc53ffd3f940b89f8d5a4c392c170180af51ef6cd63d64c2"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-semantic-fusion-ply-hsv-user-gt-design-2026-07-21.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-semantic-fusion-ply-hsv-user-gt-design-2026-07-21.md",
+      "bytes": 47354,
+      "sha256": "ab00bc98c9ee575ebc2ef5ce9663d3b2d2f0a037b92ec44c0d88d500e1ddb6ae"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-slam-evaluation-gt-data-collection-research-2026-06-22.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-slam-evaluation-gt-data-collection-research-2026-06-22.md",
+      "bytes": 10041,
+      "sha256": "8db23ed66b1b72ea4f45ca57ccab62849ce0bb5f6a0ba1e53a96a544de53bf8d"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-slam-gt-free-localization-metrics-research-2026-06-26.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-slam-gt-free-localization-metrics-research-2026-06-26.md",
+      "bytes": 32515,
+      "sha256": "83118b25b01fb7543cc32f91c3771799fc05628c3f403a47d95f10aa98a96bc5"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-yoloworld-wrong-location-bbox-localization-improvement-research-2026-07-21.md",
+      "path": "CLI_environment/_bmad_output_for_slam/planning-artifacts/research/technical-yoloworld-wrong-location-bbox-localization-improvement-research-2026-07-21.md",
+      "bytes": 31690,
+      "sha256": "7f85e2d525fc566b4c416b375fb0e67033fb18a2d85d0497446d181bc8af3cdc"
+    },
+    {
+      "source": "/home/jucpark/DeepLearning/CLI_environment/_bmad_output_for_slam/test-artifacts/report-sam6d-reloc-png-audit-2026-07-15.md",
+      "path": "CLI_environment/_bmad_output_for_slam/test-artifacts/report-sam6d-reloc-png-audit-2026-07-15.md",
+      "bytes": 69510,
+      "sha256": "9b2aaf5a9856e5e94bf9a10a8903baee627d05d1ce86633ed354be97e04bc338"
+    },
+    {
+      "source": "/home/jucpark/sam6d_object_memory/implementation-artifacts/spec-host-camera-roles.md",
+      "path": "sam6d_object_memory/implementation-artifacts/spec-host-camera-roles.md",
+      "bytes": 4528,
+      "sha256": "0a06ad182606e0c64045c27522108936b7e4c0aec866538444591c8c7b6d1c8f"
+    },
+    {
+      "source": "/home/jucpark/sam6d_object_memory/implementation-artifacts/spec-korean-localization-report.md",
+      "path": "sam6d_object_memory/implementation-artifacts/spec-korean-localization-report.md",
+      "bytes": 1764,
+      "sha256": "1d5d8491e281f2bebe8c097c8b4473fb5da9980cc429b4d2daeb3ce19b722521"
+    },
+    {
+      "source": "/home/jucpark/sam6d_object_memory/implementation-artifacts/spec-split-map-entrypoint.md",
+      "path": "sam6d_object_memory/implementation-artifacts/spec-split-map-entrypoint.md",
+      "bytes": 6541,
+      "sha256": "ee16c1e1afdc0df018794c499fb5c69293bd9fa139cd89d855e8b0fbc2f120c4"
+    },
+    {
+      "source": "/home/jucpark/sam6d_object_memory/implementation-artifacts/spec-two-host.md",
+      "path": "sam6d_object_memory/implementation-artifacts/spec-two-host.md",
+      "bytes": 6076,
+      "sha256": "914c444bcf7fac5b1327e5ea82ac3bcdbb254cfa02ecd3b70f1a131edbfc6d76"
+    },
+    {
+      "source": "/home/jucpark/sam6d_object_memory/integration/GPU_SLAM_EXPERIMENT.md",
+      "path": "sam6d_object_memory/integration/GPU_SLAM_EXPERIMENT.md",
+      "bytes": 8904,
+      "sha256": "a442c58098d62c1a5f43e5e15aa1408cc6655bc68f909df00fd98a5df2f84753"
+    },
+    {
+      "source": "/home/jucpark/sam6d_object_memory/integration/IMU_OBJECT_EXPERIMENTS.md",
+      "path": "sam6d_object_memory/integration/IMU_OBJECT_EXPERIMENTS.md",
+      "bytes": 15904,
+      "sha256": "a975fc42062f25b75e5e635b9adbdfd3975bd701734d2afc36f3f3f022b68403"
+    },
+    {
+      "source": "/home/jucpark/sam6d_object_memory/integration/REALTIME_SPLIT.md",
+      "path": "sam6d_object_memory/integration/REALTIME_SPLIT.md",
+      "bytes": 12461,
+      "sha256": "1843b2f48ac963140cc39269bcaeef806b4f999763d1363dbaf614c038198277"
+    },
+    {
+      "source": "/home/etri/sam6d_object_memory/implementation-artifacts/spec-direct-dds-two-host.md",
+      "path": "local-controller/implementation-artifacts/spec-direct-dds-two-host.md",
+      "bytes": 5809,
+      "sha256": "f45a22c5e556cced8788794224871b9ca6eda7ffe7648f3a077fd7a9e36015a1"
+    },
+    {
+      "source": "/home/etri/sam6d_object_memory/implementation-artifacts/spec-remote-map-viewer-cuda.md",
+      "path": "local-controller/implementation-artifacts/spec-remote-map-viewer-cuda.md",
+      "bytes": 7503,
+      "sha256": "68a65fc4234a595e149e18f3210783b8b60d9a4de40c19f3875be2dc0c213a74"
+    },
+    {
+      "source": "/home/etri/sam6d_object_memory/implementation-artifacts/spec-two-host-live-delivery.md",
+      "path": "local-controller/implementation-artifacts/spec-two-host-live-delivery.md",
+      "bytes": 8211,
+      "sha256": "51934d0b221f92e16c9ac4f5ad068ab95396d106f7819244325567d7f9c99eca"
+    }
+  ],
+  "empty_source_directories": [
+    "/home/jucpark/DeepLearning/CLI_environment/orbslam_ws/_bmad-output"
+  ],
+  "excluded": [
+    "Python __pycache__ and .pyc"
+  ]
+}
