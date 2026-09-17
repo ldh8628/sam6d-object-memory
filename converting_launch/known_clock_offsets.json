@@ -1,0 +1,15 @@
+{
+ "_comment": [
+  "genlock probe 도 레코더 manifest 도 없는 데이터셋의 두 호스트 시계차를 사람이 넣어 두는 곳.",
+  "convert_all.py 의 clock 단계가 3순위 폴백으로 읽는다.",
+  "",
+  "offset_ns 는 'SAM 타임스탬프에서 빼야 할 값' 이다:  t_common = t_SAM - offset_ns.",
+  "",
+  "키는 '<날짜>' 또는 '<날짜>/<세션>' 이다. 세션 쪽이 우선한다."
+ ],
+ "260714": {
+  "offset_ns": -4350000000,
+  "method": "manual",
+  "evidence": "기존에 수동으로 측정한 두 호스트 시계차."
+ }
+}

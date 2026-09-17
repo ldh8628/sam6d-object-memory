@@ -1,0 +1,2412 @@
+{
+ "generated_for": "pre-reorg baseline of EXISTING converted bags",
+ "note": "재변환 결과를 이 값과 대조한다. frames/duration_s 는 반드시 일치해야 하고, K/D 는 convert_recording.py 의 왜곡계수 수정(ed258ad) 때문에 D 만 달라질 수 있다.",
+ "bags": {
+  "data_slam/0807_chungbuk/SLAM/260807_rgbd_standard/smoke_185223": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 600,
+    "/camera/camera/color/camera_info": 600,
+    "/camera/camera/aligned_depth_to_color/image_raw": 600,
+    "/camera/camera/color/image_raw": 600
+   },
+   "frames": 600,
+   "duration_s": 39.982,
+   "t_start_ns": 1786096363653698816
+  },
+  "data_slam/260714_frame_data/converted/sam_105018": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 401,
+    "/camera/camera/color/camera_info": 401,
+    "/camera/camera/aligned_depth_to_color/image_raw": 401,
+    "/camera/camera/color/image_raw": 401
+   },
+   "frames": 401,
+   "duration_s": 133.531,
+   "t_start_ns": 1783993821019681280
+  },
+  "data_slam/260714_frame_data/converted/sam_105018_dense": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 2004,
+    "/camera/camera/color/camera_info": 2004,
+    "/camera/camera/aligned_depth_to_color/image_raw": 2004,
+    "/camera/camera/color/image_raw": 2004
+   },
+   "frames": 2004,
+   "duration_s": 133.735,
+   "t_start_ns": 1783993821019681280
+  },
+  "data_slam/260714_frame_data/converted/sam_105314": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 594,
+    "/camera/camera/color/camera_info": 594,
+    "/camera/camera/aligned_depth_to_color/image_raw": 594,
+    "/camera/camera/color/image_raw": 594
+   },
+   "frames": 594,
+   "duration_s": 99.0,
+   "t_start_ns": 1783993996994336000
+  },
+  "data_slam/260714_frame_data/converted/sam_105314_dense": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 1484,
+    "/camera/camera/color/camera_info": 1484,
+    "/camera/camera/aligned_depth_to_color/image_raw": 1484,
+    "/camera/camera/color/image_raw": 1484
+   },
+   "frames": 1484,
+   "duration_s": 99.031,
+   "t_start_ns": 1783993996994336000
+  },
+  "data_slam/260714_frame_data/converted/sam_105652": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 549,
+    "/camera/camera/color/camera_info": 549,
+    "/camera/camera/aligned_depth_to_color/image_raw": 549,
+    "/camera/camera/color/image_raw": 549
+   },
+   "frames": 549,
+   "duration_s": 183.297,
+   "t_start_ns": 1783994214869286912
+  },
+  "data_slam/260714_frame_data/converted/sam_105652_dense": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 2742,
+    "/camera/camera/color/camera_info": 2742,
+    "/camera/camera/aligned_depth_to_color/image_raw": 2742,
+    "/camera/camera/color/image_raw": 2742
+   },
+   "frames": 2742,
+   "duration_s": 183.359,
+   "t_start_ns": 1783994214869286912
+  },
+  "data_slam/260714_frame_data/converted/sam_110104": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 547,
+    "/camera/camera/color/camera_info": 547,
+    "/camera/camera/aligned_depth_to_color/image_raw": 547,
+    "/camera/camera/color/image_raw": 547
+   },
+   "frames": 547,
+   "duration_s": 182.281,
+   "t_start_ns": 1783994466779097344
+  },
+  "data_slam/260714_frame_data/converted/sam_110104_dense": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 2732,
+    "/camera/camera/color/camera_info": 2732,
+    "/camera/camera/aligned_depth_to_color/image_raw": 2732,
+    "/camera/camera/color/image_raw": 2732
+   },
+   "frames": 2732,
+   "duration_s": 182.344,
+   "t_start_ns": 1783994466779097344
+  },
+  "data_slam/260714_frame_data/converted/sam_110532": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 152,
+    "/camera/camera/color/camera_info": 152,
+    "/camera/camera/aligned_depth_to_color/image_raw": 152,
+    "/camera/camera/color/image_raw": 152
+   },
+   "frames": 152,
+   "duration_s": 51.341,
+   "t_start_ns": 1783994734150236416
+  },
+  "data_slam/260714_frame_data/converted/sam_110532_dense": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 758,
+    "/camera/camera/color/camera_info": 758,
+    "/camera/camera/aligned_depth_to_color/image_raw": 758,
+    "/camera/camera/color/image_raw": 758
+   },
+   "frames": 758,
+   "duration_s": 51.484,
+   "t_start_ns": 1783994734150236416
+  },
+  "data_slam/260714_frame_data/converted/sam_110633": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 353,
+    "/camera/camera/color/camera_info": 353,
+    "/camera/camera/aligned_depth_to_color/image_raw": 353,
+    "/camera/camera/color/image_raw": 353
+   },
+   "frames": 353,
+   "duration_s": 118.046,
+   "t_start_ns": 1783994795505094656
+  },
+  "data_slam/260714_frame_data/converted/sam_110633_dense": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 1762,
+    "/camera/camera/color/camera_info": 1762,
+    "/camera/camera/aligned_depth_to_color/image_raw": 1762,
+    "/camera/camera/color/image_raw": 1762
+   },
+   "frames": 1762,
+   "duration_s": 118.109,
+   "t_start_ns": 1783994795505094656
+  },
+  "data_slam/260714_frame_data/converted/slam_105023": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 2004,
+    "/camera/camera/color/camera_info": 2004,
+    "/camera/camera/aligned_depth_to_color/image_raw": 2004,
+    "/camera/camera/color/image_raw": 2004
+   },
+   "frames": 2004,
+   "duration_s": 133.719,
+   "t_start_ns": 1783993825408323328
+  },
+  "data_slam/260714_frame_data/converted/slam_105319": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 1484,
+    "/camera/camera/color/camera_info": 1484,
+    "/camera/camera/aligned_depth_to_color/image_raw": 1484,
+    "/camera/camera/color/image_raw": 1484
+   },
+   "frames": 1484,
+   "duration_s": 99.015,
+   "t_start_ns": 1783994001371056640
+  },
+  "data_slam/260714_frame_data/converted/slam_105657": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 2748,
+    "/camera/camera/color/camera_info": 2748,
+    "/camera/camera/aligned_depth_to_color/image_raw": 2748,
+    "/camera/camera/color/image_raw": 2748
+   },
+   "frames": 2748,
+   "duration_s": 183.375,
+   "t_start_ns": 1783994219218110720
+  },
+  "data_slam/260714_frame_data/converted/slam_110109": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 2733,
+    "/camera/camera/color/camera_info": 2733,
+    "/camera/camera/aligned_depth_to_color/image_raw": 2733,
+    "/camera/camera/color/image_raw": 2733
+   },
+   "frames": 2733,
+   "duration_s": 182.375,
+   "t_start_ns": 1783994471119844096
+  },
+  "data_slam/260714_frame_data/converted/slam_110536": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 772,
+    "/camera/camera/color/camera_info": 772,
+    "/camera/camera/aligned_depth_to_color/image_raw": 772,
+    "/camera/camera/color/image_raw": 772
+   },
+   "frames": 772,
+   "duration_s": 51.469,
+   "t_start_ns": 1783994738513330176
+  },
+  "data_slam/260714_frame_data/converted/slam_110637": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 1770,
+    "/camera/camera/color/camera_info": 1770,
+    "/camera/camera/aligned_depth_to_color/image_raw": 1770,
+    "/camera/camera/color/image_raw": 1770
+   },
+   "frames": 1770,
+   "duration_s": 118.065,
+   "t_start_ns": 1783994799874407424
+  },
+  "data_slam/260804_office/260804_SAM_converted/longcircle2/ros2_standard": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 2130,
+    "/camera/camera/color/camera_info": 2130,
+    "/camera/camera/aligned_depth_to_color/image_raw": 2130,
+    "/camera/camera/color/image_raw": 2130
+   },
+   "frames": 2130,
+   "duration_s": 72.187,
+   "t_start_ns": 1785831512802877184,
+   "sidecars": {
+    "../conversion_report.json": "data_slam/260804_office/260804_SAM_converted/longcircle2/conversion_report.json"
+   },
+   "sidecar_fields": {
+    "camera": {
+     "model": "D435i",
+     "host": "BOOK-QN90665CQN",
+     "role": "SAM (side-mounted)",
+     "fx": 386.886,
+     "fy": 386.376,
+     "cx": 322.719,
+     "cy": 244.823,
+     "distortion": [
+      -0.0549,
+      0.063086,
+      3e-06,
+      0.000582,
+      -0.020351
+     ],
+     "depth_units_m": 0.001,
+     "stereo_baseline_m": 0.0951
+    },
+    "clock_alignment": {
+     "policy": "constant offset, frame 0 of both recordings assumed simultaneous",
+     "reference_bag": "data_slam/260804_office/260804_SLAM_converted/longcircle2/ros2_standard",
+     "applied_offset_ns": 6601443584,
+     "applied_offset_s": 6.601443584,
+     "note": "laptop clocks disagreed. session_manifest scheduled starts differ by 6.601 s (longcircle2) / 6.607 s (stablization); the frame-0 assumption used here gives +6.6014 s.",
+     "shifted": [
+      "bag message timestamp",
+      "in-message header.stamp"
+     ]
+    }
+   }
+  },
+  "data_slam/260804_office/260804_SAM_converted/stablization/ros2_standard": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 769,
+    "/camera/camera/color/camera_info": 769,
+    "/camera/camera/aligned_depth_to_color/image_raw": 769,
+    "/camera/camera/color/image_raw": 769
+   },
+   "frames": 769,
+   "duration_s": 25.985,
+   "t_start_ns": 1785831597053005568,
+   "sidecars": {
+    "../conversion_report.json": "data_slam/260804_office/260804_SAM_converted/stablization/conversion_report.json"
+   },
+   "sidecar_fields": {
+    "camera": {
+     "model": "D435i",
+     "host": "BOOK-QN90665CQN",
+     "role": "SAM (side-mounted)",
+     "fx": 386.886,
+     "fy": 386.376,
+     "cx": 322.719,
+     "cy": 244.823,
+     "distortion": [
+      -0.0549,
+      0.063086,
+      3e-06,
+      0.000582,
+      -0.020351
+     ],
+     "depth_units_m": 0.001,
+     "stereo_baseline_m": 0.0951
+    },
+    "clock_alignment": {
+     "policy": "constant offset, frame 0 of both recordings assumed simultaneous",
+     "reference_bag": "data_slam/260804_office/260804_SLAM_converted/stablization/ros2_standard",
+     "applied_offset_ns": 6625325568,
+     "applied_offset_s": 6.625325568,
+     "note": "Same frame-0 method as the longcircle2 conversion. The session_manifest scheduled starts differ by 6.6071 s here.",
+     "shifted": [
+      "bag message timestamp",
+      "in-message header.stamp"
+     ]
+    }
+   }
+  },
+  "data_slam/260804_office/260804_SLAM_converted/longcircle2/ros2_standard": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 2166,
+    "/camera/camera/aligned_depth_to_color/image_raw": 2166,
+    "/camera/camera/color/camera_info": 2166,
+    "/camera/camera/color/image_raw": 2166,
+    "/velodyne_points": 721,
+    "/xsens/imu/data": 14432,
+    "/xsens/imu/time_ref": 14432,
+    "/xsens/magnetic_field_au": 7216,
+    "/xsens/packet_counter": 14432,
+    "/xsens/pressure": 3608,
+    "/xsens/status": 14432,
+    "/xsens/temperature": 72
+   },
+   "frames": 2166,
+   "duration_s": 72.203,
+   "t_start_ns": 1785831512802877184,
+   "sidecars": {
+    "../conversion_report.json": "data_slam/260804_office/260804_SLAM_converted/longcircle2/conversion_report.json"
+   }
+  },
+  "data_slam/260804_office/260804_SLAM_converted/stablization/ros2_standard": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 778,
+    "/camera/camera/aligned_depth_to_color/image_raw": 778,
+    "/camera/camera/color/camera_info": 778,
+    "/camera/camera/color/image_raw": 778,
+    "/velodyne_points": 259,
+    "/xsens/imu/data": 5182,
+    "/xsens/imu/time_ref": 5182,
+    "/xsens/magnetic_field_au": 2591,
+    "/xsens/packet_counter": 5182,
+    "/xsens/pressure": 1296,
+    "/xsens/status": 5182,
+    "/xsens/temperature": 26
+   },
+   "frames": 778,
+   "duration_s": 25.922,
+   "t_start_ns": 1785831597053005568,
+   "sidecars": {
+    "../conversion_report.json": "data_slam/260804_office/260804_SLAM_converted/stablization/conversion_report.json"
+   }
+  },
+  "integration/data/0807_chungbuk/182735__u_turn_cw/sam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 1933,
+    "/camera/camera/color/camera_info": 1933,
+    "/camera/camera/aligned_depth_to_color/image_raw": 1933,
+    "/camera/camera/color/image_raw": 1933
+   },
+   "frames": 1933,
+   "duration_s": 64.484,
+   "t_start_ns": 1786094875166792682,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/182735__u_turn_cw/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/182735__u_turn_cw/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 1933
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 1933
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 1933
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 1933
+      }
+     },
+     "t_start_ns": 1786094875200420608,
+     "t_end_ns": 1786094939678176001,
+     "duration_s": 64.478,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.444,
+       0.0,
+       322.784,
+       0.0,
+       386.872,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 1933,
+     "color_hz": 29.98
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/182735__u_turn_cw/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 1933
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 1933
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 1933
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 1933
+      }
+     },
+     "t_start_ns": 1786094875166792682,
+     "t_end_ns": 1786094939651000299,
+     "duration_s": 64.484,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.149,
+       0.0,
+       322.719,
+       0.0,
+       387.637,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 1933,
+     "color_hz": 29.98
+    },
+    "clock_offset_ns": 50846486
+   }
+  },
+  "integration/data/0807_chungbuk/182735__u_turn_cw/slam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 1933,
+    "/camera/camera/color/camera_info": 1933,
+    "/camera/camera/aligned_depth_to_color/image_raw": 1933,
+    "/camera/camera/color/image_raw": 1933
+   },
+   "frames": 1933,
+   "duration_s": 64.478,
+   "t_start_ns": 1786094875200420608,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/182735__u_turn_cw/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/182735__u_turn_cw/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 1933
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 1933
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 1933
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 1933
+      }
+     },
+     "t_start_ns": 1786094875200420608,
+     "t_end_ns": 1786094939678176001,
+     "duration_s": 64.478,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.444,
+       0.0,
+       322.784,
+       0.0,
+       386.872,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 1933,
+     "color_hz": 29.98
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/182735__u_turn_cw/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 1933
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 1933
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 1933
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 1933
+      }
+     },
+     "t_start_ns": 1786094875166792682,
+     "t_end_ns": 1786094939651000299,
+     "duration_s": 64.484,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.149,
+       0.0,
+       322.719,
+       0.0,
+       387.637,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 1933,
+     "color_hz": 29.98
+    },
+    "clock_offset_ns": 50846486
+   }
+  },
+  "integration/data/0807_chungbuk/182943__large_loop_then_small_loop_cw/sam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 3742,
+    "/camera/camera/color/camera_info": 3742,
+    "/camera/camera/aligned_depth_to_color/image_raw": 3742,
+    "/camera/camera/color/image_raw": 3742
+   },
+   "frames": 3742,
+   "duration_s": 124.853,
+   "t_start_ns": 1786095003520410682,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/182943__large_loop_then_small_loop_cw/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/182943__large_loop_then_small_loop_cw/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3742
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3742
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3742
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3742
+      }
+     },
+     "t_start_ns": 1786095003555319552,
+     "t_end_ns": 1786095128406009345,
+     "duration_s": 124.851,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.444,
+       0.0,
+       322.784,
+       0.0,
+       386.872,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 3742,
+     "color_hz": 29.97
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/182943__large_loop_then_small_loop_cw/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3742
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3742
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3742
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3742
+      }
+     },
+     "t_start_ns": 1786095003520410682,
+     "t_end_ns": 1786095128372922171,
+     "duration_s": 124.853,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.149,
+       0.0,
+       322.719,
+       0.0,
+       387.637,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 3742,
+     "color_hz": 29.97
+    },
+    "clock_offset_ns": 53380550
+   }
+  },
+  "integration/data/0807_chungbuk/182943__large_loop_then_small_loop_cw/slam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 3742,
+    "/camera/camera/color/camera_info": 3742,
+    "/camera/camera/aligned_depth_to_color/image_raw": 3742,
+    "/camera/camera/color/image_raw": 3742
+   },
+   "frames": 3742,
+   "duration_s": 124.851,
+   "t_start_ns": 1786095003555319552,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/182943__large_loop_then_small_loop_cw/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/182943__large_loop_then_small_loop_cw/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3742
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3742
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3742
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3742
+      }
+     },
+     "t_start_ns": 1786095003555319552,
+     "t_end_ns": 1786095128406009345,
+     "duration_s": 124.851,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.444,
+       0.0,
+       322.784,
+       0.0,
+       386.872,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 3742,
+     "color_hz": 29.97
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/182943__large_loop_then_small_loop_cw/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3742
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3742
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3742
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3742
+      }
+     },
+     "t_start_ns": 1786095003520410682,
+     "t_end_ns": 1786095128372922171,
+     "duration_s": 124.853,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.149,
+       0.0,
+       322.719,
+       0.0,
+       387.637,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 3742,
+     "color_hz": 29.97
+    },
+    "clock_offset_ns": 53380550
+   }
+  },
+  "integration/data/0807_chungbuk/183504__straight_then_circle_ccw/sam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 3740,
+    "/camera/camera/color/camera_info": 3740,
+    "/camera/camera/aligned_depth_to_color/image_raw": 3740,
+    "/camera/camera/color/image_raw": 3740
+   },
+   "frames": 3740,
+   "duration_s": 124.785,
+   "t_start_ns": 1786095324007398265,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/183504__straight_then_circle_ccw/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/183504__straight_then_circle_ccw/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3740
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3740
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3740
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3740
+      }
+     },
+     "t_start_ns": 1786095324041570304,
+     "t_end_ns": 1786095448825311745,
+     "duration_s": 124.784,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.444,
+       0.0,
+       322.784,
+       0.0,
+       386.872,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 3740,
+     "color_hz": 29.97
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/183504__straight_then_circle_ccw/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3740
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3740
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3740
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3740
+      }
+     },
+     "t_start_ns": 1786095324007398265,
+     "t_end_ns": 1786095448792532346,
+     "duration_s": 124.785,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.149,
+       0.0,
+       322.719,
+       0.0,
+       387.637,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 3740,
+     "color_hz": 29.97
+    },
+    "clock_offset_ns": 56523143
+   }
+  },
+  "integration/data/0807_chungbuk/183504__straight_then_circle_ccw/slam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 3740,
+    "/camera/camera/color/camera_info": 3740,
+    "/camera/camera/aligned_depth_to_color/image_raw": 3740,
+    "/camera/camera/color/image_raw": 3740
+   },
+   "frames": 3740,
+   "duration_s": 124.784,
+   "t_start_ns": 1786095324041570304,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/183504__straight_then_circle_ccw/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/183504__straight_then_circle_ccw/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3740
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3740
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3740
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3740
+      }
+     },
+     "t_start_ns": 1786095324041570304,
+     "t_end_ns": 1786095448825311745,
+     "duration_s": 124.784,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.444,
+       0.0,
+       322.784,
+       0.0,
+       386.872,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 3740,
+     "color_hz": 29.97
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/183504__straight_then_circle_ccw/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3740
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3740
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3740
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3740
+      }
+     },
+     "t_start_ns": 1786095324007398265,
+     "t_end_ns": 1786095448792532346,
+     "duration_s": 124.785,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.149,
+       0.0,
+       322.719,
+       0.0,
+       387.637,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 3740,
+     "color_hz": 29.97
+    },
+    "clock_offset_ns": 56523143
+   }
+  },
+  "integration/data/0807_chungbuk/183839__irregular_multi_loop_ccw_2turns/sam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 3929,
+    "/camera/camera/color/camera_info": 3929,
+    "/camera/camera/aligned_depth_to_color/image_raw": 3929,
+    "/camera/camera/color/image_raw": 3929
+   },
+   "frames": 3929,
+   "duration_s": 131.098,
+   "t_start_ns": 1786095539934022705,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/183839__irregular_multi_loop_ccw_2turns/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/183839__irregular_multi_loop_ccw_2turns/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3928
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3928
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3928
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3928
+      }
+     },
+     "t_start_ns": 1786095539968703232,
+     "t_end_ns": 1786095671059981825,
+     "duration_s": 131.091,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.444,
+       0.0,
+       322.784,
+       0.0,
+       386.872,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 3928,
+     "color_hz": 29.96
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/183839__irregular_multi_loop_ccw_2turns/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3929
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3929
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3929
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3929
+      }
+     },
+     "t_start_ns": 1786095539934022705,
+     "t_end_ns": 1786095671031957042,
+     "duration_s": 131.098,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.149,
+       0.0,
+       322.719,
+       0.0,
+       387.637,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 3929,
+     "color_hz": 29.97
+    },
+    "clock_offset_ns": 59573199
+   }
+  },
+  "integration/data/0807_chungbuk/183839__irregular_multi_loop_ccw_2turns/slam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 3928,
+    "/camera/camera/color/camera_info": 3928,
+    "/camera/camera/aligned_depth_to_color/image_raw": 3928,
+    "/camera/camera/color/image_raw": 3928
+   },
+   "frames": 3928,
+   "duration_s": 131.091,
+   "t_start_ns": 1786095539968703232,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/183839__irregular_multi_loop_ccw_2turns/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/183839__irregular_multi_loop_ccw_2turns/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3928
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3928
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3928
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3928
+      }
+     },
+     "t_start_ns": 1786095539968703232,
+     "t_end_ns": 1786095671059981825,
+     "duration_s": 131.091,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.444,
+       0.0,
+       322.784,
+       0.0,
+       386.872,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 3928,
+     "color_hz": 29.96
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/183839__irregular_multi_loop_ccw_2turns/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3929
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 3929
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3929
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 3929
+      }
+     },
+     "t_start_ns": 1786095539934022705,
+     "t_end_ns": 1786095671031957042,
+     "duration_s": 131.098,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.149,
+       0.0,
+       322.719,
+       0.0,
+       387.637,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 3929,
+     "color_hz": 29.97
+    },
+    "clock_offset_ns": 59573199
+   }
+  },
+  "integration/data/0807_chungbuk/184128__irregular_multi_loop_ccw_8turns/sam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 8117,
+    "/camera/camera/color/camera_info": 8117,
+    "/camera/camera/aligned_depth_to_color/image_raw": 8117,
+    "/camera/camera/color/image_raw": 8117
+   },
+   "frames": 8117,
+   "duration_s": 270.868,
+   "t_start_ns": 1786095708401319031,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/184128__irregular_multi_loop_ccw_8turns/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/184128__irregular_multi_loop_ccw_8turns/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8117
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8117
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8117
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8117
+      }
+     },
+     "t_start_ns": 1786095708438431488,
+     "t_end_ns": 1786095979298374913,
+     "duration_s": 270.86,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.654,
+       0.0,
+       322.784,
+       0.0,
+       387.082,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 8117,
+     "color_hz": 29.97
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/184128__irregular_multi_loop_ccw_8turns/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8117
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8117
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8117
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8117
+      }
+     },
+     "t_start_ns": 1786095708401319031,
+     "t_end_ns": 1786095979268945272,
+     "duration_s": 270.868,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.149,
+       0.0,
+       322.719,
+       0.0,
+       387.637,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 8117,
+     "color_hz": 29.97
+    },
+    "clock_offset_ns": 63683209
+   }
+  },
+  "integration/data/0807_chungbuk/184128__irregular_multi_loop_ccw_8turns/slam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 8117,
+    "/camera/camera/color/camera_info": 8117,
+    "/camera/camera/aligned_depth_to_color/image_raw": 8117,
+    "/camera/camera/color/image_raw": 8117
+   },
+   "frames": 8117,
+   "duration_s": 270.86,
+   "t_start_ns": 1786095708438431488,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/184128__irregular_multi_loop_ccw_8turns/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/184128__irregular_multi_loop_ccw_8turns/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8117
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8117
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8117
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8117
+      }
+     },
+     "t_start_ns": 1786095708438431488,
+     "t_end_ns": 1786095979298374913,
+     "duration_s": 270.86,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.654,
+       0.0,
+       322.784,
+       0.0,
+       387.082,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 8117,
+     "color_hz": 29.97
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/184128__irregular_multi_loop_ccw_8turns/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8117
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8117
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8117
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8117
+      }
+     },
+     "t_start_ns": 1786095708401319031,
+     "t_end_ns": 1786095979268945272,
+     "duration_s": 270.868,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.149,
+       0.0,
+       322.719,
+       0.0,
+       387.637,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 8117,
+     "color_hz": 29.97
+    },
+    "clock_offset_ns": 63683209
+   }
+  },
+  "integration/data/0807_chungbuk/185223__circle_ccw_8laps/sam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 8837,
+    "/camera/camera/color/camera_info": 8837,
+    "/camera/camera/aligned_depth_to_color/image_raw": 8837,
+    "/camera/camera/color/image_raw": 8837
+   },
+   "frames": 8837,
+   "duration_s": 294.892,
+   "t_start_ns": 1786096363618533190,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/185223__circle_ccw_8laps/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/185223__circle_ccw_8laps/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8837
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8837
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8837
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8837
+      }
+     },
+     "t_start_ns": 1786096363653698816,
+     "t_end_ns": 1786096658542695169,
+     "duration_s": 294.889,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.654,
+       0.0,
+       322.784,
+       0.0,
+       387.082,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 8837,
+     "color_hz": 29.97
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/185223__circle_ccw_8laps/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8837
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8837
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8837
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8837
+      }
+     },
+     "t_start_ns": 1786096363618533190,
+     "t_end_ns": 1786096658510902087,
+     "duration_s": 294.892,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.044,
+       0.0,
+       322.719,
+       0.0,
+       387.532,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 8837,
+     "color_hz": 29.97
+    },
+    "clock_offset_ns": 66315962
+   }
+  },
+  "integration/data/0807_chungbuk/185223__circle_ccw_8laps/slam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 8837,
+    "/camera/camera/color/camera_info": 8837,
+    "/camera/camera/aligned_depth_to_color/image_raw": 8837,
+    "/camera/camera/color/image_raw": 8837
+   },
+   "frames": 8837,
+   "duration_s": 294.889,
+   "t_start_ns": 1786096363653698816,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/185223__circle_ccw_8laps/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/185223__circle_ccw_8laps/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8837
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8837
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8837
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8837
+      }
+     },
+     "t_start_ns": 1786096363653698816,
+     "t_end_ns": 1786096658542695169,
+     "duration_s": 294.889,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.654,
+       0.0,
+       322.784,
+       0.0,
+       387.082,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 8837,
+     "color_hz": 29.97
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/185223__circle_ccw_8laps/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8837
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 8837
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8837
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 8837
+      }
+     },
+     "t_start_ns": 1786096363618533190,
+     "t_end_ns": 1786096658510902087,
+     "duration_s": 294.892,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.044,
+       0.0,
+       322.719,
+       0.0,
+       387.532,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 8837,
+     "color_hz": 29.97
+    },
+    "clock_offset_ns": 66315962
+   }
+  },
+  "integration/data/0807_chungbuk/185901__multi_loop_figure_eight/sam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 10078,
+    "/camera/camera/color/camera_info": 10078,
+    "/camera/camera/aligned_depth_to_color/image_raw": 10078,
+    "/camera/camera/color/image_raw": 10078
+   },
+   "frames": 10078,
+   "duration_s": 336.342,
+   "t_start_ns": 1786096761665039777,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/185901__multi_loop_figure_eight/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/185901__multi_loop_figure_eight/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 10077
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 10077
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 10077
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 10077
+      }
+     },
+     "t_start_ns": 1786096761700227840,
+     "t_end_ns": 1786097098039243521,
+     "duration_s": 336.339,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.654,
+       0.0,
+       322.784,
+       0.0,
+       387.082,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 10077,
+     "color_hz": 29.96
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/185901__multi_loop_figure_eight/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 10078
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 10078
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 10078
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 10078
+      }
+     },
+     "t_start_ns": 1786096761665039777,
+     "t_end_ns": 1786097098007490978,
+     "duration_s": 336.342,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.044,
+       0.0,
+       322.719,
+       0.0,
+       387.532,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 10078,
+     "color_hz": 29.96
+    },
+    "clock_offset_ns": 71106911
+   }
+  },
+  "integration/data/0807_chungbuk/185901__multi_loop_figure_eight/slam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 10077,
+    "/camera/camera/color/camera_info": 10077,
+    "/camera/camera/aligned_depth_to_color/image_raw": 10077,
+    "/camera/camera/color/image_raw": 10077
+   },
+   "frames": 10077,
+   "duration_s": 336.339,
+   "t_start_ns": 1786096761700227840,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/185901__multi_loop_figure_eight/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/185901__multi_loop_figure_eight/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 10077
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 10077
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 10077
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 10077
+      }
+     },
+     "t_start_ns": 1786096761700227840,
+     "t_end_ns": 1786097098039243521,
+     "duration_s": 336.339,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.654,
+       0.0,
+       322.784,
+       0.0,
+       387.082,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 10077,
+     "color_hz": 29.96
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/185901__multi_loop_figure_eight/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 10078
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 10078
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 10078
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 10078
+      }
+     },
+     "t_start_ns": 1786096761665039777,
+     "t_end_ns": 1786097098007490978,
+     "duration_s": 336.342,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.044,
+       0.0,
+       322.719,
+       0.0,
+       387.532,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 10078,
+     "color_hz": 29.96
+    },
+    "clock_offset_ns": 71106911
+   }
+  },
+  "integration/data/0807_chungbuk/190624__irregular_multi_loop/sam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 6185,
+    "/camera/camera/color/camera_info": 6185,
+    "/camera/camera/aligned_depth_to_color/image_raw": 6185,
+    "/camera/camera/color/image_raw": 6185
+   },
+   "frames": 6185,
+   "duration_s": 208.187,
+   "t_start_ns": 1786097204366525254,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/190624__irregular_multi_loop/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/190624__irregular_multi_loop/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 9490
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 9490
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 9490
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 9490
+      }
+     },
+     "t_start_ns": 1786097204401028864,
+     "t_end_ns": 1786097521082761473,
+     "duration_s": 316.682,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.654,
+       0.0,
+       322.784,
+       0.0,
+       387.082,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 9490,
+     "color_hz": 29.97
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/190624__irregular_multi_loop/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 6185
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 6185
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 6185
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 6185
+      }
+     },
+     "t_start_ns": 1786097204366525254,
+     "t_end_ns": 1786097412553056839,
+     "duration_s": 208.187,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.044,
+       0.0,
+       322.719,
+       0.0,
+       387.532,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 6185,
+     "color_hz": 29.71
+    },
+    "clock_offset_ns": 75264442
+   }
+  },
+  "integration/data/0807_chungbuk/190624__irregular_multi_loop/slam": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 9490,
+    "/camera/camera/color/camera_info": 9490,
+    "/camera/camera/aligned_depth_to_color/image_raw": 9490,
+    "/camera/camera/color/image_raw": 9490
+   },
+   "frames": 9490,
+   "duration_s": 316.682,
+   "t_start_ns": 1786097204401028864,
+   "sidecars": {
+    "../info.json": "integration/data/0807_chungbuk/190624__irregular_multi_loop/info.json"
+   },
+   "sidecar_fields": {
+    "slam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/190624__irregular_multi_loop/slam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 9490
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 9490
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 9490
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 9490
+      }
+     },
+     "t_start_ns": 1786097204401028864,
+     "t_end_ns": 1786097521082761473,
+     "duration_s": 316.682,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       387.654,
+       0.0,
+       322.784,
+       0.0,
+       387.082,
+       250.28,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 9490,
+     "color_hz": 29.97
+    },
+    "sam": {
+     "path": "/home/ldh9501/temp_ws/CLI_environment/integration/data/0807_chungbuk/190624__irregular_multi_loop/sam",
+     "topics": {
+      "/camera/camera/aligned_depth_to_color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 6185
+      },
+      "/camera/camera/color/camera_info": {
+       "type": "sensor_msgs/msg/CameraInfo",
+       "count": 6185
+      },
+      "/camera/camera/aligned_depth_to_color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 6185
+      },
+      "/camera/camera/color/image_raw": {
+       "type": "sensor_msgs/msg/Image",
+       "count": 6185
+      }
+     },
+     "t_start_ns": 1786097204366525254,
+     "t_end_ns": 1786097412553056839,
+     "duration_s": 208.187,
+     "color_topic": "/camera/camera/color/image_raw",
+     "depth_topic": "/camera/camera/aligned_depth_to_color/image_raw",
+     "caminfo_topic": "/camera/camera/color/camera_info",
+     "camera": {
+      "width": 640,
+      "height": 480,
+      "K": [
+       388.044,
+       0.0,
+       322.719,
+       0.0,
+       387.532,
+       244.823,
+       0.0,
+       0.0,
+       1.0
+      ],
+      "D": [
+       0.0,
+       0.0,
+       0.0,
+       0.0,
+       0.0
+      ],
+      "distortion_model": "plumb_bob"
+     },
+     "color_encoding": "bgr8",
+     "color_count": 6185,
+     "color_hz": 29.71
+    },
+    "clock_offset_ns": 75264442
+   }
+  },
+  "objectmemory_ws/input/SAM_circle/bag": {
+   "topics": {
+    "/camera/camera/imu": 8988,
+    "/camera/camera/aligned_depth_to_color/camera_info": 1322,
+    "/camera/camera/color/camera_info": 1322,
+    "/camera/camera/aligned_depth_to_color/image_raw": 1322,
+    "/camera/camera/color/image_raw": 1322
+   },
+   "frames": 1322,
+   "duration_s": 44.888,
+   "t_start_ns": 1782722649597755088
+  },
+  "objectmemory_ws/input/SAM_loop1/bag": {
+   "topics": {
+    "/camera/camera/imu": 16475,
+    "/camera/camera/aligned_depth_to_color/camera_info": 2431,
+    "/camera/camera/color/camera_info": 2431,
+    "/camera/camera/aligned_depth_to_color/image_raw": 2431,
+    "/camera/camera/color/image_raw": 2431
+   },
+   "frames": 2431,
+   "duration_s": 82.287,
+   "t_start_ns": 1782721890438647204
+  },
+  "objectmemory_ws/input/SAM_loop2/bag": {
+   "topics": {
+    "/camera/camera/imu": 13275,
+    "/camera/camera/aligned_depth_to_color/camera_info": 1969,
+    "/camera/camera/color/camera_info": 1969,
+    "/camera/camera/aligned_depth_to_color/image_raw": 1969,
+    "/camera/camera/color/image_raw": 1969
+   },
+   "frames": 1969,
+   "duration_s": 66.301,
+   "t_start_ns": 1782722086790953195
+  },
+  "objectmemory_ws/input/SAM_occlusion/bag": {
+   "topics": {
+    "/camera/camera/imu": 5398,
+    "/camera/camera/aligned_depth_to_color/camera_info": 795,
+    "/camera/camera/color/camera_info": 795,
+    "/camera/camera/aligned_depth_to_color/image_raw": 795,
+    "/camera/camera/color/image_raw": 795
+   },
+   "frames": 795,
+   "duration_s": 26.958,
+   "t_start_ns": 1782722483589028353
+  },
+  "objectmemory_ws/input/SLAM_long_loop/bag": {
+   "topics": {
+    "/camera/camera/imu": 37282,
+    "/camera/camera/aligned_depth_to_color/camera_info": 5564,
+    "/camera/camera/color/camera_info": 5564,
+    "/camera/camera/aligned_depth_to_color/image_raw": 5564,
+    "/camera/camera/color/image_raw": 5564
+   },
+   "frames": 5564,
+   "duration_s": 186.202,
+   "t_start_ns": 1782721447034706206
+  },
+  "objectmemory_ws/input/SLAM_short_loop/bag": {
+   "topics": {
+    "/camera/camera/imu": 21692,
+    "/camera/camera/aligned_depth_to_color/camera_info": 3217,
+    "/camera/camera/color/camera_info": 3217,
+    "/camera/camera/aligned_depth_to_color/image_raw": 3217,
+    "/camera/camera/color/image_raw": 3217
+   },
+   "frames": 3217,
+   "duration_s": 108.344,
+   "t_start_ns": 1782720598817267704
+  },
+  "objectmemory_ws/input/SLAM_wide_loop/bag": {
+   "topics": {
+    "/camera/camera/imu": 26470,
+    "/camera/camera/aligned_depth_to_color/camera_info": 3935,
+    "/camera/camera/color/camera_info": 3935,
+    "/camera/camera/aligned_depth_to_color/image_raw": 3935,
+    "/camera/camera/color/image_raw": 3935
+   },
+   "frames": 3935,
+   "duration_s": 132.196,
+   "t_start_ns": 1782721032875546208
+  },
+  "sam6d_ws/data/ros2_bag/260804_SAM_longcircle2": {
+   "topics": {
+    "/camera/camera/aligned_depth_to_color/camera_info": 2130,
+    "/camera/camera/color/camera_info": 2130,
+    "/camera/camera/aligned_depth_to_color/image_raw": 2130,
+    "/camera/camera/color/image_raw": 2130
+   },
+   "frames": 2130,
+   "duration_s": 72.187,
+   "t_start_ns": 1785831506201433600
+  }
+ }
+}

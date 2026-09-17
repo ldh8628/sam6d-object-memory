@@ -1,0 +1,366 @@
+{
+ "/home/ldh9501/temp_ws/CLI_environment/data_slam/260807_chungbuk/165039__double_loop_cw/SLAM|/home/ldh9501/temp_ws/CLI_environment/data_slam/260807_chungbuk/165039__double_loop_cw/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 7.252237,
+  "residual_ms": -2.4091796875,
+  "total_offset_ms": 4.8430573125,
+  "total_offset_ns": 4843057,
+  "sd_ms": 9.124868199828136,
+  "n": 3850,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/ldh9501/temp_ws/CLI_environment/data_slam/260804_office/stablization/SLAM|/home/ldh9501/temp_ws/CLI_environment/data_slam/260804_office/stablization/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": -6607.09095,
+  "residual_ms": -0.73486328125,
+  "total_offset_ms": -6607.82581328125,
+  "total_offset_ns": -6607825813,
+  "sd_ms": 0.6928982571283595,
+  "n": 778,
+  "peer_verdict": "probe_count=7",
+  "probe_source": "session_manifest.peer_clock",
+  "method": "calib_offset_genlock"
+ },
+ "/home/ldh9501/temp_ws/CLI_environment/data_slam/260714/105023__unlabeled/SLAM|/home/ldh9501/temp_ws/CLI_environment/data_slam/260714/105023__unlabeled/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ },
+ "/home/ldh9501/temp_ws/CLI_environment/data_slam/260807_chungbuk/170521__outer_loop_inner_loop_mixed/SLAM|/home/ldh9501/temp_ws/CLI_environment/data_slam/260807_chungbuk/170521__outer_loop_inner_loop_mixed/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 17.973418,
+  "residual_ms": 0.510498046875,
+  "total_offset_ms": 18.483916046875,
+  "total_offset_ns": 18483916,
+  "sd_ms": 9.678717714239548,
+  "n": 4261,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/ldh9501/temp_ws/CLI_environment/data_slam/260724_chungbuk/circle3b_181520/SLAM|/home/ldh9501/temp_ws/CLI_environment/data_slam/260724_chungbuk/circle3b_181520/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ },
+ "/home/ldh9501/temp_ws/CLI_environment/data_slam/260807_chungbuk/190624__irregular_multi_loop/SLAM|/home/ldh9501/temp_ws/CLI_environment/data_slam/260807_chungbuk/190624__irregular_multi_loop/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 63.934486,
+  "residual_ms": 11.3299560546875,
+  "total_offset_ms": 75.26444205468749,
+  "total_offset_ns": 75264442,
+  "sd_ms": 0.7424131570281658,
+  "n": 6184,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sync_record_gui_v3d/data/260826_etri_longcircle_SLAM/SLAM|/home/etri/sync_record_gui_v3d/data/260826_etri_longcircle_SLAM/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 18229.466951,
+  "residual_ms": 1.457275390625,
+  "total_offset_ms": 18230.924226390624,
+  "total_offset_ns": 18230924226,
+  "sd_ms": 0.6294289329347093,
+  "n": 5161,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sync_record_gui_v3d/data/260826_etri_longcircle_bright/SLAM|/home/etri/sync_record_gui_v3d/data/260826_etri_longcircle_bright/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 18227.378193,
+  "residual_ms": 2.3944091796875,
+  "total_offset_ms": 18229.772602179688,
+  "total_offset_ns": 18229772602,
+  "sd_ms": 0.5077320605007405,
+  "n": 4498,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sync_record_gui_v3d/data/260826_etri_longcircle_dark/SLAM|/home/etri/sync_record_gui_v3d/data/260826_etri_longcircle_dark/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 18229.130358,
+  "residual_ms": 2.007080078125,
+  "total_offset_ms": 18231.137438078124,
+  "total_offset_ns": 18231137438,
+  "sd_ms": 0.3631665415029915,
+  "n": 3919,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sync_record_gui_v3d/data/260826_etri_eightcircle_SLAM/SLAM|/home/etri/sync_record_gui_v3d/data/260826_etri_eightcircle_SLAM/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 18228.579384,
+  "residual_ms": 0.825439453125,
+  "total_offset_ms": 18229.404823453126,
+  "total_offset_ns": 18229404823,
+  "sd_ms": 0.5790445289516932,
+  "n": 7104,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sync_record_gui_v3d/data/260826_etri_eightcircle_bright/SLAM|/home/etri/sync_record_gui_v3d/data/260826_etri_eightcircle_bright/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 18223.830641,
+  "residual_ms": 0.4833984375,
+  "total_offset_ms": 18224.3140394375,
+  "total_offset_ns": 18224314039,
+  "sd_ms": 0.8039383779876493,
+  "n": 6689,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sync_record_gui_v3d/data/260826_etri_eightcircle_dark/SLAM|/home/etri/sync_record_gui_v3d/data/260826_etri_eightcircle_dark/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 18225.662057,
+  "residual_ms": 0.5531005859375,
+  "total_offset_ms": 18226.21515758594,
+  "total_offset_ns": 18226215158,
+  "sd_ms": 0.6831866218957573,
+  "n": 7964,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/data/260826_etri_longcircle_SLAM/SLAM|/home/etri/sam6d_object_memory/data/260826_etri_longcircle_SLAM/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 18229.466951,
+  "residual_ms": 1.457275390625,
+  "total_offset_ms": 18230.924226390624,
+  "total_offset_ns": 18230924226,
+  "sd_ms": 0.6294289329347093,
+  "n": 5161,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/data/260826_etri_longcircle_dark/SLAM|/home/etri/sam6d_object_memory/data/260826_etri_longcircle_dark/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 18229.130358,
+  "residual_ms": 2.007080078125,
+  "total_offset_ms": 18231.137438078124,
+  "total_offset_ns": 18231137438,
+  "sd_ms": 0.3631665415029915,
+  "n": 3919,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/data/260826_etri_eightcircle_SLAM/SLAM|/home/etri/sam6d_object_memory/data/260826_etri_eightcircle_SLAM/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 18228.579384,
+  "residual_ms": 0.825439453125,
+  "total_offset_ms": 18229.404823453126,
+  "total_offset_ns": 18229404823,
+  "sd_ms": 0.5790445289516932,
+  "n": 7104,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/data/260826_etri_eightcircle_dark/SLAM|/home/etri/sam6d_object_memory/data/260826_etri_eightcircle_dark/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": 18225.662057,
+  "residual_ms": 0.5531005859375,
+  "total_offset_ms": 18226.21515758594,
+  "total_offset_ns": 18226215158,
+  "sd_ms": 0.6831866218957573,
+  "n": 7964,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_eightcircle_SAM/SLAM|/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_eightcircle_SAM/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": -185.020922,
+  "residual_ms": -6.54345703125,
+  "total_offset_ms": -191.56437903125,
+  "total_offset_ns": -191564379,
+  "sd_ms": 6.159090569946304,
+  "n": 4003,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_eightcircle_SLAM/SLAM|/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_eightcircle_SLAM/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": -64.691886,
+  "residual_ms": -0.56884765625,
+  "total_offset_ms": -65.26073365625,
+  "total_offset_ns": -65260734,
+  "sd_ms": 9.28390032038922,
+  "n": 4646,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_longcircle_SAM/SLAM|/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_longcircle_SAM/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": -49.238929,
+  "residual_ms": -0.775390625,
+  "total_offset_ms": -50.014319625,
+  "total_offset_ns": -50014320,
+  "sd_ms": 9.464874393355862,
+  "n": 3699,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_longcircle_SLAM/SLAM|/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_longcircle_SLAM/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": -54.417349,
+  "residual_ms": -0.4263916015625,
+  "total_offset_ms": -54.8437406015625,
+  "total_offset_ns": -54843741,
+  "sd_ms": 8.899270339928261,
+  "n": 3440,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_bigeightcircle_SLAM/SLAM|/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_bigeightcircle_SLAM/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": -7.838892,
+  "residual_ms": 1.591796875,
+  "total_offset_ms": -6.247095125,
+  "total_offset_ns": -6247095,
+  "sd_ms": 9.169071248430496,
+  "n": 5163,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_digut_SLAM/SLAM|/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_digut_SLAM/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": -9.741899,
+  "residual_ms": 1.688720703125,
+  "total_offset_ms": -8.053178296875,
+  "total_offset_ns": -8053178,
+  "sd_ms": 8.974591853392228,
+  "n": 6979,
+  "peer_verdict": "PASS",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_bigeightcircle_SAM/SLAM|/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_bigeightcircle_SAM/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": -6.874988,
+  "residual_ms": 0.743896484375,
+  "total_offset_ms": -6.131091515625,
+  "total_offset_ns": -6131092,
+  "sd_ms": 9.277172298905885,
+  "n": 8882,
+  "peer_verdict": "FAIL",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_digut_SAM/SLAM|/home/etri/sam6d_object_memory/converting_launch/input_pairs_260901_cbnu/260901_cbnu_digut_SAM/SAM|color": {
+  "ok": true,
+  "stream": "color",
+  "probe_ms": -12.291868,
+  "residual_ms": -1.197998046875,
+  "total_offset_ms": -13.489866046875,
+  "total_offset_ns": -13489866,
+  "sd_ms": 9.309210411845564,
+  "n": 6475,
+  "peer_verdict": "FAIL",
+  "probe_source": "peer_timestamp_comparison",
+  "method": "calib_offset_genlock"
+ },
+ "/home/etri/sam6d_object_memory/data/260915_pair_inputs/260915_dense/SLAM|/home/etri/sam6d_object_memory/data/260915_pair_inputs/260915_dense/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ },
+ "/home/etri/sam6d_object_memory/data/260915_pair_inputs/260915_distance/SLAM|/home/etri/sam6d_object_memory/data/260915_pair_inputs/260915_distance/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ },
+ "/home/etri/sam6d_object_memory/data/260915_pair_inputs/260915_eightcircle/SLAM|/home/etri/sam6d_object_memory/data/260915_pair_inputs/260915_eightcircle/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ },
+ "/home/etri/sam6d_object_memory/data/260915_pair_inputs/260915_height/SLAM|/home/etri/sam6d_object_memory/data/260915_pair_inputs/260915_height/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ },
+ "/home/etri/sam6d_object_memory/data/260915_pair_inputs/260915_longcircle/SLAM|/home/etri/sam6d_object_memory/data/260915_pair_inputs/260915_longcircle/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ },
+ "/home/etri/conversion_work_260915/pairs/260915_inlong_fast/SLAM|/home/etri/conversion_work_260915/pairs/260915_inlong_fast/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ },
+ "/home/etri/conversion_work_260915/pairs/260915_eight_fast/SLAM|/home/etri/conversion_work_260915/pairs/260915_eight_fast/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ },
+ "/home/etri/conversion_work_260915/pairs/260915_inlong_middle/SLAM|/home/etri/conversion_work_260915/pairs/260915_inlong_middle/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ },
+ "/home/etri/conversion_work_260915/pairs/260915_eight_middle/SLAM|/home/etri/conversion_work_260915/pairs/260915_eight_middle/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ },
+ "/home/etri/conversion_work_260915/pairs/260915_outlong_fast/SLAM|/home/etri/conversion_work_260915/pairs/260915_outlong_fast/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ },
+ "/home/etri/conversion_work_260915/pairs/260915_outlong_middle/SLAM|/home/etri/conversion_work_260915/pairs/260915_outlong_middle/SAM|color": {
+  "ok": false,
+  "reason": "NTP probe 사이드카가 없다 — 최근접 프레임 매칭만으로는 오프셋을 알 수 없다 (항상 ±16.7 ms 안의 거짓값이 나온다)",
+  "probe_ms": null,
+  "peer_verdict": null
+ }
+}
